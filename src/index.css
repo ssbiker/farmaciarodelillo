@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-purple: #7B2FBE;
+  --color-brand-purple-dark: #5C1FA0;
+}
+
+body {
+  background-color: #0f172a;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: white;
+}
+
+/* Hide scrollbar for cleaner look */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

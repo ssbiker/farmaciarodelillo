@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "landing-cesfamrod"
+  },
+  "targets": {
+    "landing-cesfamrod": {
+      "hosting": {
+        "recetas": [
+          "recetas-farmacia"
+        ]
+      }
+    }
+  }
+}
