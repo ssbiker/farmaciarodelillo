@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { collection, onSnapshot, query, orderBy, doc, setDoc, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { decryptRecetaFields } from "../lib/crypto";
 import type { Receta, FarmaciaUser, FarmaciaConfig } from "../types";
 import { Pill, Stethoscope, AlertCircle, Trash2 } from "lucide-react";
 import { RecetaList } from "./RecetaList";
@@ -41,13 +42,13 @@ export function Dashboard({
 
     const qCtrl = query(collection(db, "recetas_controladas"), orderBy("fechaSolicitud", "desc"));
     const unsubCtrl = onSnapshot(qCtrl,
-      (s) => setRecetasControladas(s.docs.map((d) => ({ id: d.id, ...d.data() } as Receta))),
+      (s) => setRecetasControladas(s.docs.map((d) => decryptRecetaFields({ id: d.id, ...d.data() } as Receta))),
       () => setRecetasControladas([])
     );
 
     const qCron = query(collection(db, "recetas_cronicas"), orderBy("fechaSolicitud", "desc"));
     const unsubCron = onSnapshot(qCron,
-      (s) => { setRecetasCronicas(s.docs.map((d) => ({ id: d.id, ...d.data() } as Receta))); setLoading(false); },
+      (s) => { setRecetasCronicas(s.docs.map((d) => decryptRecetaFields({ id: d.id, ...d.data() } as Receta))); setLoading(false); },
       () => { setRecetasCronicas([]); setLoading(false); }
     );
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { X, Plus, Edit2, Trash2, RefreshCw, AlertTriangle } from "lucide-react";
 import { obtenerAuditoria } from "../lib/auditoria";
+import { decryptAuditoriaValue } from "../lib/crypto";
 import type { AuditoriaEntry } from "../types";
 
 function formatFecha(ts: any): string {
@@ -126,13 +127,13 @@ export function AuditoriaDrawer({
                                 <div className="flex gap-2 mt-1 flex-wrap">
                                   {c.antes && (
                                     <span className="bg-red-500/15 text-red-400 px-2 py-0.5 rounded line-through max-w-[120px] truncate">
-                                      {c.antes}
+                                      {String(decryptAuditoriaValue(c.antes))}
                                     </span>
                                   )}
                                   <span className="text-white/30">→</span>
                                   {c.despues && (
                                     <span className="bg-green-500/15 text-green-400 px-2 py-0.5 rounded max-w-[120px] truncate">
-                                      {c.despues}
+                                      {String(decryptAuditoriaValue(c.despues))}
                                     </span>
                                   )}
                                 </div>

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { X, Trash2, RefreshCw, AlertTriangle } from "lucide-react";
 import {
   collection, onSnapshot, query, where,
@@ -6,6 +6,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { registrarAccion, registrarEliminacionDefinitiva } from "../lib/auditoria";
+import { decryptRecetaFields } from "../lib/crypto";
 import type { Receta, FarmaciaUser } from "../types";
 
 function formatFecha(ts: any): string {
@@ -35,7 +36,7 @@ export function PapeleraModal({
       const q = query(collection(db, col), where("eliminada", "==", true));
       return onSnapshot(q, (snap) => {
         const nuevos = snap.docs.map((d) => ({
-          receta: { id: d.id, ...d.data() } as Receta,
+          receta: decryptRecetaFields({ id: d.id, ...d.data() } as Receta),
           coleccion: col,
         }));
         setItems((prev) => {

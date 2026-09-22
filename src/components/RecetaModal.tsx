@@ -3,6 +3,7 @@ import { X, Save, AlertCircle } from "lucide-react";
 import { db } from "../lib/firebase";
 import { collection, addDoc, updateDoc, doc, Timestamp, getDoc } from "firebase/firestore";
 import { registrarAccion, detectarCambios } from "../lib/auditoria";
+import { encryptRecetaFields } from "../lib/crypto";
 import type { Receta, FarmaciaUser } from "../types";
 
 export function RecetaModal({
@@ -102,16 +103,18 @@ export function RecetaModal({
       if (receta) {
         const snapAntes = await getDoc(doc(db, collectionName, receta.id));
         const dataAntes = snapAntes.data() as Record<string, unknown>;
-        await updateDoc(doc(db, collectionName, receta.id), payload);
+        const payloadCifrado = encryptRecetaFields(payload);
+        await updateDoc(doc(db, collectionName, receta.id), payloadCifrado);
         const cambios = detectarCambios(
           dataAntes,
-          payload as Record<string, unknown>,
+          payloadCifrado as Record<string, unknown>,
           ["nombrePaciente", "rut", "medicamento", "nota", "estado", "medicoReceta", "fechaLimite"]
         );
         await registrarAccion(collectionName, receta.id, "MODIFICACION", farmaciaUser, cambios);
       } else {
+        const payloadCifrado = encryptRecetaFields(payload);
         const docRef = await addDoc(collection(db, collectionName), {
-          ...payload,
+          ...payloadCifrado,
           sector,
           tipo: tipo === "controladas" ? "controlado" : "cronico",
           fechaSolicitud: now,
