@@ -7,7 +7,7 @@ import type { User } from "firebase/auth";
 import { LoginScreen } from "./components/LoginScreen";
 import { Dashboard } from "./components/Dashboard";
 import { AdminSettings } from "./components/AdminSettings";
-import { LogOut, Settings, Pill } from "lucide-react";
+import { LogOut, Settings, Pill, ArrowLeft } from "lucide-react";
 import type { FarmaciaUser } from "./types";
 
 export default function App() {
@@ -25,7 +25,8 @@ export default function App() {
             const userData = userDoc.data() as FarmaciaUser;
             const role = userData.role?.toLowerCase() || "";
             const isAdmin = role === "admin" || role === "quimico" || currentUser.email === "ssanchez@cmvalparaiso.cl";
-            const hasAccess = isAdmin || userData.inFarmaciaTeam === true;
+            // Médicos y funcionarios tienen acceso directo por su rol, sin necesitar inFarmaciaTeam
+            const hasAccess = isAdmin || userData.inFarmaciaTeam === true || role === "medico" || role === "funcionario";
 
             if (hasAccess) {
               setUser(currentUser);
@@ -85,39 +86,78 @@ export default function App() {
 
   const role = farmaciaUser.role?.toLowerCase() || "";
   const isAdmin = role === "admin" || role === "quimico" || user.email === "ssanchez@cmvalparaiso.cl";
+  // Considera tanto el role string como el flag booleano independiente
+  // Así un admin con isMedico: true puede autorizar sin perder su acceso admin
+  const isMedico      = role === "medico"      || farmaciaUser.isMedico      === true;
+  const isFuncionario = role === "funcionario" || farmaciaUser.isFuncionario === true;
 
   return (
-    <div className="min-h-screen bg-[#0F0F1E] text-white flex flex-col">
-      {/* Header */}
-      <header className="bg-white/5 border-b border-white/10 sticky top-0 z-50 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="bg-brand-purple/20 p-2 rounded-xl">
-              <Pill className="w-5 h-5 text-brand-purple" />
-            </div>
-            <div>
-              <h1 className="text-base font-black leading-none">Recetas Farmacia</h1>
-              <p className="text-[10px] text-white/40 leading-none mt-0.5">CESFAM Rodelillo</p>
-            </div>
-          </Link>
+    <div className="min-h-screen page-bg text-[#0F1B35] flex flex-col">
 
+      {/* ── Header — gradiente azul cielo → cyan → violeta ── */}
+      <header className="header-gradient sticky top-0 z-50">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+
+          {/* Grupo izquierdo: Logo + Botón Volver */}
+          <div className="flex items-center gap-4">
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="header-logo-pill flex items-center gap-2.5 pl-1.5 pr-4 py-1.5 rounded-full transition-all duration-300 group-hover:scale-[1.02]">
+                <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.15)] overflow-hidden">
+                  <img src="/logo.png" alt="CESFAM Logo" className="w-8 h-8 object-contain" />
+                </div>
+                <div>
+                  <p className="text-sm font-black leading-none text-white drop-shadow-sm">Recetas Farmacia</p>
+                  <p className="text-[10px] text-white/90 leading-none mt-0.5 font-bold">CESFAM Rodelillo</p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Volver al Portal */}
+            <a 
+              href="https://landing-cesfamrod.web.app/funcionarios" 
+              className="hidden md:flex items-center gap-1.5 header-logo-pill px-3 py-2 rounded-full text-white hover:bg-white/20 hover:scale-[1.02] transition-all duration-300 shadow-sm"
+              title="Volver al Portal de Funcionarios"
+            >
+              <ArrowLeft className="w-4 h-4 opacity-80" />
+              <span className="text-xs font-bold leading-none">Portal</span>
+            </a>
+          </div>
+
+          {/* Acciones del header */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-white/40 hidden md:block">{user.email}</span>
+            {/* Email */}
+            <span className="text-xs text-white/60 hidden lg:block">{user.email}</span>
+
+            {/* Badges de rol */}
+            {isMedico && (
+              <span className="hidden sm:flex items-center gap-1.5 header-logo-pill text-white text-[11px] font-semibold px-3 py-1.5 rounded-full">
+                🩺 Médico
+              </span>
+            )}
+            {isFuncionario && (
+              <span className="hidden sm:flex items-center gap-1.5 header-logo-pill text-white text-[11px] font-semibold px-3 py-1.5 rounded-full">
+                📋 Funcionario
+              </span>
+            )}
+
+            {/* Administración */}
             {isAdmin && (
               <Link
                 to="/settings"
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/50 hover:text-white"
+                className="header-pill p-2.5 rounded-xl"
                 title="Administración"
               >
-                <Settings className="w-4 h-4" />
+                <Settings className="w-4 h-4 text-white" />
               </Link>
             )}
+
+            {/* Logout */}
             <button
               onClick={handleLogout}
-              className="p-2 hover:bg-red-500/20 text-white/50 hover:text-red-400 rounded-lg transition-colors"
+              className="header-pill p-2.5 rounded-xl hover:!bg-red-500/30 hover:!border-red-300/40"
               title="Cerrar sesión"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-4 h-4 text-white" />
             </button>
           </div>
         </div>
@@ -126,7 +166,7 @@ export default function App() {
       {/* Main */}
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6">
         <Routes>
-          <Route path="/" element={<Dashboard farmaciaUser={farmaciaUser} isAdmin={isAdmin} />} />
+          <Route path="/" element={<Dashboard farmaciaUser={farmaciaUser} isAdmin={isAdmin} isMedico={isMedico} isFuncionario={isFuncionario} />} />
           <Route
             path="/settings"
             element={isAdmin ? <AdminSettings currentUser={user} farmaciaUser={farmaciaUser} /> : <Navigate to="/" replace />}

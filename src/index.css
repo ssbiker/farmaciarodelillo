@@ -1,21 +1,193 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════
+   SISTEMA DE COLORES — FARMACIA RODELILLO
+   Tema: Clínico moderno · Claro nacarado + Azules + Lila + Ámbar
+   ═══════════════════════════════════════════════════════════════ */
+
 @theme {
-  --color-brand-purple: #7B2FBE;
-  --color-brand-purple-dark: #5C1FA0;
+  /* Acento principal — azul celeste iluminado */
+  --color-brand-blue:       #2B8EF0;
+  --color-brand-blue-light: #5BABFF;
+  --color-brand-blue-dark:  #1A6AC7;
+  --color-brand-blue-glow:  #2B8EF020;
+
+  /* Acento secundario — lila/morado suave */
+  --color-brand-purple:      #7C5CFC;
+  --color-brand-purple-light:#A38BFE;
+  --color-brand-purple-dark: #5B3FD4;
+  --color-brand-purple-glow: #7C5CFC18;
+
+  /* Ámbar — para alertas y fechas límite */
+  --color-brand-amber:      #F59E0B;
+  --color-brand-amber-light:#FCD34D;
+  --color-brand-amber-glow: #F59E0B15;
+
+  /* Superficies principales — blancos nacarados */
+  --color-surface-base:    #F0F4FF;   /* fondo de página */
+  --color-surface-card:    #FFFFFF;   /* tarjetas */
+  --color-surface-raised:  #EFF3FB;   /* paneles elevados */
+  --color-surface-overlay: #FAFCFF;   /* overlays / modales */
+
+  /* Bordes */
+  --color-border-soft:    #DDE6F5;
+  --color-border-medium:  #C4D4EE;
+  --color-border-strong:  #A0B8E0;
+
+  /* Texto */
+  --color-text-primary:   #0F1B35;
+  --color-text-secondary: #3D5278;
+  --color-text-muted:     #7B90B5;
+  --color-text-faint:     #A8BDD8;
+
+  /* Estados — verde, rojo, amarillo (accesibles sobre fondo claro) */
+  --color-success:        #059669;
+  --color-success-bg:     #D1FAE5;
+  --color-success-border: #6EE7B7;
+  --color-danger:         #DC2626;
+  --color-danger-bg:      #FEE2E2;
+  --color-danger-border:  #FCA5A5;
+  --color-warning:        #D97706;
+  --color-warning-bg:     #FEF3C7;
+  --color-warning-border: #FCD34D;
 }
 
+/* ── Base ─────────────────────────────────────────────────────── */
 body {
-  background-color: #0f172a;
+  background-color: #F0F4FF;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: white;
+  color: #0F1B35;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Hide scrollbar for cleaner look */
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
+/* ── Header gradient — azul cielo → cyan → violeta ─────────────── */
+.header-gradient {
+  background:
+    linear-gradient(135deg,
+      #1A55CC 0%,
+      #1D89F0 25%,
+      #0BBDE8 55%,
+      #6C47E8 85%,
+      #8B5CF6 100%
+    );
+  position: relative;
+  overflow: hidden;
 }
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+
+/* Aurora mesh encima del gradiente */
+.header-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 80% at 20% 50%, rgba(255,255,255,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 80% 30%, rgba(255,255,255,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 100% at 50% 100%, rgba(107,70,232,0.3) 0%, transparent 60%);
+  pointer-events: none;
 }
+
+/* Logo pill en el header */
+.header-logo-pill {
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Botones/pills del header */
+.header-pill {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.header-pill:hover {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Tab activo — sombra de color azul */
+.tab-active-blue {
+  background: #EBF4FF;
+  color: #1A55CC;
+  border: 1.5px solid #93C5FD;
+  box-shadow: 0 2px 12px rgba(29, 111, 232, 0.18), 0 0 0 3px rgba(29, 111, 232, 0.06);
+}
+
+/* Tab especial Mi Panel */
+.tab-active-cyan {
+  background: linear-gradient(135deg, #1D89F0, #0BBDE8);
+  color: white;
+  border: 1.5px solid #0BBDE8;
+  box-shadow: 0 4px 16px rgba(11, 189, 232, 0.35), 0 0 0 3px rgba(11, 189, 232, 0.12);
+}
+
+/* Tab especial Estadísticas */
+.tab-active-purple {
+  background: linear-gradient(135deg, #6C47E8, #8B5CF6);
+  color: white;
+  border: 1.5px solid #8B5CF6;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35), 0 0 0 3px rgba(139, 92, 246, 0.12);
+}
+
+/* ── Glassmorphism nacarado (para cards y modales) ──────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgba(180, 210, 255, 0.45);
+  box-shadow:
+    0 1px 3px rgba(43, 142, 240, 0.08),
+    0 8px 32px rgba(43, 142, 240, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.glass-modal {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid rgba(180, 210, 255, 0.50);
+  box-shadow:
+    0 4px 6px rgba(43, 142, 240, 0.04),
+    0 20px 60px rgba(43, 142, 240, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+/* ── Sombras de color ───────────────────────────────────────────── */
+.shadow-blue {
+  box-shadow: 0 4px 24px rgba(43, 142, 240, 0.20), 0 1px 4px rgba(43, 142, 240, 0.12);
+}
+.shadow-purple {
+  box-shadow: 0 4px 24px rgba(124, 92, 252, 0.20), 0 1px 4px rgba(124, 92, 252, 0.12);
+}
+.shadow-card {
+  box-shadow:
+    0 1px 2px rgba(15, 27, 53, 0.04),
+    0 4px 16px rgba(43, 142, 240, 0.06),
+    0 0 0 1px rgba(180, 210, 255, 0.3);
+}
+
+/* ── Gradientes de fondo de página ─────────────────────────────── */
+.page-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 10% 0%, rgba(124, 92, 252, 0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(43, 142, 240, 0.09) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 60% at 50% 100%, rgba(43, 142, 240, 0.05) 0%, transparent 70%),
+    #F0F4FF;
+}
+
+/* ── Scrollbar personalizada ────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #EFF3FB; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #C4D4EE; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #A0B8E0; }
+
+/* Legacy */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

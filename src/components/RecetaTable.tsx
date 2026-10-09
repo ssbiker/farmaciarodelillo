@@ -30,15 +30,15 @@ export function RecetaTable({
   const [ticketReceta, setTicketReceta] = useState<Receta | null>(null);
 
   const getAlertColor = (receta: Receta) => {
-    if (receta.estado === "completado") return "bg-green-500/10 text-green-400 border-green-500/20";
-    if (receta.estado === "rechazado") return "bg-red-900/40 text-red-400 border-red-500/20";
+    if (receta.estado === "completado") return "bg-green-50 text-green-700 border-green-200";
+    if (receta.estado === "rechazado") return "bg-slate-100 text-slate-500 border-slate-200";
     
     const now = new Date();
     const days = Math.floor((now.getTime() - receta.fechaSolicitud.toDate().getTime()) / (1000 * 3600 * 24));
     
-    if (days >= config.diasAlertaRoja) return "bg-red-500/20 text-red-300 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]";
-    if (days >= config.diasAlertaAmarilla) return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30";
-    return "bg-white/5 text-white border-white/10";
+    if (days >= config.diasAlertaRoja) return "bg-red-50 text-red-600 border-red-200 shadow-[0_0_15px_rgba(239,68,68,0.1)]";
+    if (days >= config.diasAlertaAmarilla) return "bg-yellow-50 text-yellow-700 border-yellow-200";
+    return "bg-[#F8FAFF] text-[#0F1B35] border-[#DDE6F5]";
   };
 
   const getDaysPassed = (receta: Receta) => {
@@ -80,12 +80,12 @@ export function RecetaTable({
             placeholder="Buscar por paciente o RUT..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm w-full md:w-64 focus:border-brand-purple outline-none transition-colors"
+            className="bg-white border border-[#DDE6F5] rounded-xl px-4 py-2.5 text-sm text-[#0F1B35] placeholder-[#A8BDD8] w-full md:w-64 focus:border-brand-blue outline-none transition-colors"
           />
           <select
             value={filterEstado}
             onChange={(e) => setFilterEstado(e.target.value)}
-            className="bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-brand-purple outline-none transition-colors appearance-none"
+            className="bg-white border border-[#DDE6F5] rounded-xl px-4 py-2.5 text-sm text-[#0F1B35] focus:border-brand-blue outline-none transition-colors appearance-none"
           >
             <option value="all">Todos los estados</option>
             <option value="pendiente">Pendientes</option>
@@ -96,7 +96,7 @@ export function RecetaTable({
         
         <button
           onClick={openCreateModal}
-          className="bg-brand-purple hover:bg-brand-purple-dark text-white px-5 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2 w-full md:w-auto justify-center shadow-lg hover:shadow-brand-purple/20"
+          className="bg-brand-blue hover:bg-brand-blue-dark text-white px-5 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2 w-full md:w-auto justify-center shadow-lg hover:shadow-brand-blue/20"
         >
           <Plus className="w-5 h-5" />
           Nueva Solicitud
@@ -104,9 +104,9 @@ export function RecetaTable({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-white/10 bg-black/10">
+      <div className="overflow-x-auto rounded-xl border border-[#DDE6F5] bg-white">
         <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead className="bg-white/5 border-b border-white/10 text-white/60">
+          <thead className="bg-[#F0F4FF] border-b border-[#DDE6F5] text-[#7B90B5]">
             <tr>
               <th className="px-6 py-4 font-medium">Estado</th>
               <th className="px-6 py-4 font-medium">Paciente</th>
@@ -116,16 +116,16 @@ export function RecetaTable({
               <th className="px-6 py-4 font-medium text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-[#EEF3FC]">
             {filteredRecetas.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-white/40">
+                <td colSpan={6} className="px-6 py-8 text-center text-[#7B90B5]">
                   No hay recetas que coincidan con los filtros.
                 </td>
               </tr>
             ) : (
               filteredRecetas.map((receta) => (
-                <tr key={receta.id} className="hover:bg-white/[0.02] transition-colors group">
+                <tr key={receta.id} className="hover:bg-[#F5F8FF] transition-colors group">
                   <td className="px-6 py-4">
                     <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium ${getAlertColor(receta)}`}>
                       {receta.estado === 'pendiente' && <Clock className="w-3.5 h-3.5" />}
@@ -134,10 +134,10 @@ export function RecetaTable({
                       <span className="capitalize">{receta.estado}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 font-medium">{receta.nombrePaciente}</td>
-                  <td className="px-6 py-4 text-white/70">{receta.rut}</td>
+                  <td className="px-6 py-4 font-medium text-[#0F1B35]">{receta.nombrePaciente}</td>
+                  <td className="px-6 py-4 text-[#3D5278] font-mono text-xs whitespace-nowrap">{receta.rut}</td>
                   <td className="px-6 py-4 text-brand-purple font-medium">{receta.medicamento}</td>
-                  <td className="px-6 py-4 text-white/70">
+                  <td className="px-6 py-4 text-[#7B90B5]">
                     {getDaysPassed(receta)} días
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -146,7 +146,7 @@ export function RecetaTable({
                       {receta.estado === "completado" && (
                         <button 
                           onClick={() => setTicketReceta(receta)}
-                          className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                          className="p-1.5 text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
                           title="Ver Ticket"
                         >
                           <Printer className="w-4 h-4" />
@@ -155,7 +155,7 @@ export function RecetaTable({
                       
                       <button 
                         onClick={() => { setEditingReceta(receta); setIsModalOpen(true); }}
-                        className="p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                        className="p-1.5 text-[#7B90B5] hover:text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
                         title="Ver / Editar"
                       >
                         <Edit className="w-4 h-4" />
@@ -164,7 +164,7 @@ export function RecetaTable({
                       {(isAdmin || farmaciaUser.email === "ssanchez@cmvalparaiso.cl") && (
                         <button 
                           onClick={() => handleDelete(receta)}
-                          className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           title="Eliminar registro"
                         >
                           <Trash2 className="w-4 h-4" />

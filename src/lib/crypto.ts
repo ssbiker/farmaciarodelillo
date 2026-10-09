@@ -62,11 +62,14 @@ export function decrypt(text: string): string {
  * Solo afecta: nombrePaciente y rut.
  */
 export function encryptRecetaFields<T extends { nombrePaciente?: string; rut?: string }>(data: T): T {
-  return {
-    ...data,
-    nombrePaciente: data.nombrePaciente !== undefined ? encrypt(data.nombrePaciente) : data.nombrePaciente,
-    rut: data.rut !== undefined ? encrypt(data.rut) : data.rut,
-  };
+  const result = { ...data };
+  if ('nombrePaciente' in data && data.nombrePaciente !== undefined) {
+    result.nombrePaciente = encrypt(data.nombrePaciente);
+  }
+  if ('rut' in data && data.rut !== undefined) {
+    result.rut = encrypt(data.rut);
+  }
+  return result;
 }
 
 /**
@@ -74,11 +77,14 @@ export function encryptRecetaFields<T extends { nombrePaciente?: string; rut?: s
  * Compatible con registros antiguos en texto plano.
  */
 export function decryptRecetaFields<T extends { nombrePaciente?: string; rut?: string }>(data: T): T {
-  return {
-    ...data,
-    nombrePaciente: data.nombrePaciente !== undefined ? decrypt(data.nombrePaciente) : data.nombrePaciente,
-    rut: data.rut !== undefined ? decrypt(data.rut) : data.rut,
-  };
+  const result = { ...data };
+  if ('nombrePaciente' in data && data.nombrePaciente !== undefined) {
+    result.nombrePaciente = decrypt(data.nombrePaciente);
+  }
+  if ('rut' in data && data.rut !== undefined) {
+    result.rut = decrypt(data.rut);
+  }
+  return result;
 }
 
 /**

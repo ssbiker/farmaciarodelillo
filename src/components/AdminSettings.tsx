@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { collection, onSnapshot, doc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import type { User } from "firebase/auth";
-import { Save, Clock, Users, Stethoscope, ShieldCheck, ShieldOff, CheckCircle, Trash2 } from "lucide-react";
+import { Save, Clock, Users, Stethoscope, ShieldCheck, ShieldOff, CheckCircle, Trash2, ClipboardList } from "lucide-react";
 import type { FarmaciaUser, FarmaciaConfig } from "../types";
 import { PapeleraModal } from "./PapeleraModal";
 
@@ -50,26 +50,38 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
 
   const toggleMedicoRole = async (user: FarmaciaUser) => {
     setSavingUserId(user.id);
-    const isMedico = user.role?.toLowerCase() === "medico";
-    await updateDoc(doc(db, "users", user.id), { role: isMedico ? "" : "medico" });
-    showToast((!isMedico ? "🩺 Marcado como Médico" : "❌ Rol Médico removido") + ": " + user.name);
+    // Usa flag booleano independiente — NO toca el campo role
+    // Así un admin puede tener isMedico: true sin perder su rol de admin
+    const esMedico = user.role?.toLowerCase() === "medico" || user.isMedico === true;
+    await updateDoc(doc(db, "users", user.id), { isMedico: !esMedico });
+    showToast((!esMedico ? "🩺 Permiso Médico activado" : "❌ Permiso Médico desactivado") + ": " + user.name);
     setSavingUserId(null);
   };
 
-  const sectionClass = "bg-white/[0.03] border border-white/10 rounded-3xl p-6 space-y-5";
-  const inputClass = "w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-purple outline-none transition-colors";
+  const toggleFuncionarioRole = async (user: FarmaciaUser) => {
+    setSavingUserId(user.id);
+    // Usa flag booleano independiente — NO toca el campo role
+    // Así un admin puede tener isFuncionario: true sin perder su rol de admin
+    const esFuncionario = user.role?.toLowerCase() === "funcionario" || user.isFuncionario === true;
+    await updateDoc(doc(db, "users", user.id), { isFuncionario: !esFuncionario });
+    showToast((!esFuncionario ? "📋 Permiso Funcionario activado" : "❌ Permiso Funcionario desactivado") + ": " + user.name);
+    setSavingUserId(null);
+  };
+
+  const sectionClass = "bg-[#F8FAFF] border border-[#DDE6F5] rounded-3xl p-6 space-y-5";
+  const inputClass = "w-full bg-white border border-[#DDE6F5] rounded-xl px-4 py-3 text-[#0F1B35] placeholder-[#A8BDD8] focus:border-brand-blue outline-none transition-colors";
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h2 className="text-3xl font-black">Administración</h2>
-        <p className="text-white/50 mt-1 text-sm">Configura tiempos de alerta, médicos y accesos al módulo.</p>
+        <h2 className="text-3xl font-black text-[#0F1B35]">Administración</h2>
+        <p className="text-[#7B90B5] mt-1 text-sm">Configura tiempos de alerta, médicos y accesos al módulo.</p>
       </div>
 
       {/* Toast */}
       {toast && (
-        <div className="bg-white/10 border border-white/20 rounded-2xl px-5 py-3 text-sm font-medium backdrop-blur-xl flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-green-400" />
+        <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl px-5 py-3 text-sm font-medium backdrop-blur-xl flex items-center gap-2 text-[#0F1B35]">
+          <CheckCircle className="w-4 h-4 text-green-600" />
           {toast}
         </div>
       )}
@@ -79,13 +91,13 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
         <div className="flex items-center gap-3">
           <div className="bg-brand-purple/20 p-2 rounded-xl"><Clock className="w-5 h-5 text-brand-purple" /></div>
           <div>
-            <h3 className="font-bold">Tiempos de Alerta</h3>
-            <p className="text-xs text-white/40">Define cuántos días se toleran antes de activar alertas.</p>
+            <h3 className="font-bold text-[#0F1B35]">Tiempos de Alerta</h3>
+            <p className="text-xs text-[#7B90B5]">Define cuántos días se toleran antes de activar alertas.</p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-white/60 uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-xs font-semibold text-[#3D5278] uppercase tracking-wider flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.6)]" />
               Alerta Amarilla (días)
             </label>
@@ -94,7 +106,7 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
               className={inputClass} />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-white/60 uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-xs font-semibold text-[#3D5278] uppercase tracking-wider flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
               Alerta Roja Crítica (días)
             </label>
@@ -105,7 +117,7 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
         </div>
         <div className="flex justify-end">
           <button onClick={saveConfig} disabled={saving}
-            className="flex items-center gap-2 bg-brand-purple hover:bg-brand-purple-dark text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50">
+            className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue-dark text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50">
             <Save className="w-4 h-4" />
             {saving ? "Guardando..." : "Guardar Tiempos"}
           </button>
@@ -115,17 +127,17 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
       {/* Papelera */}
       <div className={sectionClass}>
         <div className="flex items-center gap-3">
-          <div className="bg-red-500/20 p-2 rounded-xl"><Trash2 className="w-5 h-5 text-red-400" /></div>
+          <div className="bg-red-500/20 p-2 rounded-xl"><Trash2 className="w-5 h-5 text-red-500" /></div>
           <div>
-            <h3 className="font-bold">Papelera de Recetas</h3>
-            <p className="text-xs text-white/40">
+            <h3 className="font-bold text-[#0F1B35]">Papelera de Recetas</h3>
+            <p className="text-xs text-[#7B90B5]">
               Revisa recetas eliminadas, restáuralas o bórralas definitivamente. Todo queda registrado.
             </p>
           </div>
         </div>
         <div className="flex justify-end">
           <button onClick={() => setPapeleraOpen(true)}
-            className="flex items-center gap-2 bg-red-500/15 hover:bg-red-500/25 text-red-400 px-6 py-2.5 rounded-xl text-sm font-bold transition-all border border-red-500/20">
+            className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 px-6 py-2.5 rounded-xl text-sm font-bold transition-all border border-red-200">
             <Trash2 className="w-4 h-4" /> Abrir Papelera
           </button>
         </div>
@@ -134,66 +146,83 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
       {/* Gestión de usuarios */}
       <div className={sectionClass}>
         <div className="flex items-center gap-3">
-          <div className="bg-blue-500/20 p-2 rounded-xl"><Users className="w-5 h-5 text-blue-400" /></div>
+          <div className="bg-brand-blue/10 p-2 rounded-xl"><Users className="w-5 h-5 text-brand-blue" /></div>
           <div>
-            <h3 className="font-bold">Acceso y Roles de Usuarios</h3>
-            <p className="text-xs text-white/40">
-              Activa acceso al módulo o marca a un usuario como Médico para que aparezca en el selector de recetas.
+            <h3 className="font-bold text-[#0F1B35]">Acceso y Roles de Usuarios</h3>
+            <p className="text-xs text-[#7B90B5]">
+              Gestiona el acceso y rol de cada usuario. Los médicos pueden autorizar recetas. Los funcionarios pueden ingresar recetas.
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-4 text-xs text-white/40">
-          <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-green-400" /> Acceso al módulo activo</span>
-          <span className="flex items-center gap-1.5"><Stethoscope className="w-3.5 h-3.5 text-cyan-400" /> Aparece en lista de médicos</span>
+        <div className="flex flex-wrap gap-4 text-xs text-[#7B90B5]">
+          <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-green-600" /> Acceso al módulo activo</span>
+          <span className="flex items-center gap-1.5"><Stethoscope className="w-3.5 h-3.5 text-brand-blue" /> Médico — puede autorizar/rechazar</span>
+          <span className="flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5 text-orange-500" /> Funcionario — puede ingresar recetas</span>
         </div>
         <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
           {users.length === 0 && (
-            <p className="text-center text-white/30 text-sm py-8">Cargando usuarios...</p>
+            <p className="text-center text-[#7B90B5] text-sm py-8">Cargando usuarios...</p>
           )}
           {users
             .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
             .map((u) => {
-              const isMedico = u.role?.toLowerCase() === "medico";
+              // Considera role string (usuarios con role:"medico"/"funcionario")
+              // Y también el flag booleano (admins con permiso adicional)
+              const isMedico      = u.role?.toLowerCase() === "medico"      || u.isMedico      === true;
+              const isFuncionario = u.role?.toLowerCase() === "funcionario" || u.isFuncionario === true;
               const hasAccess = u.inFarmaciaTeam === true;
               const isCurrentUser = u.id === currentUser.uid;
               const isLoading = savingUserId === u.id;
               return (
                 <div key={u.id}
-                  className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all ${hasAccess || isMedico ? "bg-white/[0.05] border-white/10" : "bg-transparent border-white/5"}`}>
-                  <div className="w-9 h-9 rounded-full bg-brand-purple/20 text-brand-purple flex items-center justify-center text-xs font-black flex-shrink-0">
+                  className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all ${hasAccess || isMedico || isFuncionario ? "bg-white border-[#DDE6F5]" : "bg-transparent border-[#EEF3FC]"}`}>
+                  <div className="w-9 h-9 rounded-full bg-brand-blue/10 text-brand-blue flex items-center justify-center text-xs font-black flex-shrink-0">
                     {(u.name || u.email || "?")[0].toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold leading-tight truncate">
+                    <p className="text-sm font-semibold leading-tight truncate text-[#0F1B35]">
                       {u.name || "Sin nombre"}
-                      {isCurrentUser && <span className="ml-1.5 text-[10px] bg-brand-purple/20 text-brand-purple px-1.5 py-0.5 rounded-full">tú</span>}
+                      {isCurrentUser && <span className="ml-1.5 text-[10px] bg-brand-blue/10 text-brand-blue px-1.5 py-0.5 rounded-full">tú</span>}
                     </p>
-                    <p className="text-xs text-white/40 truncate">{u.email}</p>
+                    <p className="text-xs text-[#7B90B5] truncate">{u.email}</p>
                     <div className="flex gap-1 mt-1 flex-wrap">
-                      {u.role && u.role !== "medico" && (
-                        <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded-full text-white/50 capitalize">{u.role}</span>
+                      {u.role && u.role !== "medico" && u.role !== "funcionario" && (
+                        <span className="text-[10px] bg-[#EFF3FB] px-1.5 py-0.5 rounded-full text-[#3D5278] capitalize">{u.role}</span>
                       )}
                       {isMedico && (
-                        <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                        <span className="text-[10px] bg-brand-blue/10 text-brand-blue px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                           <Stethoscope className="w-2.5 h-2.5" /> Médico
                         </span>
                       )}
+                      {isFuncionario && (
+                        <span className="text-[10px] bg-orange-500/10 text-orange-600 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                          <ClipboardList className="w-2.5 h-2.5" /> Funcionario
+                        </span>
+                      )}
                       {hasAccess && (
-                        <span className="text-[10px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                        <span className="text-[10px] bg-green-500/10 text-green-700 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                           <ShieldCheck className="w-2.5 h-2.5" /> Farmacia
                         </span>
                       )}
                     </div>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
-                    <button onClick={() => toggleMedicoRole(u)} disabled={isLoading}
+                    {/* Toggle Médico */}
+                    <button onClick={() => toggleMedicoRole(u)} disabled={isLoading || isFuncionario}
                       title={isMedico ? "Quitar rol Médico" : "Marcar como Médico"}
-                      className={`p-2 rounded-lg text-xs transition-all disabled:opacity-40 ${isMedico ? "bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/10" : "bg-white/5 text-white/30 hover:bg-cyan-500/10 hover:text-cyan-400"}`}>
+                      className={`p-2 rounded-lg text-xs transition-all disabled:opacity-30 ${isMedico ? "bg-brand-blue/10 text-brand-blue hover:bg-brand-blue/20" : "bg-[#EFF3FB] text-[#7B90B5] hover:bg-brand-blue/10 hover:text-brand-blue"}`}>
                       <Stethoscope className="w-4 h-4" />
                     </button>
+                    {/* Toggle Funcionario */}
+                    <button onClick={() => toggleFuncionarioRole(u)} disabled={isLoading || isMedico}
+                      title={isFuncionario ? "Quitar rol Funcionario" : "Marcar como Funcionario"}
+                      className={`p-2 rounded-lg text-xs transition-all disabled:opacity-30 ${isFuncionario ? "bg-orange-500/10 text-orange-600 hover:bg-orange-500/20" : "bg-[#EFF3FB] text-[#7B90B5] hover:bg-orange-500/10 hover:text-orange-500"}`}>
+                      <ClipboardList className="w-4 h-4" />
+                    </button>
+                    {/* Toggle Acceso Farmacia */}
                     <button onClick={() => toggleFarmaciaAccess(u)} disabled={isLoading || isCurrentUser}
                       title={hasAccess ? "Retirar acceso a Farmacia" : "Dar acceso a Farmacia"}
-                      className={`p-2 rounded-lg text-xs transition-all disabled:opacity-40 ${hasAccess ? "bg-green-500/20 text-green-300 hover:bg-red-500/10 hover:text-red-400" : "bg-white/5 text-white/30 hover:bg-green-500/10 hover:text-green-400"}`}>
+                      className={`p-2 rounded-lg text-xs transition-all disabled:opacity-40 ${hasAccess ? "bg-green-500/10 text-green-700 hover:bg-red-50 hover:text-red-500" : "bg-[#EFF3FB] text-[#7B90B5] hover:bg-green-50 hover:text-green-600"}`}>
                       {hasAccess ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
                     </button>
                   </div>

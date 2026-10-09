@@ -12,12 +12,20 @@ import { TicketModal } from "./TicketModal";
 import { AuditoriaDrawer } from "./AuditoriaDrawer";
 
 function daysSince(ts: any): number {
-  return Math.floor((Date.now() - ts.toDate().getTime()) / 86400000);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const date = ts.toDate();
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.round((today.getTime() - target.getTime()) / 86400000);
 }
 
 function daysToDeadline(ts: any): number {
   // Positivo = días restantes, negativo = días vencida
-  return Math.ceil((ts.toDate().getTime() - Date.now()) / 86400000);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const date = ts.toDate();
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.round((target.getTime() - today.getTime()) / 86400000);
 }
 
 function formatDate(ts: any): string {
@@ -28,25 +36,25 @@ function formatDate(ts: any): string {
 function EstadoBadge({ estado }: { estado: string }) {
   if (estado === "completado")
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-400 border border-green-500/25">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200">
         <CheckCircle2 className="w-3.5 h-3.5" /> Completado
       </span>
     );
   if (estado === "rechazado")
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-white/50 border border-white/10">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
         <XCircle className="w-3.5 h-3.5" /> Rechazado
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/25">
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-yellow-50 text-yellow-700 border border-yellow-200">
       <Clock className="w-3.5 h-3.5" /> Pendiente
     </span>
   );
 }
 
 function TiempoBadge({ receta, config }: { receta: Receta; config: FarmaciaConfig }) {
-  if (receta.estado !== "pendiente") return <span className="text-white/30 text-xs">—</span>;
+  if (receta.estado !== "pendiente") return <span className="text-[#7B90B5] text-xs">—</span>;
 
   // ── Modo fecha límite ──
   if (receta.fechaLimite) {
@@ -54,20 +62,20 @@ function TiempoBadge({ receta, config }: { receta: Receta; config: FarmaciaConfi
     if (left < 0) {
       // Vencida
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-red-600/20 text-red-400 border border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.25)] animate-pulse">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-red-600/20 text-red-500 border border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.25)] animate-pulse">
           <AlertCircle className="w-3 h-3" /> Vencida {Math.abs(left)}d
         </span>
       );
     }
     if (left <= config.diasAlertaAmarilla) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/25">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-50 text-yellow-700 border border-yellow-200">
           <Clock className="w-3 h-3" /> {left}d restantes
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
         <Clock className="w-3 h-3" /> {left}d restantes
       </span>
     );
@@ -77,18 +85,18 @@ function TiempoBadge({ receta, config }: { receta: Receta; config: FarmaciaConfi
   const days = daysSince(receta.fechaSolicitud);
   if (days >= config.diasAlertaRoja)
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-red-600/20 text-red-400 border border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.2)] animate-pulse">
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-red-600/20 text-red-500 border border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.2)] animate-pulse">
         <AlertCircle className="w-3 h-3" /> {days}d activa
       </span>
     );
   if (days >= config.diasAlertaAmarilla)
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/25">
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-50 text-yellow-700 border border-yellow-200">
         <Clock className="w-3 h-3" /> {days}d activa
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-white/5 text-white/50 border border-white/10">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[#EFF3FB] text-[#3D5278] border border-[#DDE6F5]">
       <Clock className="w-3 h-3" /> {days}d activa
     </span>
   );
@@ -108,12 +116,12 @@ function ConfirmPapeleraModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={onCancel} />
-      <div className="relative bg-[#12122A] border border-white/10 rounded-3xl p-6 max-w-sm w-full shadow-2xl">
-        <h3 className="font-black text-lg mb-1">Enviar a Papelera</h3>
-        <p className="text-xs text-white/50 mb-4">
-          Receta de <strong className="text-white">{receta.nombrePaciente}</strong>. Se guardará quién realizó esta acción.
+      <div className="relative bg-white border border-[#DDE6F5] rounded-3xl p-6 max-w-sm w-full shadow-2xl">
+        <h3 className="font-black text-lg mb-1 text-[#0F1B35]">Enviar a Papelera</h3>
+        <p className="text-xs text-[#3D5278] mb-4">
+          Receta de <strong className="text-[#0F1B35]">{receta.nombrePaciente}</strong>. Se guardará quién realizó esta acción.
         </p>
-        <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-1.5">
+        <label className="block text-xs font-semibold text-[#3D5278] uppercase tracking-wider mb-1.5">
           Motivo (obligatorio)
         </label>
         <textarea
@@ -121,17 +129,17 @@ function ConfirmPapeleraModal({
           placeholder="Ej: Receta duplicada, error de carga..."
           value={motivo}
           onChange={(e) => setMotivo(e.target.value)}
-          className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:border-brand-purple outline-none transition-colors text-sm resize-none"
+          className="w-full bg-white border border-[#DDE6F5] rounded-xl px-4 py-3 text-[#0F1B35] placeholder-[#A8BDD8] focus:border-brand-blue outline-none transition-colors text-sm resize-none"
         />
         <div className="flex gap-3 mt-4">
           <button onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white/60 hover:bg-white/10 transition-colors">
+            className="flex-1 py-2.5 rounded-xl text-sm font-medium text-[#3D5278] hover:bg-[#EFF3FB] transition-colors">
             Cancelar
           </button>
           <button
             disabled={!motivo.trim()}
             onClick={() => onConfirm(motivo.trim())}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-40">
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-40">
             <Trash2 className="w-4 h-4" /> Enviar
           </button>
         </div>
@@ -145,6 +153,8 @@ export function RecetaList({
   config,
   medicos,
   isAdmin,
+  isMedico,
+  isFuncionario,
   farmaciaUser,
   activeTab,
 }: {
@@ -152,6 +162,8 @@ export function RecetaList({
   config: FarmaciaConfig;
   medicos: FarmaciaUser[];
   isAdmin: boolean;
+  isMedico: boolean;
+  isFuncionario: boolean;
   farmaciaUser: FarmaciaUser;
   activeTab: string;
 }) {
@@ -163,8 +175,27 @@ export function RecetaList({
   const [papeleraReceta, setPapeleraReceta] = useState<Receta | null>(null);
   const [auditoriaReceta, setAuditoriaReceta] = useState<Receta | null>(null);
 
-  const [tipo, sector] = activeTab.split("_");
+  const tipo = activeTab.startsWith("controladas") ? "controladas" : "cronicas";
+  const sector = activeTab.includes("CECOSF") ? "CECOSF" : activeTab.split("_")[1];
   const collectionName = tipo === "controladas" ? "recetas_controladas" : "recetas_cronicas";
+
+  // ── Permisos granulares ──────────────────────────────────────────────────────
+  // Puede crear recetas: admin/quimico, funcionario (NO médico puro)
+  const puedeCrear = isAdmin || isFuncionario || isMedico;
+  // Puede editar datos del paciente/medicamento: admin/quimico, funcionario
+  const puedeEditarDatos = isAdmin || isFuncionario;
+
+  /** Puede cambiar el estado (autorizar/rechazar) de una receta concreta */
+  const puedeCambiarEstado = (r: Receta): boolean => {
+    if (isAdmin) return true;
+    if (!isMedico) return false;
+    // Si la receta tiene médico asignado, solo ese médico puede cambiar estado
+    if (r.medicoUid && r.medicoUid !== "") {
+      return r.medicoUid === farmaciaUser.id;
+    }
+    // Sin médico asignado → cualquier médico puede
+    return true;
+  };
 
   // Filtrar recetas: excluir eliminadas de la vista principal
   const visibles = recetas.filter((r) => !r.eliminada);
@@ -224,13 +255,13 @@ export function RecetaList({
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Total", value: total, color: "text-white", bg: "bg-white/5 border-white/10" },
-          { label: "Pendientes", value: pendientes, color: "text-yellow-400", bg: "bg-yellow-500/5 border-yellow-500/15" },
-          { label: "Vencidas 🔴", value: vencidas, color: "text-red-400", bg: vencidas > 0 ? "bg-red-500/10 border-red-500/20" : "bg-white/5 border-white/10" },
-          { label: "Completadas", value: completadas, color: "text-green-400", bg: "bg-green-500/5 border-green-500/15" },
+          { label: "Total", value: total, color: "text-[#0F1B35]", bg: "bg-[#F8FAFF] border-[#DDE6F5]" },
+          { label: "Pendientes", value: pendientes, color: "text-yellow-700", bg: "bg-yellow-50 border-yellow-200" },
+          { label: "Vencidas 🔴", value: vencidas, color: "text-red-600", bg: vencidas > 0 ? "bg-red-50 border-red-200" : "bg-[#F8FAFF] border-[#DDE6F5]" },
+          { label: "Completadas", value: completadas, color: "text-green-700", bg: "bg-green-50 border-green-200" },
         ].map((s) => (
           <div key={s.label} className={`rounded-2xl border px-4 py-3 ${s.bg}`}>
-            <p className="text-[10px] text-white/40 uppercase tracking-wider font-semibold">{s.label}</p>
+            <p className="text-[10px] text-[#7B90B5] uppercase tracking-wider font-semibold">{s.label}</p>
             <p className={`text-2xl font-black mt-0.5 ${s.color}`}>{s.value}</p>
           </div>
         ))}
@@ -239,33 +270,35 @@ export function RecetaList({
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-white/30 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#A8BDD8] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input type="text" placeholder="Buscar por nombre, RUT o medicamento..."
             value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:border-brand-purple outline-none transition-colors" />
+            className="w-full bg-white border border-[#DDE6F5] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#0F1B35] placeholder-[#A8BDD8] focus:border-brand-blue outline-none transition-colors" />
         </div>
         <div className="relative">
           <select value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)}
-            className="appearance-none bg-black/20 border border-white/10 rounded-xl pl-4 pr-9 py-2.5 text-sm focus:border-brand-purple outline-none transition-colors">
+            className="appearance-none bg-white border border-[#DDE6F5] rounded-xl pl-4 pr-9 py-2.5 text-sm text-[#0F1B35] focus:border-brand-blue outline-none transition-colors">
             <option value="all">Todos los estados</option>
             <option value="pendiente">Pendientes</option>
             <option value="completado">Completados</option>
             <option value="rechazado">Rechazados</option>
           </select>
-          <ChevronDown className="w-4 h-4 text-white/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <ChevronDown className="w-4 h-4 text-[#7B90B5] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
-        <button onClick={openCreate}
-          className="flex items-center justify-center gap-2 bg-brand-purple hover:bg-brand-purple-dark text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg hover:scale-[1.02]">
-          <Plus className="w-4 h-4" /> Nueva Solicitud
-        </button>
+        {puedeCrear && (
+          <button onClick={openCreate}
+            className="flex items-center justify-center gap-2 bg-brand-blue hover:bg-brand-blue-dark text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg hover:scale-[1.02]">
+            <Plus className="w-4 h-4" /> Nueva Solicitud
+          </button>
+        )}
       </div>
 
       {/* Tabla */}
-      <div className="rounded-2xl border border-white/10 overflow-hidden">
+      <div className="rounded-2xl border border-[#DDE6F5] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-white/[0.04] border-b border-white/10 text-white/50 text-xs uppercase tracking-wider font-semibold">
+              <tr className="bg-[#F0F4FF] border-b border-[#DDE6F5] text-[#7B90B5] text-xs uppercase tracking-wider font-semibold">
                 <th className="px-5 py-3.5 text-left">Estado</th>
                 <th className="px-5 py-3.5 text-left">Paciente</th>
                 <th className="px-5 py-3.5 text-left">RUT</th>
@@ -277,10 +310,10 @@ export function RecetaList({
                 <th className="px-5 py-3.5 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.05]">
+            <tbody className="divide-y divide-[#EEF3FC]">
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-5 py-10 text-center text-white/30">
+                  <td colSpan={9} className="px-5 py-10 text-center text-[#7B90B5]">
                     No hay registros que coincidan con la búsqueda.
                   </td>
                 </tr>
@@ -291,22 +324,58 @@ export function RecetaList({
 
                 return (
                   <tr key={receta.id}
-                    className={`group transition-colors ${isCritical ? "bg-red-500/5 hover:bg-red-500/10" : isWarning ? "bg-yellow-500/5 hover:bg-yellow-500/10" : "hover:bg-white/[0.03]"}`}>
+                    className={`group transition-colors ${isCritical ? "bg-red-500/5 hover:bg-red-500/10" : isWarning ? "bg-yellow-500/5 hover:bg-yellow-500/10" : "hover:bg-[#F5F8FF]"}`}>
                     <td className="px-5 py-4 relative">
                       {isCritical && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-red-500" />}
                       {isWarning && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-yellow-500" />}
                       <EstadoBadge estado={receta.estado} />
+                      {/* Badge auto-renovación */}
+                      {(() => {
+                        if (!receta.autoRenovacion || receta.autoRenovacion <= 0) return null;
+                        
+                        const start = receta.fechaSolicitud.toDate();
+                        const today = new Date();
+                        let elapsedMonths = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
+                        if (today.getDate() < start.getDate()) elapsedMonths--;
+                        
+                        const currentMonth = Math.max(1, elapsedMonths + 1);
+                        
+                        if (currentMonth > receta.autoRenovacion) {
+                          return (
+                            <span className="block mt-1.5 inline-flex items-center gap-1 text-[10px] bg-red-50 text-red-600 border border-red-200 rounded-full px-2 py-0.5 font-bold shadow-sm leading-tight" title="Las renovaciones autorizadas ya se agotaron">
+                              ⚠️ Venció (eran {receta.autoRenovacion}m)
+                            </span>
+                          );
+                        }
+                        if (receta.estado === "rechazado") {
+                          return null;
+                        }
+                        
+                        if (receta.estado === "pendiente") {
+                          return (
+                            <span className="block mt-1.5 inline-flex items-center gap-1 text-[10px] bg-blue-50 text-brand-blue border border-brand-blue/20 rounded-full px-2 py-0.5 font-bold shadow-sm leading-tight">
+                              🔄 Renovable por {receta.autoRenovacion}m
+                            </span>
+                          );
+                        }
+
+                        return (
+                          <span className="block mt-1.5 inline-flex items-center gap-1 text-[10px] bg-green-50 text-green-700 border border-green-200 rounded-full px-2 py-0.5 font-bold shadow-sm leading-tight">
+                            🔄 Renovada {currentMonth} de {receta.autoRenovacion}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-5 py-4">
-                      <span className="font-semibold text-white">{receta.nombrePaciente}</span>
+                      <span className="font-semibold text-[#0F1B35]">{receta.nombrePaciente}</span>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="font-mono text-white/60 text-xs">{receta.rut}</span>
+                      <span className="font-mono text-[#3D5278] text-xs whitespace-nowrap">{receta.rut}</span>
                     </td>
                     <td className="px-5 py-4">
                       <span className="font-semibold text-brand-purple">{receta.medicamento}</span>
                     </td>
-                    <td className="px-5 py-4 text-white/50 text-xs whitespace-nowrap">
+                    <td className="px-5 py-4 text-[#7B90B5] text-xs whitespace-nowrap">
                       {formatDate(receta.fechaSolicitud)}
                     </td>
                     <td className="px-5 py-4">
@@ -315,46 +384,81 @@ export function RecetaList({
                     <td className="px-5 py-4">
                       {receta.estado === "completado" ? (
                         <div>
-                          <p className="text-green-400 font-semibold text-xs">{receta.medicoReceta || "—"}</p>
-                          <p className="text-white/40 text-[10px] mt-0.5">{formatDate(receta.fechaReceta)}</p>
+                          <p className="text-green-700 font-semibold text-xs flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3"/> {receta.medicoReceta || "—"}
+                          </p>
+                          <p className="text-[#7B90B5] text-[10px] mt-0.5">{formatDate(receta.fechaReceta)}</p>
+                        </div>
+                      ) : receta.medicoReceta ? (
+                        <div>
+                          <p className="text-brand-blue font-semibold text-xs flex items-center gap-1">
+                            <Clock className="w-3 h-3"/> {receta.medicoReceta}
+                          </p>
+                          <p className="text-[#7B90B5] text-[10px] mt-0.5">Asignado (Pendiente)</p>
+                        </div>
+                      ) : receta.estado === "rechazado" ? (
+                        <div>
+                          <p className="text-red-600 font-semibold text-xs">❌ Rechazado</p>
+                          {receta.motivoRechazo && <p className="text-red-400 text-[10px] mt-0.5 italic line-clamp-2">{receta.motivoRechazo}</p>}
                         </div>
                       ) : (
-                        <span className="text-white/25 text-xs">—</span>
+                        <span className="text-[#A8BDD8] text-xs">Sin asignar</span>
                       )}
                     </td>
                     <td className="px-5 py-4 max-w-[180px]">
                       {receta.nota ? (
-                        <p className="text-white/50 text-xs line-clamp-2 leading-relaxed">{receta.nota}</p>
+                        <p className="text-[#3D5278] text-xs line-clamp-2 leading-relaxed">{receta.nota}</p>
                       ) : (
-                        <span className="text-white/20 text-xs">—</span>
+                        <span className="text-[#A8BDD8] text-xs">—</span>
+                      )}
+                      {receta.estado === "rechazado" && receta.motivoRechazo && (
+                        <p className="text-red-500 text-xs mt-1 italic">❌ {receta.motivoRechazo}</p>
                       )}
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {/* Historial */}
                         <button onClick={() => setAuditoriaReceta(receta)}
-                          className="p-1.5 text-white/30 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors"
+                          className="p-1.5 text-[#7B90B5] hover:text-purple-500 hover:bg-purple-500/10 rounded-lg transition-colors"
                           title="Ver historial de cambios">
                           <History className="w-4 h-4" />
                         </button>
                         {/* Imprimir ticket */}
                         {receta.estado === "completado" && (
                           <button onClick={() => setTicketReceta(receta)}
-                            className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+                            className="p-1.5 text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
                             title="Ver e Imprimir Ticket">
                             <Printer className="w-4 h-4" />
                           </button>
                         )}
-                        {/* Editar */}
-                        <button onClick={() => openEdit(receta)}
-                          className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                          title="Editar">
-                          <Edit className="w-4 h-4" />
-                        </button>
+                        {/* Editar datos (funcionario/admin) o Autorizar (médico con permiso) */}
+                        {(puedeEditarDatos || puedeCambiarEstado(receta)) && (
+                          <button onClick={() => openEdit(receta)}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              puedeCambiarEstado(receta) && !puedeEditarDatos
+                                ? "text-brand-blue hover:text-brand-blue-dark hover:bg-brand-blue/10"
+                                : "text-[#7B90B5] hover:text-brand-blue hover:bg-brand-blue/10"
+                            }`}
+                            title={
+                              puedeCambiarEstado(receta) && !puedeEditarDatos
+                                ? "Autorizar / Rechazar"
+                                : "Editar"
+                            }>
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        )}
+                        {/* Médico sin permiso para esta receta: mostrar candado */}
+                        {isMedico && !isAdmin && !puedeCambiarEstado(receta) && (
+                          <span
+                            className="p-1.5 text-[#C4D4EE] rounded-lg cursor-not-allowed"
+                            title="Solo el médico asignado puede autorizar esta receta">
+                            🔒
+                          </span>
+                        )}
                         {/* Papelera — solo admin */}
                         {isAdmin && (
                           <button onClick={() => setPapeleraReceta(receta)}
-                            className="p-1.5 text-white/30 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                            className="p-1.5 text-[#7B90B5] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                             title="Enviar a papelera">
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -377,8 +481,11 @@ export function RecetaList({
           receta={editing}
           medicos={medicos}
           tipo={tipo as "controladas" | "cronicas"}
-          sector={sector as "A" | "B"}
+          sector={sector as "A" | "B" | "CECOSF"}
           farmaciaUser={farmaciaUser}
+          soloAutorizacion={isMedico && !isAdmin}
+          puedeEditarDatos={puedeEditarDatos}
+          puedeAutorizar={isAdmin}
         />
       )}
       {ticketReceta && (

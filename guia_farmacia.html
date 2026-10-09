@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Guía de Uso - Recetas Farmacia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #fff; color: #0F1B35; }
+        .page-break { page-break-before: always; }
+        .gradient-text { background: linear-gradient(135deg, #1D89F0, #8B5CF6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<body class="p-12 max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="border-b-2 border-blue-100 pb-6 mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-4xl font-black text-blue-900 mb-2">Sistema de Recetas Farmacia</h1>
+            <p class="text-lg text-gray-500 font-semibold">Guía Rápida para Funcionarios y Médicos</p>
+        </div>
+        <div class="text-right">
+            <p class="text-sm text-gray-400 font-bold uppercase">CESFAM Rodelillo</p>
+        </div>
+    </div>
+
+    <!-- 1. Introducción -->
+    <div class="mb-10">
+        <h2 class="text-2xl font-black mb-4 gradient-text">1. Introducción al Sistema</h2>
+        <p class="text-gray-700 leading-relaxed mb-4">
+            El nuevo sistema digital de Recetas del CESFAM Rodelillo centraliza y agiliza la solicitud, autorización y seguimiento de recetas <b>Crónicas</b> y <b>Controladas</b>.
+        </p>
+        <div class="grid grid-cols-2 gap-6 mt-6">
+            <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100 shadow-sm">
+                <h3 class="font-bold text-blue-800 mb-2 flex items-center gap-2">👨‍⚕️ Rol Médico</h3>
+                <p class="text-sm text-blue-900/80">Su función es revisar su Panel Médico. Autoriza o rechaza las recetas solicitadas por los funcionarios con un par de clics.</p>
+            </div>
+            <div class="bg-amber-50 p-6 rounded-2xl border border-amber-100 shadow-sm">
+                <h3 class="font-bold text-amber-800 mb-2 flex items-center gap-2">📋 Rol Funcionario</h3>
+                <p class="text-sm text-amber-900/80">Ingresa las solicitudes de recetas, busca pacientes y las deja disponibles para que los médicos las autoricen.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Guía Médico -->
+    <div class="mb-10">
+        <h2 class="text-2xl font-black mb-4 text-blue-900">2. Guía paso a paso: Médico</h2>
+        <div class="space-y-4">
+            <div class="flex gap-4 items-start">
+                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center shrink-0 mt-1">1</div>
+                <div>
+                    <h4 class="font-bold text-gray-900">Ingresar a "Mi Panel"</h4>
+                    <p class="text-gray-600 text-sm mt-1">Al iniciar sesión verás un resumen personal de tus estadísticas. Encontrarás de inmediato las alertas de recetas <b>urgentes</b>, las recetas que te fueron asignadas por nombre, y las recetas generales que no tienen un médico específico.</p>
+                </div>
+            </div>
+            <div class="flex gap-4 items-start">
+                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center shrink-0 mt-1">2</div>
+                <div>
+                    <h4 class="font-bold text-gray-900">Revisar una Receta</h4>
+                    <p class="text-gray-600 text-sm mt-1">Haz clic en cualquier tarjeta de receta bajo la lista de <i>Pendientes asignadas a mí</i> o <i>Sin médico asignado</i>. Se abrirá una ventana limpia con los datos (RUT, medicamento, nota) en <b>modo lectura</b> para proteger la integridad de los datos.</p>
+                </div>
+            </div>
+            <div class="flex gap-4 items-start">
+                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center shrink-0 mt-1">3</div>
+                <div>
+                    <h4 class="font-bold text-gray-900">Autorizar o Rechazar</h4>
+                    <p class="text-gray-600 text-sm mt-1">En la parte inferior de la ventana, simplemente presiona el botón <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">Autorizar</span> o <span class="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs font-bold">Rechazar</span>. Luego haz clic en <b>"Confirmar Decisión"</b> y la receta desaparecerá de tus pendientes de forma automática.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Salto de página para el PDF -->
+    <div class="page-break"></div>
+
+    <!-- 3. Guía Funcionario -->
+    <div class="mb-10 pt-10">
+        <h2 class="text-2xl font-black mb-4 text-amber-600">3. Guía paso a paso: Funcionario</h2>
+        <div class="space-y-4">
+            <div class="flex gap-4 items-start">
+                <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-600 font-bold flex items-center justify-center shrink-0 mt-1">1</div>
+                <div>
+                    <h4 class="font-bold text-gray-900">Navegar por las Carteras</h4>
+                    <p class="text-gray-600 text-sm mt-1">Usa los botones superiores (ej. Controladas A, Crónicas B) para moverte de sector. Una vez ahí, podrás buscar recetas antiguas o crear nuevas.</p>
+                </div>
+            </div>
+            <div class="flex gap-4 items-start">
+                <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-600 font-bold flex items-center justify-center shrink-0 mt-1">2</div>
+                <div>
+                    <h4 class="font-bold text-gray-900">Crear Nueva Solicitud</h4>
+                    <p class="text-gray-600 text-sm mt-1">Haz clic en <b>"Nueva Solicitud"</b>. Ingresa el Nombre, RUT (el sistema le pone los puntos y guion automáticamente), el Medicamento exacto y una nota opcional si la situación es especial.</p>
+                </div>
+            </div>
+            <div class="flex gap-4 items-start">
+                <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-600 font-bold flex items-center justify-center shrink-0 mt-1">3</div>
+                <div>
+                    <h4 class="font-bold text-gray-900">Opciones Adicionales: Médico y Fecha Límite</h4>
+                    <p class="text-gray-600 text-sm mt-1">Si la receta <b>debe</b> hacerla un médico en particular, puedes seleccionarlo en el menú de "Médico Asignado". De lo contrario déjalo en blanco. Opcionalmente puedes definir una fecha límite de entrega; el sistema alertará al médico cuando la fecha se acerque.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Alertas -->
+    <div class="mb-10">
+        <h2 class="text-2xl font-black mb-4 gradient-text">4. Entendiendo las Alertas Visuales</h2>
+        <div class="grid grid-cols-3 gap-4">
+            <div class="border border-red-200 bg-red-50 p-4 rounded-xl shadow-sm">
+                <h4 class="text-red-700 font-bold text-sm mb-1">🔴 Alerta Roja</h4>
+                <p class="text-xs text-red-600/80">La receta ya venció su fecha límite o lleva demasiados días esperando sin resolverse. Es de máxima urgencia.</p>
+            </div>
+            <div class="border border-yellow-200 bg-yellow-50 p-4 rounded-xl shadow-sm">
+                <h4 class="text-yellow-700 font-bold text-sm mb-1">🟡 Alerta Amarilla</h4>
+                <p class="text-xs text-yellow-600/80">La receta está pronta a vencer su fecha límite o ya lleva un tiempo esperando.</p>
+            </div>
+            <div class="border border-green-200 bg-green-50 p-4 rounded-xl shadow-sm">
+                <h4 class="text-green-700 font-bold text-sm mb-1">🟢 Completada</h4>
+                <p class="text-xs text-green-600/80">La receta ya fue revisada y debidamente autorizada por el médico.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-12 pt-8 border-t border-gray-100">
+        <p class="text-xs text-gray-400 font-medium">Guía autogenerada · Sistema de Recetas Farmacia CESFAM Rodelillo</p>
+    </div>
+</body>
+</html>

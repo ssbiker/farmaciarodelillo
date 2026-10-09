@@ -1,6 +1,6 @@
 import { Timestamp } from "firebase/firestore";
 
-export type Sector = "A" | "B";
+export type Sector = "A" | "B" | "CECOSF";
 export type TipoReceta = "controlado" | "cronico";
 export type EstadoReceta = "pendiente" | "completado" | "rechazado";
 
@@ -49,6 +49,14 @@ export interface Receta {
   eliminadaPor?: string;
   eliminadaEn?: Timestamp;
   motivoEliminacion?: string;
+  // Nuevas funcionalidades
+  autoRenovacion?: number;    // 0 = sin renovación, 1-6 = meses
+  mesesDescontados?: number;  // Cuántos meses ya se han descontado del inventario
+  motivoRechazo?: string;     // motivo cuando estado = rechazado
+  creadoPorMedico?: boolean;  // true si la creó el médico mismo
+  // Stock y conexión con inventario
+  codigoMedicamento?: string; // Código del medicamento desde el Excel
+  cantidad?: number;          // Cantidad a despachar (unidades)
 }
 
 export interface FarmaciaConfig {
@@ -61,6 +69,18 @@ export interface FarmaciaUser {
   id: string;           // uid Firebase
   name: string;
   email: string;
+  /** Roles: 'admin' | 'quimico' | 'medico' | 'funcionario' | 'tens' | 'tecnico' */
   role?: string;
   inFarmaciaTeam?: boolean;
+  /** Flag independiente: permite a cualquier rol (ej: admin) autorizar/rechazar recetas */
+  isMedico?: boolean;
+  /** Flag independiente: permite a cualquier rol (ej: admin) crear e ingresar recetas */
+  isFuncionario?: boolean;
+}
+
+export interface MedicamentoInventario {
+  codigo: string;
+  nombre: string;
+  stock: number;
+  actualizadoEn: Timestamp;
 }

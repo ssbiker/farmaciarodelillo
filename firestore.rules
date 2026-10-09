@@ -1,0 +1,235 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // 1. FUNCIONES DE AYUDA (SEGURIDAD Y ROLES)
+    // ==========================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Cuenta administradora maestra infalible
+    function isSuperAdmin() {
+      return isAuthenticated() && request.auth.token.email == 'ssanchez@cmvalparaiso.cl';
+    }
+
+    // Función para leer los datos del usuario actual desde la base de datos
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(roleTarget) {
+      return isSuperAdmin() || (isAuthenticated() && getUserData().role == roleTarget);
+    }
+
+    // Administradores de sistema web y farmacia
+    function isAdmin() {
+      return isSuperAdmin() || hasRole('admin') || hasRole('quimico');
+    }
+
+    // Administradores y moderadores de contenido web
+    function isWebEditor() {
+      return isAdmin() || hasRole('moderator');
+    }
+
+    // Miembro del equipo de Gestión
+    function isGestionMember() {
+      return isAuthenticated() && (
+        getUserData().role == 'admin' ||
+        getUserData().inGestionTeam == true
+      );
+    }
+
+    // ==========================================
+    // 2. FUNCIONES ESPECÍFICAS FARMACIA
+    // ==========================================
+
+    // Médico: puede autorizar/rechazar recetas
+    // Considera tanto role:"medico" como el flag booleano isMedico:true (para admins con permiso adicional)
+    function isMedico() {
+      let data = getUserData();
+      return isAuthenticated() && (data.role == 'medico' || data.isMedico == true);
+    }
+
+    // Funcionario: puede ingresar y editar recetas (NO autorizar)
+    // Considera tanto role:"funcionario" como el flag booleano isFuncionario:true (para admins con permiso adicional)
+    function isFuncionario() {
+      let data = getUserData();
+      return isAuthenticated() && (data.role == 'funcionario' || data.isFuncionario == true);
+    }
+
+    // Acceso general al módulo farmacia
+    // Soporta inFarmaciaTeam (campo actual), hasFarmaciaAccess (legacy) y los flags de rol
+    function hasFarmaciaPrivileges() {
+      let data = getUserData();
+      let hasValidRole = data.role in ['admin', 'quimico', 'tens', 'medico', 'tecnico', 'funcionario'];
+      let hasSpecialAccess = data.inFarmaciaTeam == true || data.hasFarmaciaAccess == true;
+      let hasBooleanFlag = data.isMedico == true || data.isFuncionario == true;
+      return isSuperAdmin() || (isAuthenticated() && (hasValidRole || hasSpecialAccess || hasBooleanFlag));
+    }
+
+    // ==========================================
+    // 3. REGLAS PORTAL WEB Y FUNCIONARIOS
+    // ==========================================
+
+    // Noticias Públicas (cualquiera en internet puede leerlas, solo editores publican)
+    match /public_news/{newsId} {
+      allow read: if true;
+      allow create, update, delete: if isWebEditor();
+    }
+
+    // Avisos / Tablones Kanban (solo personal logueado ve, editores publican)
+    match /announcements/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isWebEditor();
+    }
+
+    match /boards/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isWebEditor();
+    }
+
+    // Documentos (solo personal logueado)
+    match /documents/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isWebEditor();
+    }
+
+    // Eventos del Calendario (solo personal logueado)
+    match /events/{eventId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isWebEditor();
+    }
+
+    // ==========================================
+    // 4. MÓDULO DE GESTIÓN DE PROYECTOS
+    // ==========================================
+
+    match /gestion_projects/{projectId} {
+      allow read: if isGestionMember();
+      allow create, delete: if hasRole('admin');
+      allow update: if hasRole('admin');
+    }
+
+    match /gestion_boards/{boardId} {
+      allow read: if isGestionMember();
+      allow create, delete: if hasRole('admin');
+      allow update: if hasRole('admin');
+    }
+
+    match /gestion_tasks/{taskId} {
+      allow read: if isGestionMember();
+      allow create, delete: if hasRole('admin');
+      allow update: if isGestionMember();
+    }
+
+    // ==========================================
+    // 5. MÓDULO FARMACIA — USUARIOS Y CONFIG
+    // ==========================================
+
+    // Colección de Usuarios: todos los logueados pueden leer el directorio
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin();
+      allow update: if request.auth.uid == userId || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Configuración farmacia (días de alerta, etc.)
+    match /farmacia_config/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Inventario de medicamentos
+    match /inventario/{docId} {
+      allow read: if hasFarmaciaPrivileges();
+      allow write: if hasFarmaciaPrivileges();
+    }
+
+    // ==========================================
+    // 6. MÓDULO FARMACIA — RECETAS (CON ROLES)
+    // ==========================================
+
+    // Recetas Controladas
+    match /recetas_controladas/{recetaId} {
+      // Todos con acceso al módulo pueden leer
+      allow read: if hasFarmaciaPrivileges();
+
+      // Solo funcionarios y admins pueden CREAR recetas
+      allow create: if isAdmin() || isFuncionario();
+
+      // Actualización con permisos diferenciados por rol:
+      allow update: if
+        // Admin/Quimico: control total
+        isAdmin()
+        // Funcionario: edita datos pero NO puede cambiar estado a completado/rechazado
+        || (isFuncionario() && !(
+              'estado' in request.resource.data &&
+              request.resource.data.estado != resource.data.estado &&
+              request.resource.data.estado in ['completado', 'rechazado']
+           ))
+        // Médico: SOLO puede cambiar el estado y la receta (no toca datos del paciente)
+        || (isMedico()
+            && (!('nombrePaciente' in request.resource.data) || request.resource.data.nombrePaciente == resource.data.nombrePaciente)
+            && (!('rut' in request.resource.data)            || request.resource.data.rut == resource.data.rut)
+            && (
+              !('medicoUid' in resource.data) ||
+              resource.data.medicoUid == ''   ||
+              resource.data.medicoUid == null ||
+              resource.data.medicoUid == request.auth.uid
+            )
+           );
+
+      // Eliminar: solo admins
+      allow delete: if isAdmin();
+
+      // Auditoría: inmutable, solo lectura y creación
+      match /auditoria/{logId} {
+        allow read, create: if hasFarmaciaPrivileges();
+        allow update, delete: if false; // 🔒 INMUTABLE
+      }
+    }
+
+    // Recetas Crónicas (misma lógica que controladas)
+    match /recetas_cronicas/{recetaId} {
+      allow read: if hasFarmaciaPrivileges();
+
+      allow create: if isAdmin() || isFuncionario();
+
+      allow update: if
+        isAdmin()
+        || (isFuncionario() && !(
+              'estado' in request.resource.data &&
+              request.resource.data.estado != resource.data.estado &&
+              request.resource.data.estado in ['completado', 'rechazado']
+           ))
+        || (isMedico()
+            && (!('nombrePaciente' in request.resource.data) || request.resource.data.nombrePaciente == resource.data.nombrePaciente)
+            && (!('rut' in request.resource.data)            || request.resource.data.rut == resource.data.rut)
+            && (
+              !('medicoUid' in resource.data) ||
+              resource.data.medicoUid == ''   ||
+              resource.data.medicoUid == null ||
+              resource.data.medicoUid == request.auth.uid
+            )
+           );
+
+      allow delete: if isAdmin();
+
+      match /auditoria/{logId} {
+        allow read, create: if hasFarmaciaPrivileges();
+        allow update, delete: if false; // 🔒 INMUTABLE
+      }
+    }
+
+    // Papelera de auditoría (solo admins)
+    match /papelera_auditoria/{logId} {
+      allow read, create: if isAdmin();
+      allow update, delete: if false; // 🔒 INMUTABLE
+    }
+
+  }
+}
