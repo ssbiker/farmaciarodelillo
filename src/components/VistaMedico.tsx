@@ -124,7 +124,7 @@ export function VistaMedico({
   config,
   medicos,
   isAdmin,
-  isMedico,
+  isMedico: _isMedico,
   isFuncionario,
 }: {
   farmaciaUser: FarmaciaUser;

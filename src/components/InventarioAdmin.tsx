@@ -2,10 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { collection, doc, writeBatch, onSnapshot, query, orderBy, Timestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import * as xlsx from "xlsx";
-import { Package, Upload, AlertCircle, CheckCircle2, Search, ArrowRight, RefreshCw, AlertTriangle } from "lucide-react";
+import { Package, Upload, CheckCircle2, Search, RefreshCw, AlertTriangle } from "lucide-react";
 import type { MedicamentoInventario, FarmaciaUser } from "../types";
 
-export function InventarioAdmin({ farmaciaUser }: { farmaciaUser: FarmaciaUser }) {
+export function InventarioAdmin({ farmaciaUser: _farmaciaUser }: { farmaciaUser: FarmaciaUser }) {
   const [inventario, setInventario] = useState<MedicamentoInventario[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");

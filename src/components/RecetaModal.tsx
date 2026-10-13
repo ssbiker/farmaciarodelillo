@@ -6,7 +6,6 @@ import { registrarAccion, detectarCambios } from "../lib/auditoria";
 import { encryptRecetaFields } from "../lib/crypto";
 import type { Receta, FarmaciaUser, ItemReceta } from "../types";
 import { getItemsDeReceta, nuevoItemVacio } from "../lib/recetaHelpers";
-import { MEDICAMENTOS_COMUNES } from "../lib/medicamentos";
 
 export function RecetaModal({
   isOpen,
@@ -59,7 +58,6 @@ export function RecetaModal({
   const isDoctorMode = soloAutorizacion || isDoctorUser;
   const [formTipo, setFormTipo] = useState<"controladas" | "cronicas">(tipo);
   const [formSector, setFormSector] = useState<"A" | "B" | "CECOSF">(sector);
-  const dateRef = useRef<HTMLInputElement>(null);
   const comboboxRef = useRef<HTMLDivElement>(null);
 
   const tsToDateStr = (ts: any): string => {
@@ -221,10 +219,8 @@ export function RecetaModal({
           const snapAntes = await getDoc(doc(db, collectionName, receta.id));
           const dataAntes = snapAntes.data() as Record<string, unknown>;
 
-          // items válidos (con medicamento real, no solicitudes genéricas sin asignar)
-          const itemsValidos = formItems.filter(it => it.codigoMedicamento && it.cantidad > 0);
           // Mantener mesesDescontados de los items que ya existían
-          const itemsConMeses: ItemReceta[] = formItems.map((it, idx) => ({
+          const itemsConMeses: ItemReceta[] = formItems.map((it) => ({
             ...it,
             // Preservar mesesDescontados si el ítem ya existía y tiene el mismo código
             mesesDescontados: it.mesesDescontados ?? 0,
@@ -347,7 +343,7 @@ export function RecetaModal({
             cantidad: primerItem.cantidad,
             items: itemsConMeses,
             nota: form.nota,
-            estado: form.estado,
+            estado: "completado",
             medicoReceta: farmaciaUser.name,
             medicoUid: farmaciaUser.id,
             fechaLimite: dateStrToTs(form.fechaLimite),
@@ -356,27 +352,25 @@ export function RecetaModal({
             sector: targetSector,
             tipo: targetTipo,
             fechaSolicitud: now,
-            fechaReceta: form.estado === "completado" ? now : null,
+            fechaReceta: now,
             creadoPor: farmaciaUser.id,
             creadoPorMedico: true,
             creadoEn: now,
             eliminada: false,
-            mesesDescontados: form.estado === "completado" ? 1 : 0,
+            mesesDescontados: 1,
           };
 
           const payloadCifrado = encryptRecetaFields(payload as any);
           const docRef = await addDoc(collection(db, targetCollection), payloadCifrado);
           await registrarAccion(targetCollection, docRef.id, "CREACION", farmaciaUser);
 
-          // Descontar stock en inventario para cada medicamento prescrito si la receta es autorizada
-          if (form.estado === "completado") {
-            const { increment, updateDoc: uDoc, doc: fDoc } = await import("firebase/firestore");
-            for (const it of itemsConMeses) {
-              if (it.codigoMedicamento && it.cantidad > 0) {
-                uDoc(fDoc(db, "inventario", it.codigoMedicamento), {
-                  stock: increment(-it.cantidad)
-                }).catch(console.error);
-              }
+          // Descontar stock en inventario para cada medicamento prescrito
+          const { increment, updateDoc: uDoc, doc: fDoc } = await import("firebase/firestore");
+          for (const it of itemsConMeses) {
+            if (it.codigoMedicamento && it.cantidad > 0) {
+              uDoc(fDoc(db, "inventario", it.codigoMedicamento), {
+                stock: increment(-it.cantidad)
+              }).catch(console.error);
             }
           }
         }
@@ -437,8 +431,8 @@ export function RecetaModal({
                 if (oldCodigo && oldCantidad > 0) {
                   updateDoc(doc(db, "inventario", oldCodigo), { stock: increment(oldCantidad) }).catch(e => console.error(e));
                 }
-                if (payload.codigoMedicamento && payload.cantidad > 0) {
-                  updateDoc(doc(db, "inventario", payload.codigoMedicamento as string), { stock: increment(-(payload.cantidad as number)) }).catch(e => console.error(e));
+                if (payload.codigoMedicamento && (payload.cantidad ?? 0) > 0) {
+                  updateDoc(doc(db, "inventario", payload.codigoMedicamento as string), { stock: increment(-((payload.cantidad ?? 0) as number)) }).catch(e => console.error(e));
                 }
               });
             }
@@ -680,7 +674,6 @@ export function RecetaModal({
                               inv.nombre.toLowerCase().includes(item.medicamento.toLowerCase()) ||
                               inv.codigo.includes(item.medicamento)
                             )
-                            .filter(inv => item.medicamento !== "SOLICITUD_RECETA" || true)
                             .slice(0, 50)
                             .map(inv => (
                               <div
@@ -972,37 +965,43 @@ export function RecetaModal({
               <div>
                 <label className={labelClass}>Estado</label>
                 {isDoctorMode ? (
-                  <div className="flex gap-2">
-                    {(!receta ? (["completado", "pendiente"] as const) : (["pendiente", "completado", "rechazado"] as const)).map((est) => {
-                      const icons = { pendiente: null, completado: CheckCircle2, rechazado: XCircle };
-                      const activeColors = {
-                        pendiente: "border-amber-300 bg-amber-50 text-amber-700 shadow-sm",
-                        completado: "border-green-400 bg-green-50 text-green-700 shadow-sm",
-                        rechazado: "border-red-300 bg-red-50 text-red-600 shadow-sm",
-                      };
-                      const labels = {
-                        pendiente: !receta ? "Borrador (Pendiente)" : "Pendiente",
-                        completado: !receta ? "Emitir (Autorizada)" : "Autorizar",
-                        rechazado: "Rechazar"
-                      };
-                      const Icon = icons[est];
-                      return (
-                        <button
-                          key={est}
-                          type="button"
-                          onClick={() => setForm({ ...form, estado: est })}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold border transition-all ${
-                            form.estado === est
-                              ? activeColors[est]
-                              : "border-[#DDE6F5] bg-white text-[#5D7299] hover:border-[#C4D4EE] hover:bg-[#F5F8FF]"
-                          }`}
-                        >
-                          {Icon && <Icon className="w-3.5 h-3.5" />}
-                          {labels[est]}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  !receta ? (
+                    <div className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-xl">
+                      <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-bold text-green-700">Emitir Receta Autorizada</p>
+                        <p className="text-[11px] text-green-600/70">La receta queda lista para despacho en farmacia</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      {(["pendiente", "completado", "rechazado"] as const).map((est) => {
+                        const icons = { pendiente: null, completado: CheckCircle2, rechazado: XCircle };
+                        const activeColors = {
+                          pendiente: "border-amber-300 bg-amber-50 text-amber-700 shadow-sm",
+                          completado: "border-green-400 bg-green-50 text-green-700 shadow-sm",
+                          rechazado: "border-red-300 bg-red-50 text-red-600 shadow-sm",
+                        };
+                        const labels = { pendiente: "Pendiente", completado: "Autorizar", rechazado: "Rechazar" };
+                        const Icon = icons[est];
+                        return (
+                          <button
+                            key={est}
+                            type="button"
+                            onClick={() => setForm({ ...form, estado: est })}
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold border transition-all ${
+                              form.estado === est
+                                ? activeColors[est]
+                                : "border-[#DDE6F5] bg-white text-[#5D7299] hover:border-[#C4D4EE] hover:bg-[#F5F8FF]"
+                            }`}
+                          >
+                            {Icon && <Icon className="w-3.5 h-3.5" />}
+                            {labels[est]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )
                 ) : puedeAutorizar ? (
                   <select value={form.estado} onChange={(e) => setForm({ ...form, estado: e.target.value as any })}
                     className={`${inputClass} appearance-none`}>

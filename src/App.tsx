@@ -7,7 +7,7 @@ import type { User } from "firebase/auth";
 import { LoginScreen } from "./components/LoginScreen";
 import { Dashboard } from "./components/Dashboard";
 import { AdminSettings } from "./components/AdminSettings";
-import { LogOut, Settings, Pill, ArrowLeft } from "lucide-react";
+import { LogOut, Settings, ArrowLeft } from "lucide-react";
 import type { FarmaciaUser } from "./types";
 
 export default function App() {

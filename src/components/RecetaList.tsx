@@ -10,7 +10,7 @@ import { registrarAccion } from "../lib/auditoria";
 import { RecetaModal } from "./RecetaModal";
 import { TicketModal } from "./TicketModal";
 import { AuditoriaDrawer } from "./AuditoriaDrawer";
-import { getPrimerMedicamento, esMultiMedicamento, contarMedsExtra, getItemsDeReceta } from "../lib/recetaHelpers";
+import { getItemsDeReceta } from "../lib/recetaHelpers";
 
 function daysSince(ts: any): number {
   const now = new Date();

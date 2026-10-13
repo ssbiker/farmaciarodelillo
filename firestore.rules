@@ -158,8 +158,8 @@ service cloud.firestore {
       // Todos con acceso al módulo pueden leer
       allow read: if hasFarmaciaPrivileges();
 
-      // Solo funcionarios y admins pueden CREAR recetas
-      allow create: if isAdmin() || isFuncionario();
+      // Funcionarios, médicos y admins pueden CREAR recetas
+      allow create: if isAdmin() || isFuncionario() || isMedico();
 
       // Actualización con permisos diferenciados por rol:
       allow update: if
@@ -171,17 +171,14 @@ service cloud.firestore {
               request.resource.data.estado != resource.data.estado &&
               request.resource.data.estado in ['completado', 'rechazado']
            ))
-        // Médico: SOLO puede cambiar el estado y la receta (no toca datos del paciente)
-        || (isMedico()
-            && (!('nombrePaciente' in request.resource.data) || request.resource.data.nombrePaciente == resource.data.nombrePaciente)
-            && (!('rut' in request.resource.data)            || request.resource.data.rut == resource.data.rut)
-            && (
+        // Médico: puede autorizar, atender o actualizar recetas
+        || (isMedico() && (
               !('medicoUid' in resource.data) ||
               resource.data.medicoUid == ''   ||
               resource.data.medicoUid == null ||
-              resource.data.medicoUid == request.auth.uid
-            )
-           );
+              resource.data.medicoUid == request.auth.uid ||
+              resource.data.creadoPor == request.auth.uid
+           ));
 
       // Eliminar: solo admins
       allow delete: if isAdmin();
@@ -197,7 +194,7 @@ service cloud.firestore {
     match /recetas_cronicas/{recetaId} {
       allow read: if hasFarmaciaPrivileges();
 
-      allow create: if isAdmin() || isFuncionario();
+      allow create: if isAdmin() || isFuncionario() || isMedico();
 
       allow update: if
         isAdmin()
@@ -206,16 +203,13 @@ service cloud.firestore {
               request.resource.data.estado != resource.data.estado &&
               request.resource.data.estado in ['completado', 'rechazado']
            ))
-        || (isMedico()
-            && (!('nombrePaciente' in request.resource.data) || request.resource.data.nombrePaciente == resource.data.nombrePaciente)
-            && (!('rut' in request.resource.data)            || request.resource.data.rut == resource.data.rut)
-            && (
+        || (isMedico() && (
               !('medicoUid' in resource.data) ||
               resource.data.medicoUid == ''   ||
               resource.data.medicoUid == null ||
-              resource.data.medicoUid == request.auth.uid
-            )
-           );
+              resource.data.medicoUid == request.auth.uid ||
+              resource.data.creadoPor == request.auth.uid
+           ));
 
       allow delete: if isAdmin();
 
