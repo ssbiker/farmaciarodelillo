@@ -1,10 +1,11 @@
 import { useState } from "react";
 import type { Receta, FarmaciaConfig, FarmaciaUser } from "../types";
-import { CheckCircle2, XCircle, Clock, Trash2, Edit, Printer, Plus } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Trash2, Edit, Printer, Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { RecetaModal } from "./RecetaModal";
 import { TicketModal } from "./TicketModal";
+import { getItemsDeReceta, getEstadoItemRenovacion } from "../lib/recetaHelpers";
 
 export function RecetaTable({ 
   recetas, 
@@ -23,11 +24,16 @@ export function RecetaTable({
 }) {
   const [search, setSearch] = useState("");
   const [filterEstado, setFilterEstado] = useState<string>("all");
-  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReceta, setEditingReceta] = useState<Receta | null>(null);
-  
   const [ticketReceta, setTicketReceta] = useState<Receta | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRow = (id: string) => setExpandedRows(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
   const getAlertColor = (receta: Receta) => {
     if (receta.estado === "completado") return "bg-green-50 text-green-700 border-green-200";
@@ -62,12 +68,17 @@ export function RecetaTable({
   };
 
   const filteredRecetas = recetas.filter(r => {
-    const matchesSearch = r.nombrePaciente.toLowerCase().includes(search.toLowerCase()) || r.rut.includes(search);
+    const q = search.toLowerCase();
+    const matchesSearch =
+      r.nombrePaciente.toLowerCase().includes(q) ||
+      r.rut.includes(search) ||
+      getItemsDeReceta(r).some(it => it.medicamento.toLowerCase().includes(q) && it.medicamento !== "SOLICITUD_RECETA");
     const matchesEstado = filterEstado === "all" || r.estado === filterEstado;
     return matchesSearch && matchesEstado;
   });
 
-  const [tipo, sector] = activeTab.split("_"); // e.g. "controladas", "A"
+  const tipo = activeTab.startsWith("controladas") ? "controladas" : "cronicas";
+  const sector = activeTab.includes("CECOSF") ? "CECOSF" : activeTab.split("_")[1];
 
   return (
     <div className="space-y-6">
@@ -77,7 +88,7 @@ export function RecetaTable({
         <div className="flex gap-4 w-full md:w-auto">
           <input
             type="text"
-            placeholder="Buscar por paciente o RUT..."
+            placeholder="Buscar por paciente, RUT o medicamento..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="bg-white border border-[#DDE6F5] rounded-xl px-4 py-2.5 text-sm text-[#0F1B35] placeholder-[#8FA3C4] w-full md:w-64 focus:border-brand-blue outline-none transition-colors"
@@ -105,15 +116,15 @@ export function RecetaTable({
 
       {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-[#DDE6F5] bg-white">
-        <table className="w-full text-left text-sm whitespace-nowrap">
+        <table className="w-full text-left text-sm">
           <thead className="bg-[#F0F4FF] border-b border-[#DDE6F5] text-[#5D7299]">
             <tr>
-              <th className="px-6 py-4 font-medium">Estado</th>
-              <th className="px-6 py-4 font-medium">Paciente</th>
-              <th className="px-6 py-4 font-medium">RUT</th>
-              <th className="px-6 py-4 font-medium">Medicamento</th>
-              <th className="px-6 py-4 font-medium">Tiempo</th>
-              <th className="px-6 py-4 font-medium text-right">Acciones</th>
+              <th className="px-6 py-4 font-medium whitespace-nowrap">Estado</th>
+              <th className="px-6 py-4 font-medium whitespace-nowrap">Paciente</th>
+              <th className="px-6 py-4 font-medium whitespace-nowrap">RUT</th>
+              <th className="px-6 py-4 font-medium">Medicamento(s)</th>
+              <th className="px-6 py-4 font-medium whitespace-nowrap">Tiempo</th>
+              <th className="px-6 py-4 font-medium text-right whitespace-nowrap">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#EEF3FC]">
@@ -124,56 +135,146 @@ export function RecetaTable({
                 </td>
               </tr>
             ) : (
-              filteredRecetas.map((receta) => (
-                <tr key={receta.id} className="hover:bg-[#F5F8FF] transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium ${getAlertColor(receta)}`}>
-                      {receta.estado === 'pendiente' && <Clock className="w-3.5 h-3.5" />}
-                      {receta.estado === 'completado' && <CheckCircle2 className="w-3.5 h-3.5" />}
-                      {receta.estado === 'rechazado' && <XCircle className="w-3.5 h-3.5" />}
-                      <span className="capitalize">{receta.estado}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 font-medium text-[#0F1B35]">{receta.nombrePaciente}</td>
-                  <td className="px-6 py-4 text-[#3D5278] font-mono text-xs whitespace-nowrap">{receta.rut}</td>
-                  <td className="px-6 py-4 text-brand-purple font-medium">{receta.medicamento}</td>
-                  <td className="px-6 py-4 text-[#5D7299]">
-                    {getDaysPassed(receta)} días
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                      
-                      {receta.estado === "completado" && (
+              filteredRecetas.map((receta) => {
+                const items = getItemsDeReceta(receta);
+                const isMulti = items.length > 1;
+                const firstItem = items[0] || { medicamento: receta.medicamento, cantidad: receta.cantidad, autoRenovacion: 0, mesesDescontados: 0 };
+                const isExpanded = expandedRows.has(receta.id);
+
+                return (
+                  <tr key={receta.id} className="hover:bg-[#F5F8FF] transition-colors group align-top">
+                    {/* Estado */}
+                    <td className="px-6 py-4">
+                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium whitespace-nowrap ${getAlertColor(receta)}`}>
+                        {receta.estado === 'pendiente' && <Clock className="w-3.5 h-3.5" />}
+                        {receta.estado === 'completado' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                        {receta.estado === 'rechazado' && <XCircle className="w-3.5 h-3.5" />}
+                        <span className="capitalize">{receta.estado}</span>
+                      </div>
+                    </td>
+
+                    {/* Paciente */}
+                    <td className="px-6 py-4 font-medium text-[#0F1B35] whitespace-nowrap">{receta.nombrePaciente}</td>
+
+                    {/* RUT */}
+                    <td className="px-6 py-4 text-[#3D5278] font-mono text-xs whitespace-nowrap">{receta.rut}</td>
+
+                    {/* Medicamentos — columna expandible */}
+                    <td className="px-6 py-4 max-w-xs">
+                      <div className="flex flex-col gap-1 items-start">
+                        {/* Primer medicamento + badge renovación */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {firstItem.medicamento === "SOLICITUD_RECETA" ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5">
+                              📋 Pendiente médico
+                            </span>
+                          ) : (
+                            <span className="font-semibold text-brand-indigo text-sm">
+                              {firstItem.medicamento}
+                            </span>
+                          )}
+                          {(firstItem.cantidad ?? 0) > 0 && (
+                            <span className="text-[11px] font-bold text-[#5D7299] bg-[#F0F4FF] px-1.5 py-0.5 rounded border border-[#DDE6F5]">
+                              ×{firstItem.cantidad}
+                            </span>
+                          )}
+                          {/* Badge de renovación del primer item */}
+                          {receta.estado === "completado" && firstItem.medicamento !== "SOLICITUD_RECETA" && (() => {
+                            const est = getEstadoItemRenovacion(firstItem as any, receta.fechaSolicitud);
+                            return (
+                              <span className={`text-[10px] font-bold ${est.bg} ${est.text} border ${est.border} rounded-full px-1.5 py-0.5`}>
+                                {est.label}
+                              </span>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Botón expandir si hay más medicamentos */}
+                        {isMulti && (
+                          <button
+                            type="button"
+                            onClick={() => toggleRow(receta.id)}
+                            className="inline-flex items-center gap-1 text-[11px] font-bold bg-brand-blue/10 text-brand-blue border border-brand-blue/20 rounded-full px-2 py-0.5 shadow-sm hover:bg-brand-blue/20 transition-colors"
+                          >
+                            {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                            💊 {isExpanded ? "Ocultar" : `+${items.length - 1} medicamento${items.length > 2 ? "s" : ""} más`}
+                          </button>
+                        )}
+
+                        {/* Panel expandido */}
+                        {isMulti && isExpanded && (
+                          <div className="mt-2 w-full space-y-1.5 bg-[#F8FAFF] border border-[#DDE6F5] rounded-xl p-3 shadow-sm">
+                            <p className="text-[10px] font-bold text-[#5D7299] uppercase tracking-widest mb-2">Todos los medicamentos</p>
+                            {items.map((it, idx) => {
+                              const est = receta.estado === "completado" && it.medicamento !== "SOLICITUD_RECETA"
+                                ? getEstadoItemRenovacion(it, receta.fechaSolicitud)
+                                : null;
+                              return (
+                                <div key={idx} className="flex items-start gap-2 bg-white rounded-lg border border-[#DDE6F5] px-3 py-2">
+                                  <span className="text-[11px] font-bold text-[#5D7299] min-w-[18px] mt-0.5">{idx + 1}.</span>
+                                  <div className="flex-1 min-w-0">
+                                    <span className="text-sm font-semibold text-brand-indigo block leading-tight">
+                                      {it.medicamento === "SOLICITUD_RECETA" ? "📋 Pendiente médico" : it.medicamento}
+                                    </span>
+                                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                      {it.cantidad > 0 && (
+                                        <span className="text-[10px] font-bold text-[#5D7299] bg-[#F0F4FF] px-1.5 py-0.5 rounded border border-[#DDE6F5]">
+                                          ×{it.cantidad} unidades
+                                        </span>
+                                      )}
+                                      {est && (
+                                        <span className={`text-[10px] font-bold ${est.bg} ${est.text} border ${est.border} rounded-full px-1.5 py-0.5`}>
+                                          {est.label}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Tiempo */}
+                    <td className="px-6 py-4 text-[#5D7299] whitespace-nowrap">
+                      {getDaysPassed(receta)} días
+                    </td>
+
+                    {/* Acciones */}
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                        {receta.estado === "completado" && (
+                          <button 
+                            onClick={() => setTicketReceta(receta)}
+                            className="p-1.5 text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
+                            title="Ver Ticket"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                        )}
                         <button 
-                          onClick={() => setTicketReceta(receta)}
-                          className="p-1.5 text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
-                          title="Ver Ticket"
+                          onClick={() => { setEditingReceta(receta); setIsModalOpen(true); }}
+                          className="p-1.5 text-[#5D7299] hover:text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
+                          title="Ver / Editar"
                         >
-                          <Printer className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
-                      )}
-                      
-                      <button 
-                        onClick={() => { setEditingReceta(receta); setIsModalOpen(true); }}
-                        className="p-1.5 text-[#5D7299] hover:text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
-                        title="Ver / Editar"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      
-                      {(isAdmin || farmaciaUser.email === "ssanchez@cmvalparaiso.cl") && (
-                        <button 
-                          onClick={() => handleDelete(receta)}
-                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Eliminar registro"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
+                        {(isAdmin || farmaciaUser.email === "ssanchez@cmvalparaiso.cl") && (
+                          <button 
+                            onClick={() => handleDelete(receta)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Eliminar registro"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -186,7 +287,7 @@ export function RecetaTable({
           receta={editingReceta}
           medicos={medicos}
           tipo={tipo as "controladas" | "cronicas"}
-          sector={sector as "A" | "B"}
+          sector={sector as "A" | "B" | "CECOSF"}
           farmaciaUser={farmaciaUser}
           todasRecetas={recetas}
         />
