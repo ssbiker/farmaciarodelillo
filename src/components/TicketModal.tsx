@@ -19,7 +19,7 @@ export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () =
             <Printer className="w-5 h-5 text-brand-blue" />
             Ticket de Receta
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-[#EFF3FB] rounded-full transition-colors text-[#7B90B5] hover:text-[#0F1B35]">
+          <button onClick={onClose} className="p-2 hover:bg-[#EFF3FB] rounded-full transition-colors text-[#5D7299] hover:text-[#0F1B35]">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -29,7 +29,7 @@ export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () =
           
           {/* Header del Ticket */}
           <div className="text-center border-b border-dashed border-[#DDE6F5] pb-6">
-            <p className="text-xs text-[#7B90B5] mb-1 uppercase tracking-widest">CESFAM Rodelillo</p>
+            <p className="text-xs text-[#5D7299] mb-1 uppercase tracking-widest">CESFAM Rodelillo</p>
             <h3 className="text-2xl font-black text-[#0F1B35]">
               Receta {receta.tipo === "controlado" ? "Controlada" : "Crónica"}
             </h3>
@@ -44,14 +44,14 @@ export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () =
 
           {/* Datos del Paciente */}
           <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-5 space-y-4">
-            <h4 className="text-xs font-bold text-[#7B90B5] uppercase tracking-widest">Datos del Paciente</h4>
+            <h4 className="text-xs font-bold text-[#5D7299] uppercase tracking-widest">Datos del Paciente</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-[#7B90B5] mb-1">Nombre Completo</p>
+                <p className="text-xs text-[#5D7299] mb-1">Nombre Completo</p>
                 <p className="font-bold text-lg leading-tight text-[#0F1B35]">{receta.nombrePaciente}</p>
               </div>
               <div>
-                <p className="text-xs text-[#7B90B5] mb-1">RUT</p>
+                <p className="text-xs text-[#5D7299] mb-1">RUT</p>
                 <p className="font-mono font-bold text-lg text-[#0F1B35]">{receta.rut}</p>
               </div>
             </div>
@@ -61,16 +61,16 @@ export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () =
           <div className="bg-brand-purple/10 border border-brand-purple/30 rounded-2xl p-5 space-y-4">
             <h4 className="text-xs font-bold text-brand-purple/80 uppercase tracking-widest">Datos de la Receta</h4>
             <div>
-              <p className="text-xs text-[#7B90B5] mb-1">Medicamento</p>
+              <p className="text-xs text-[#5D7299] mb-1">Medicamento</p>
               <p className="font-bold text-xl text-brand-purple">{receta.medicamento}</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-[#7B90B5] mb-1">Médico Tratante</p>
+                <p className="text-xs text-[#5D7299] mb-1">Médico Tratante</p>
                 <p className="font-semibold text-[#0F1B35]">{receta.medicoReceta || "—"}</p>
               </div>
               <div>
-                <p className="text-xs text-[#7B90B5] mb-1">Fecha de Receta</p>
+                <p className="text-xs text-[#5D7299] mb-1">Fecha de Receta</p>
                 <p className="font-semibold text-[#0F1B35]">{formatDate(receta.fechaReceta)}</p>
               </div>
             </div>
@@ -79,11 +79,11 @@ export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () =
           {/* Fechas */}
           <div className="grid grid-cols-2 gap-4 text-center">
             <div className="bg-[#F8FAFF] rounded-xl p-4 border border-[#DDE6F5]">
-              <p className="text-xs text-[#7B90B5] mb-1">Fecha de Solicitud</p>
+              <p className="text-xs text-[#5D7299] mb-1">Fecha de Solicitud</p>
               <p className="font-semibold text-sm text-[#0F1B35]">{formatDate(receta.fechaSolicitud)}</p>
             </div>
             <div className="bg-[#F8FAFF] rounded-xl p-4 border border-[#DDE6F5]">
-              <p className="text-xs text-[#7B90B5] mb-1">Estado Final</p>
+              <p className="text-xs text-[#5D7299] mb-1">Estado Final</p>
               <p className="font-semibold text-sm text-green-700 capitalize">{receta.estado}</p>
             </div>
           </div>
@@ -91,7 +91,7 @@ export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () =
           {/* Nota */}
           {receta.nota && (
             <div className="bg-[#F8FAFF] rounded-xl p-4 border border-[#DDE6F5]">
-              <p className="text-xs text-[#7B90B5] mb-1">Nota</p>
+              <p className="text-xs text-[#5D7299] mb-1">Nota</p>
               <p className="text-sm text-[#3D5278]">{receta.nota}</p>
             </div>
           )}
@@ -100,9 +100,9 @@ export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () =
           <div className="pt-4 border-t border-dashed border-[#DDE6F5] flex justify-between items-end">
             <div className="text-center">
               <div className="w-40 border-b border-[#C4D4EE] mb-2"></div>
-              <p className="text-xs text-[#7B90B5]">Firma Médico</p>
+              <p className="text-xs text-[#5D7299]">Firma Médico</p>
             </div>
-            <p className="text-xs text-[#A8BDD8]">
+            <p className="text-xs text-[#8FA3C4]">
               {new Date().toLocaleDateString("es-CL")}
             </p>
           </div>

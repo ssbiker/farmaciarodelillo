@@ -64,9 +64,9 @@ export function AuditoriaDrawer({
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#DDE6F5] bg-[#F8FAFF] flex-shrink-0">
           <div>
             <h2 className="text-lg font-black text-[#0F1B35]">Historial de Auditoría</h2>
-            <p className="text-xs text-[#7B90B5] mt-0.5 truncate max-w-[280px]">{paciente}</p>
+            <p className="text-xs text-[#5D7299] mt-0.5 truncate max-w-[280px]">{paciente}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-[#EFF3FB] rounded-xl transition-colors text-[#7B90B5] hover:text-[#0F1B35]">
+          <button onClick={onClose} className="p-2 hover:bg-[#EFF3FB] rounded-xl transition-colors text-[#5D7299] hover:text-[#0F1B35]">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -79,7 +79,7 @@ export function AuditoriaDrawer({
             </div>
           )}
           {!loading && entries.length === 0 && (
-            <div className="text-center text-[#7B90B5] text-sm py-16">
+            <div className="text-center text-[#5D7299] text-sm py-16">
               No hay registros de auditoría aún.
             </div>
           )}
@@ -106,7 +106,7 @@ export function AuditoriaDrawer({
                       <div className="flex-1 min-w-0 pb-2">
                         <div className="flex items-start justify-between gap-2">
                           <span className={`text-xs font-bold ${cfg.color}`}>{cfg.label}</span>
-                          <span className="text-[10px] text-[#A8BDD8] whitespace-nowrap flex-shrink-0">
+                          <span className="text-[11px] text-[#8FA3C4] whitespace-nowrap flex-shrink-0">
                             {formatFecha(entry.fecha)}
                           </span>
                         </div>
@@ -114,14 +114,14 @@ export function AuditoriaDrawer({
                         <p className="text-sm font-medium text-[#0F1B35] mt-0.5">
                           {entry.usuarioNombre}
                         </p>
-                        <p className="text-xs text-[#7B90B5]">{entry.usuarioEmail}</p>
+                        <p className="text-xs text-[#5D7299]">{entry.usuarioEmail}</p>
 
                         {/* Cambios */}
                         {entry.cambios && entry.cambios.length > 0 && (
                           <div className="mt-2 space-y-1.5">
                             {entry.cambios.map((c, ci) => (
                               <div key={ci} className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-lg px-3 py-2 text-xs">
-                                <span className="text-[#7B90B5] font-medium">
+                                <span className="text-[#5D7299] font-medium">
                                   {CAMPO_LABELS[c.campo] ?? c.campo}:
                                 </span>
                                 <div className="flex gap-2 mt-1 flex-wrap">
@@ -130,7 +130,7 @@ export function AuditoriaDrawer({
                                       {String(decryptAuditoriaValue(c.antes))}
                                     </span>
                                   )}
-                                  <span className="text-[#A8BDD8]">→</span>
+                                  <span className="text-[#8FA3C4]">→</span>
                                   {c.despues && (
                                     <span className="bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded max-w-[120px] truncate">
                                       {String(decryptAuditoriaValue(c.despues))}

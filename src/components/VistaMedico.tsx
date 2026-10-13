@@ -21,23 +21,23 @@ function UrgenciaBadge({ receta, config }: { receta: Receta; config: FarmaciaCon
   if (receta.fechaLimite) {
     const left = daysToDeadline(receta.fechaLimite);
     if (left < 0)
-      return <span className="text-[10px] font-black text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full animate-pulse">Vencida {Math.abs(left)}d</span>;
+      return <span className="text-[11px] font-black text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full animate-pulse">Vencida {Math.abs(left)}d</span>;
     if (left <= config.diasAlertaAmarilla)
-      return <span className="text-[10px] font-bold text-yellow-700 bg-yellow-50 border border-yellow-200 px-2 py-0.5 rounded-full">{left}d restantes</span>;
-    return <span className="text-[10px] text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">{left}d restantes</span>;
+      return <span className="text-[11px] font-bold text-yellow-700 bg-yellow-50 border border-yellow-200 px-2 py-0.5 rounded-full">{left}d restantes</span>;
+    return <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">{left}d restantes</span>;
   }
   const days = daysSince(receta.fechaSolicitud);
   if (days >= config.diasAlertaRoja)
-    return <span className="text-[10px] font-black text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full animate-pulse">{days}d activa</span>;
+    return <span className="text-[11px] font-black text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full animate-pulse">{days}d activa</span>;
   if (days >= config.diasAlertaAmarilla)
-    return <span className="text-[10px] font-bold text-yellow-700 bg-yellow-50 border border-yellow-200 px-2 py-0.5 rounded-full">{days}d activa</span>;
-  return <span className="text-[10px] text-[#3D5278] bg-[#EFF3FB] border border-[#DDE6F5] px-2 py-0.5 rounded-full">{days}d activa</span>;
+    return <span className="text-[11px] font-bold text-yellow-700 bg-yellow-50 border border-yellow-200 px-2 py-0.5 rounded-full">{days}d activa</span>;
+  return <span className="text-[11px] text-[#3D5278] bg-[#EFF3FB] border border-[#DDE6F5] px-2 py-0.5 rounded-full">{days}d activa</span>;
 }
 
 function RecetaCard({ receta, config, onAction }: { receta: Receta; config: FarmaciaConfig; onAction?: () => void }) {
   const tipoBadge = receta.tipo === "controlado"
-    ? <span className="flex items-center gap-0.5 text-[10px] text-brand-purple bg-brand-purple/10 px-1.5 py-0.5 rounded-full"><Pill className="w-2.5 h-2.5" /> Controlada</span>
-    : <span className="flex items-center gap-0.5 text-[10px] text-brand-blue bg-brand-blue/10 px-1.5 py-0.5 rounded-full"><Stethoscope className="w-2.5 h-2.5" /> Crónica</span>;
+    ? <span className="flex items-center gap-0.5 text-[11px] text-brand-purple bg-brand-purple/10 px-1.5 py-0.5 rounded-full"><Pill className="w-2.5 h-2.5" /> Controlada</span>
+    : <span className="flex items-center gap-0.5 text-[11px] text-brand-blue bg-brand-blue/10 px-1.5 py-0.5 rounded-full"><Stethoscope className="w-2.5 h-2.5" /> Crónica</span>;
 
   return (
     <div 
@@ -56,30 +56,30 @@ function RecetaCard({ receta, config, onAction }: { receta: Receta; config: Farm
         {receta.estado === "completado"
           ? <CheckCircle2 className="w-4 h-4 text-green-600" />
           : receta.estado === "rechazado"
-            ? <XCircle className="w-4 h-4 text-[#7B90B5]" />
+            ? <XCircle className="w-4 h-4 text-[#5D7299]" />
             : <Clock className={`w-4 h-4 text-yellow-600 ${onAction ? 'group-hover:text-brand-blue' : ''}`} />
         }
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <p className={`font-semibold text-sm truncate transition-colors ${onAction ? 'text-[#0F1B35] group-hover:text-brand-blue' : 'text-[#0F1B35]'}`}>{receta.nombrePaciente}</p>
-          <span className="font-mono text-[10px] text-[#7B90B5] whitespace-nowrap">{receta.rut}</span>
+          <span className="font-mono text-[11px] text-[#5D7299] whitespace-nowrap">{receta.rut}</span>
         </div>
         <p className="text-xs text-brand-purple font-semibold mt-0.5">{receta.medicamento}</p>
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           {tipoBadge}
-          <span className="text-[10px] text-[#7B90B5]">Sec. {receta.sector}</span>
+          <span className="text-[11px] text-[#5D7299]">Sec. {receta.sector}</span>
           <UrgenciaBadge receta={receta} config={config} />
           {receta.estado === "completado" && receta.fechaReceta && (
-            <span className="text-[10px] text-green-700">Autorizada {formatDate(receta.fechaReceta)}</span>
+            <span className="text-[11px] text-green-700">Autorizada {formatDate(receta.fechaReceta)}</span>
           )}
           {receta.estado === "rechazado" && (
-            <span className="text-[10px] text-[#7B90B5]">Rechazada {formatDate(receta.actualizadoEn)}</span>
+            <span className="text-[11px] text-[#5D7299]">Rechazada {formatDate(receta.actualizadoEn)}</span>
           )}
         </div>
       </div>
       <div className="flex flex-col items-end justify-between self-stretch">
-        <div className="text-[10px] text-[#A8BDD8] whitespace-nowrap">{formatDate(receta.fechaSolicitud)}</div>
+        <div className="text-[11px] text-[#8FA3C4] whitespace-nowrap">{formatDate(receta.fechaSolicitud)}</div>
         {onAction && (
           <div className="bg-brand-blue/10 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity mt-auto">
             <ArrowRight className="w-3.5 h-3.5 text-brand-blue" />
@@ -149,7 +149,7 @@ export function VistaMedico({
         </div>
         <div className="flex-1">
           <h2 className="text-2xl font-black text-[#0F1B35]">Mi Panel</h2>
-          <p className="text-[#7B90B5] text-sm mt-0.5">Dr(a). {farmaciaUser.name} — Resumen personal de recetas</p>
+          <p className="text-[#5D7299] text-sm mt-0.5">Dr(a). {farmaciaUser.name} — Resumen personal de recetas</p>
         </div>
       </div>
 
@@ -172,7 +172,7 @@ export function VistaMedico({
           <div key={label} className={`rounded-2xl border px-4 py-4 ${bg}`}>
             <div className="flex items-center gap-2 mb-2">
               <Icon className={`w-3.5 h-3.5 ${color}`} />
-              <p className="text-[10px] text-[#7B90B5] uppercase tracking-wider font-semibold">{label}</p>
+              <p className="text-[11px] text-[#5D7299] uppercase tracking-wide font-semibold">{label}</p>
             </div>
             <p className={`text-3xl font-black ${color}`}>{value}</p>
           </div>
@@ -183,7 +183,7 @@ export function VistaMedico({
       {total > 0 && (
         <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-[#7B90B5] uppercase tracking-wider">Tasa de resolución</p>
+            <p className="text-xs font-semibold text-[#5D7299] uppercase tracking-wide">Tasa de resolución</p>
             <p className="text-sm font-black text-[#0F1B35]">{pctCompletadas}%</p>
           </div>
           <div className="h-2 bg-[#EEF3FC] rounded-full overflow-hidden">
@@ -192,7 +192,7 @@ export function VistaMedico({
               style={{ width: `${pctCompletadas}%` }}
             />
           </div>
-          <p className="text-xs text-[#A8BDD8] mt-2">{autorizadas.length} de {total} recetas resueltas</p>
+          <p className="text-xs text-[#8FA3C4] mt-2">{autorizadas.length} de {total} recetas resueltas</p>
         </div>
       )}
 
@@ -205,13 +205,13 @@ export function VistaMedico({
             <div className="w-2 h-2 rounded-full bg-yellow-500" />
             <h3 className="font-bold text-sm text-[#0F1B35]">Pendientes asignadas a mí</h3>
             {pendientes.length > 0 && (
-              <span className="ml-auto text-[10px] bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-0.5 rounded-full font-bold">{pendientes.length}</span>
+              <span className="ml-auto text-[11px] bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-0.5 rounded-full font-bold">{pendientes.length}</span>
             )}
           </div>
           {pendientes.length === 0 ? (
             <div className="rounded-2xl border border-[#EEF3FC] bg-[#F8FAFF] p-8 text-center">
               <CheckCircle2 className="w-8 h-8 text-green-500/40 mx-auto mb-2" />
-              <p className="text-sm text-[#7B90B5]">Sin pendientes. ¡Todo al día!</p>
+              <p className="text-sm text-[#5D7299]">Sin pendientes. ¡Todo al día!</p>
             </div>
           ) : (
             <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
@@ -233,14 +233,14 @@ export function VistaMedico({
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-brand-purple" />
             <h3 className="font-bold text-sm text-[#0F1B35]">Sin médico asignado</h3>
-            <span className="text-xs text-[#7B90B5] font-normal">(cualquier médico puede atender)</span>
+            <span className="text-xs text-[#5D7299] font-normal">(cualquier médico puede atender)</span>
             {sinAsignar.length > 0 && (
-              <span className="ml-auto text-[10px] bg-brand-purple/10 text-brand-purple border border-brand-purple/20 px-2 py-0.5 rounded-full font-bold">{sinAsignar.length}</span>
+              <span className="ml-auto text-[11px] bg-brand-purple/10 text-brand-purple border border-brand-purple/20 px-2 py-0.5 rounded-full font-bold">{sinAsignar.length}</span>
             )}
           </div>
           {sinAsignar.length === 0 ? (
             <div className="rounded-2xl border border-[#EEF3FC] bg-[#F8FAFF] p-8 text-center">
-              <p className="text-sm text-[#7B90B5]">No hay recetas sin médico asignado.</p>
+              <p className="text-sm text-[#5D7299]">No hay recetas sin médico asignado.</p>
             </div>
           ) : (
             <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">

@@ -47,7 +47,7 @@ export function LoginScreen({ onLogin, externalError }: { onLogin: (e: string, p
               <Pill className="w-8 h-8 text-brand-blue absolute" style={{ display: "none" }} />
             </div>
             <h1 className="text-2xl font-black text-[#0F1B35] text-center">Recetas Farmacia</h1>
-            <p className="text-sm text-[#7B90B5] mt-1">CESFAM Rodelillo — Acceso restringido</p>
+            <p className="text-sm text-[#5D7299] mt-1">CESFAM Rodelillo — Acceso restringido</p>
           </div>
 
           {/* Error */}
@@ -62,14 +62,14 @@ export function LoginScreen({ onLogin, externalError }: { onLogin: (e: string, p
             {/* Email */}
             <div>
               <div className="relative">
-                <Mail className="w-4 h-4 text-[#A8BDD8] absolute left-4 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-[#8FA3C4] absolute left-4 top-1/2 -translate-y-1/2" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Correo electrónico"
                   required
-                  className="w-full bg-white border border-[#DDE6F5] text-[#0F1B35] placeholder-[#A8BDD8] rounded-xl pl-11 pr-4 py-3 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15 transition-all outline-none"
+                  className="w-full bg-white border border-[#DDE6F5] text-[#0F1B35] placeholder-[#8FA3C4] rounded-xl pl-11 pr-4 py-3 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15 transition-all outline-none"
                 />
               </div>
             </div>
@@ -77,14 +77,14 @@ export function LoginScreen({ onLogin, externalError }: { onLogin: (e: string, p
             {/* Password */}
             <div>
               <div className="relative">
-                <Lock className="w-4 h-4 text-[#A8BDD8] absolute left-4 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-[#8FA3C4] absolute left-4 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Contraseña"
                   required
-                  className="w-full bg-white border border-[#DDE6F5] text-[#0F1B35] placeholder-[#A8BDD8] rounded-xl pl-11 pr-4 py-3 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15 transition-all outline-none"
+                  className="w-full bg-white border border-[#DDE6F5] text-[#0F1B35] placeholder-[#8FA3C4] rounded-xl pl-11 pr-4 py-3 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15 transition-all outline-none"
                 />
               </div>
             </div>
@@ -99,7 +99,7 @@ export function LoginScreen({ onLogin, externalError }: { onLogin: (e: string, p
             </button>
           </form>
 
-          <p className="text-center text-xs text-[#A8BDD8] mt-6">
+          <p className="text-center text-xs text-[#8FA3C4] mt-6">
             Solo personal autorizado del CESFAM puede acceder.
           </p>
         </div>

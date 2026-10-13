@@ -1,0 +1,1346 @@
+[
+  {
+    "file": "01-login.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Logo del CESFAM"
+      },
+      {
+        "n": 2,
+        "label": "Nombre del sistema y aviso de acceso restringido"
+      },
+      {
+        "n": 3,
+        "label": "Campo correo electrónico"
+      },
+      {
+        "n": 4,
+        "label": "Campo contraseña"
+      },
+      {
+        "n": 5,
+        "label": "Botón Ingresar al Sistema"
+      },
+      {
+        "n": 6,
+        "label": "Aviso: solo personal autorizado"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      },
+      {
+        "n": 5,
+        "ok": true
+      },
+      {
+        "n": 6,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "02-login-error.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Mensaje de error: credenciales incorrectas"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "03-acceso-denegado.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Mensaje: la cuenta no tiene permisos para el módulo"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "04-barra-superior.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Logo y nombre del sistema (clic vuelve al tablero)"
+      },
+      {
+        "n": 2,
+        "label": "Botón Portal: volver al Portal de Funcionarios"
+      },
+      {
+        "n": 3,
+        "label": "Correo de la sesión activa"
+      },
+      {
+        "n": 4,
+        "label": "Insignia de rol Médico (permiso para autorizar)"
+      },
+      {
+        "n": 5,
+        "label": "Insignia de rol Funcionario (permiso para ingresar recetas)"
+      },
+      {
+        "n": 6,
+        "label": "Rueda de Administración (solo administradores)"
+      },
+      {
+        "n": 7,
+        "label": "Botón salir / cerrar sesión"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      },
+      {
+        "n": 5,
+        "ok": true
+      },
+      {
+        "n": 6,
+        "ok": true
+      },
+      {
+        "n": 7,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "05-pestanas.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Pestañas de recetas CONTROLADAS por sector"
+      },
+      {
+        "n": 2,
+        "label": "Ctrl B"
+      },
+      {
+        "n": 3,
+        "label": "Ctrl CECOSF"
+      },
+      {
+        "n": 4,
+        "label": "Pestañas de recetas CRÓNICAS por sector"
+      },
+      {
+        "n": 5,
+        "label": "Crón B"
+      },
+      {
+        "n": 6,
+        "label": "Crón CECOSF"
+      },
+      {
+        "n": 7,
+        "label": "Contador rojo: recetas urgentes de esa pestaña"
+      },
+      {
+        "n": 8,
+        "label": "Mi Panel (vista personal del médico)"
+      },
+      {
+        "n": 9,
+        "label": "Inventario (Stock) — solo administradores"
+      },
+      {
+        "n": 10,
+        "label": "Estadísticas — solo administradores"
+      },
+      {
+        "n": 11,
+        "label": "Papelera — solo administradores"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": false
+      },
+      {
+        "n": 2,
+        "ok": false
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": false
+      },
+      {
+        "n": 5,
+        "ok": true
+      },
+      {
+        "n": 6,
+        "ok": true
+      },
+      {
+        "n": 7,
+        "ok": true
+      },
+      {
+        "n": 8,
+        "ok": true
+      },
+      {
+        "n": 9,
+        "ok": true
+      },
+      {
+        "n": 10,
+        "ok": true
+      },
+      {
+        "n": 11,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "06-banner-alerta.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Aviso de solicitudes con tiempo vencido"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "07-resumen-y-toolbar.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Tarjeta Total de recetas de la pestaña"
+      },
+      {
+        "n": 2,
+        "label": "Tarjeta Pendientes"
+      },
+      {
+        "n": 3,
+        "label": "Tarjeta Vencidas (en rojo cuando hay)"
+      },
+      {
+        "n": 4,
+        "label": "Tarjeta Completadas"
+      },
+      {
+        "n": 5,
+        "label": "Buscador: por nombre, RUT o medicamento"
+      },
+      {
+        "n": 6,
+        "label": "Filtro por estado"
+      },
+      {
+        "n": 7,
+        "label": "Botón Nueva Solicitud"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      },
+      {
+        "n": 5,
+        "ok": true
+      },
+      {
+        "n": 6,
+        "ok": true
+      },
+      {
+        "n": 7,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "08-tabla-recetas.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Estado de la receta (Pendiente / Completado / Rechazado)"
+      },
+      {
+        "n": 2,
+        "label": "Alerta de plazo: Vencida / días restantes / días activa"
+      },
+      {
+        "n": 3,
+        "label": "Fila roja = receta vencida (requiere acción)"
+      },
+      {
+        "n": 4,
+        "label": "Badge de auto-renovación (cuando el médico la autorizó con renovaciones)"
+      },
+      {
+        "n": 5,
+        "label": "Columna Médico / Receta (quién autorizó y cuándo)"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": false
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      },
+      {
+        "n": 5,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "10-nueva-solicitud.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Título de la ventana y sector al que se guardará"
+      },
+      {
+        "n": 2,
+        "label": "Cerrar ventana (X)"
+      },
+      {
+        "n": 3,
+        "label": "Nombre del paciente"
+      },
+      {
+        "n": 4,
+        "label": "RUT (se formatea solo, con puntos y guion)"
+      },
+      {
+        "n": 5,
+        "label": "Medicamento solicitado (busca en el inventario)"
+      },
+      {
+        "n": 6,
+        "label": "Nota adicional (opcional)"
+      },
+      {
+        "n": 7,
+        "label": "Fecha límite de atención"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      },
+      {
+        "n": 5,
+        "ok": true
+      },
+      {
+        "n": 6,
+        "ok": true
+      },
+      {
+        "n": 7,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "11-buscador-medicamento.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Lista de medicamentos del inventario que coinciden"
+      },
+      {
+        "n": 2,
+        "label": "Stock disponible de cada medicamento (verde = hay, rojo = agotado)"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "12-nueva-solicitud-abajo.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Estado de la solicitud"
+      },
+      {
+        "n": 2,
+        "label": "Médico asignado / tratante"
+      },
+      {
+        "n": 3,
+        "label": "Duración / auto-renovación en meses"
+      },
+      {
+        "n": 4,
+        "label": "Cancelar sin guardar"
+      },
+      {
+        "n": 5,
+        "label": "Guardar el registro"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      },
+      {
+        "n": 5,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "13-ticket.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Título del ticket"
+      },
+      {
+        "n": 2,
+        "label": "Tipo de receta y sector"
+      },
+      {
+        "n": 3,
+        "label": "Datos del paciente"
+      },
+      {
+        "n": 4,
+        "label": "Medicamento autorizado"
+      },
+      {
+        "n": 5,
+        "label": "Médico tratante y fecha de receta"
+      },
+      {
+        "n": 6,
+        "label": "Espacio para firma del médico"
+      },
+      {
+        "n": 7,
+        "label": "Botón Imprimir"
+      },
+      {
+        "n": 8,
+        "label": "Botón Cerrar"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      },
+      {
+        "n": 5,
+        "ok": true
+      },
+      {
+        "n": 6,
+        "ok": true
+      },
+      {
+        "n": 7,
+        "ok": true
+      },
+      {
+        "n": 8,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "14-auditoria.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Título del historial"
+      },
+      {
+        "n": 2,
+        "label": "Línea de tiempo de eventos (creación, cambios, etc.)"
+      },
+      {
+        "n": 3,
+        "label": "Quién hizo el cambio y cuándo"
+      },
+      {
+        "n": 4,
+        "label": "Valor anterior (tachado) y valor nuevo (verde)"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": false
+      },
+      {
+        "n": 3,
+        "ok": false
+      },
+      {
+        "n": 4,
+        "ok": false
+      }
+    ]
+  },
+  {
+    "file": "15-enviar-papelera.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Advertencia: se guardará quién realiza la acción"
+      },
+      {
+        "n": 2,
+        "label": "Motivo (obligatorio)"
+      },
+      {
+        "n": 3,
+        "label": "Botón Enviar (se activa al escribir el motivo)"
+      },
+      {
+        "n": 4,
+        "label": "Botón Cancelar"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "17-papelera.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Título y aviso: solo administrador puede restaurar/eliminar"
+      },
+      {
+        "n": 2,
+        "label": "Receta eliminada: quién la envió, cuándo y el motivo"
+      },
+      {
+        "n": 3,
+        "label": "Botón Restaurar (devuelve la receta a su lista)"
+      },
+      {
+        "n": 4,
+        "label": "Botón Eliminar definitivo (no se puede deshacer)"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "18-papelera-confirmacion.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Aviso de acción irreversible"
+      },
+      {
+        "n": 2,
+        "label": "Botón Sí, eliminar"
+      },
+      {
+        "n": 3,
+        "label": "Botón Cancelar"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "19-inventario.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Título de la sección"
+      },
+      {
+        "n": 2,
+        "label": "Subir Excel (stock maestro desde planilla)"
+      },
+      {
+        "n": 3,
+        "label": "Buscador por nombre o código"
+      },
+      {
+        "n": 4,
+        "label": "Tabla con código, medicamento y stock actual"
+      },
+      {
+        "n": 5,
+        "label": "Stock en verde (suficiente), amarillo (bajo) o rojo (agotado)"
+      },
+      {
+        "n": 6,
+        "label": "Total de ítems cargados"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      },
+      {
+        "n": 5,
+        "ok": true
+      },
+      {
+        "n": 6,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "20-inventario-preview.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Vista previa: cuántos medicamentos trae el Excel"
+      },
+      {
+        "n": 2,
+        "label": "Advertencia: el stock del sistema será reemplazado por el del Excel"
+      },
+      {
+        "n": 3,
+        "label": "Tabla de vista previa (código, medicamento, stock)"
+      },
+      {
+        "n": 4,
+        "label": "Cancelar la subida"
+      },
+      {
+        "n": 5,
+        "label": "Confirmar y Subir Stock"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      },
+      {
+        "n": 5,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "21-estadisticas-1.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Título de la sección"
+      },
+      {
+        "n": 2,
+        "label": "Tarjetas resumen (totales, pendientes, completadas, rechazadas, urgentes, médicos)"
+      },
+      {
+        "n": 3,
+        "label": "Tasa de resolución global"
+      },
+      {
+        "n": 4,
+        "label": "Resumen por tipo y sector"
+      },
+      {
+        "n": 5,
+        "label": "Recetas más urgentes"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      },
+      {
+        "n": 5,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "22-estadisticas-2.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Actividad por médico: pendientes, autorizadas y rechazadas de cada doctor"
+      },
+      {
+        "n": 2,
+        "label": "Barra de progreso de cada médico"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "23-estadisticas-3.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Ranking de medicamentos más entregados"
+      },
+      {
+        "n": 2,
+        "label": "Unidades totales y cantidad de recetas por medicamento"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "24-administracion-1.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Título de la página"
+      },
+      {
+        "n": 2,
+        "label": "Alerta amarilla: días de tolerancia"
+      },
+      {
+        "n": 3,
+        "label": "Alerta roja crítica: días de tolerancia"
+      },
+      {
+        "n": 4,
+        "label": "Guardar los tiempos"
+      },
+      {
+        "n": 5,
+        "label": "Sección papelera"
+      },
+      {
+        "n": 6,
+        "label": "Botón Abrir Papelera"
+      },
+      {
+        "n": 7,
+        "label": "Sección de usuarios y roles"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      },
+      {
+        "n": 5,
+        "ok": true
+      },
+      {
+        "n": 6,
+        "ok": true
+      },
+      {
+        "n": 7,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "25-administracion-2.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Usuario y sus insignias de permisos"
+      },
+      {
+        "n": 2,
+        "label": "Botón permiso Médico (estetoscopio)"
+      },
+      {
+        "n": 3,
+        "label": "Botón permiso Funcionario (tabla)"
+      },
+      {
+        "n": 4,
+        "label": "Botón acceso a Farmacia (escudo)"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "26-mi-panel.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Mi Panel: resumen personal del médico"
+      },
+      {
+        "n": 2,
+        "label": "Aviso de recetas urgentes esperando autorización"
+      },
+      {
+        "n": 3,
+        "label": "Mis pendientes, autorizadas, rechazadas y urgentes"
+      },
+      {
+        "n": 4,
+        "label": "Tasa de resolución personal"
+      },
+      {
+        "n": 5,
+        "label": "Pendientes asignadas a este médico (clic para atender)"
+      },
+      {
+        "n": 6,
+        "label": "Recetas sin médico: cualquier doctor puede atenderlas"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      },
+      {
+        "n": 5,
+        "ok": true
+      },
+      {
+        "n": 6,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "27-mi-panel-historial.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Historial reciente de decisiones del médico"
+      },
+      {
+        "n": 2,
+        "label": "Tarjeta de receta autorizada (verde)"
+      },
+      {
+        "n": 3,
+        "label": "Tarjeta de receta rechazada"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "28-autorizar-1.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Título de la ventana de decisión médica"
+      },
+      {
+        "n": 2,
+        "label": "Datos del paciente (solo lectura para el médico)"
+      },
+      {
+        "n": 3,
+        "label": "Medicamento: el médico elige del inventario"
+      },
+      {
+        "n": 4,
+        "label": "Cantidad de unidades a despachar"
+      },
+      {
+        "n": 5,
+        "label": "Asistente de cálculo de dosis"
+      },
+      {
+        "n": 6,
+        "label": "Nota dejada por el funcionario (solo lectura)"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      },
+      {
+        "n": 5,
+        "ok": true
+      },
+      {
+        "n": 6,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "29-asistente-calculo.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Dosis por toma"
+      },
+      {
+        "n": 2,
+        "label": "Cada cuántas horas"
+      },
+      {
+        "n": 3,
+        "label": "Por cuántos días"
+      },
+      {
+        "n": 4,
+        "label": "Calcula solo la cantidad total a despachar"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "30-autorizar-2.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Decisión: Pendiente / Autorizar / Rechazar"
+      },
+      {
+        "n": 2,
+        "label": "Botón Rechazar"
+      },
+      {
+        "n": 3,
+        "label": "Confirmar Decisión (guarda)"
+      },
+      {
+        "n": 4,
+        "label": "Cancelar"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      },
+      {
+        "n": 4,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "31-autorizar-renovacion.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Auto-renovación: meses de validez de la receta"
+      },
+      {
+        "n": 2,
+        "label": "Selector de meses (1 a 6)"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "32-rechazar.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Motivo del rechazo (obligatorio)"
+      },
+      {
+        "n": 2,
+        "label": "Campo para escribir el motivo"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "34-funcionario.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "Insignia Funcionario en la barra superior"
+      },
+      {
+        "n": 2,
+        "label": "Solo pestañas de recetas (sin Inventario ni Estadísticas)"
+      },
+      {
+        "n": 3,
+        "label": "Botón Nueva Solicitud para ingresar recetas"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      }
+    ]
+  },
+  {
+    "file": "35-funcionario-modal.png",
+    "markers": [
+      {
+        "n": 1,
+        "label": "El estado queda fijo en Pendiente"
+      },
+      {
+        "n": 2,
+        "label": "El funcionario asigna el médico tratante"
+      },
+      {
+        "n": 3,
+        "label": "Guardar Registro"
+      }
+    ],
+    "placed": [
+      {
+        "n": 1,
+        "ok": true
+      },
+      {
+        "n": 2,
+        "ok": true
+      },
+      {
+        "n": 3,
+        "ok": true
+      }
+    ]
+  }
+]

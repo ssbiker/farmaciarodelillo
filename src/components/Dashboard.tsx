@@ -185,7 +185,7 @@ export function Dashboard({
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <div className="w-10 h-10 border-4 border-brand-blue border-t-transparent rounded-full animate-spin" />
-        <p className="text-[#7B90B5] text-sm">Cargando tablero...</p>
+        <p className="text-[#5D7299] text-sm">Cargando tablero...</p>
       </div>
     );
   }
@@ -197,13 +197,13 @@ export function Dashboard({
       className={`relative flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
         activeTab === id
           ? "tab-active-blue"
-          : "text-[#7B90B5] hover:bg-[#EBF4FF] hover:text-[#1A55CC]"
+          : "text-[#5D7299] hover:bg-[#EBF4FF] hover:text-[#1A55CC]"
       }`}
     >
       <Icon className="w-4 h-4 flex-shrink-0" />
       {label}
       {count > 0 && (
-        <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-black rounded-full">
+        <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[11px] font-black rounded-full">
           {count}
         </span>
       )}
@@ -219,13 +219,13 @@ export function Dashboard({
       className={`relative flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 whitespace-nowrap border ${
         activeTab === id
           ? accentClass
-          : "text-[#7B90B5] border-[#DDE6F5] bg-white hover:bg-[#EBF4FF] hover:text-[#1A55CC] hover:border-[#93C5FD]"
+          : "text-[#5D7299] border-[#DDE6F5] bg-white hover:bg-[#EBF4FF] hover:text-[#1A55CC] hover:border-[#93C5FD]"
       }`}
     >
       <Icon className="w-4 h-4 flex-shrink-0" />
       {label}
       {count != null && count > 0 && (
-        <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-black rounded-full">
+        <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[11px] font-black rounded-full">
           {count}
         </span>
       )}
@@ -305,13 +305,13 @@ export function Dashboard({
           {isAdmin && (
             <button
               onClick={() => setPapeleraOpen(true)}
-              className="relative flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-200 whitespace-nowrap bg-white border-[#DDE6F5] text-[#7B90B5] hover:text-red-500 hover:border-red-300 hover:bg-red-50"
+              className="relative flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-200 whitespace-nowrap bg-white border-[#DDE6F5] text-[#5D7299] hover:text-red-500 hover:border-red-300 hover:bg-red-50"
               title="Papelera de recetas eliminadas"
             >
               <Trash2 className="w-4 h-4" />
               <span className="hidden sm:inline">Papelera</span>
               {totalPapelera > 0 && (
-                <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-black rounded-full">
+                <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[11px] font-black rounded-full">
                   {totalPapelera}
                 </span>
               )}

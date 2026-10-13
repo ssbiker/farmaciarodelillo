@@ -80,7 +80,7 @@ export function RecetaTable({
             placeholder="Buscar por paciente o RUT..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-white border border-[#DDE6F5] rounded-xl px-4 py-2.5 text-sm text-[#0F1B35] placeholder-[#A8BDD8] w-full md:w-64 focus:border-brand-blue outline-none transition-colors"
+            className="bg-white border border-[#DDE6F5] rounded-xl px-4 py-2.5 text-sm text-[#0F1B35] placeholder-[#8FA3C4] w-full md:w-64 focus:border-brand-blue outline-none transition-colors"
           />
           <select
             value={filterEstado}
@@ -106,7 +106,7 @@ export function RecetaTable({
       {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-[#DDE6F5] bg-white">
         <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead className="bg-[#F0F4FF] border-b border-[#DDE6F5] text-[#7B90B5]">
+          <thead className="bg-[#F0F4FF] border-b border-[#DDE6F5] text-[#5D7299]">
             <tr>
               <th className="px-6 py-4 font-medium">Estado</th>
               <th className="px-6 py-4 font-medium">Paciente</th>
@@ -119,7 +119,7 @@ export function RecetaTable({
           <tbody className="divide-y divide-[#EEF3FC]">
             {filteredRecetas.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-[#7B90B5]">
+                <td colSpan={6} className="px-6 py-8 text-center text-[#5D7299]">
                   No hay recetas que coincidan con los filtros.
                 </td>
               </tr>
@@ -137,7 +137,7 @@ export function RecetaTable({
                   <td className="px-6 py-4 font-medium text-[#0F1B35]">{receta.nombrePaciente}</td>
                   <td className="px-6 py-4 text-[#3D5278] font-mono text-xs whitespace-nowrap">{receta.rut}</td>
                   <td className="px-6 py-4 text-brand-purple font-medium">{receta.medicamento}</td>
-                  <td className="px-6 py-4 text-[#7B90B5]">
+                  <td className="px-6 py-4 text-[#5D7299]">
                     {getDaysPassed(receta)} días
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -155,7 +155,7 @@ export function RecetaTable({
                       
                       <button 
                         onClick={() => { setEditingReceta(receta); setIsModalOpen(true); }}
-                        className="p-1.5 text-[#7B90B5] hover:text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
+                        className="p-1.5 text-[#5D7299] hover:text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
                         title="Ver / Editar"
                       >
                         <Edit className="w-4 h-4" />

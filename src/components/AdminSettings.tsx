@@ -69,13 +69,13 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
   };
 
   const sectionClass = "bg-[#F8FAFF] border border-[#DDE6F5] rounded-3xl p-6 space-y-5";
-  const inputClass = "w-full bg-white border border-[#DDE6F5] rounded-xl px-4 py-3 text-[#0F1B35] placeholder-[#A8BDD8] focus:border-brand-blue outline-none transition-colors";
+  const inputClass = "w-full bg-white border border-[#DDE6F5] rounded-xl px-4 py-3 text-[#0F1B35] placeholder-[#8FA3C4] focus:border-brand-blue outline-none transition-colors";
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <h2 className="text-3xl font-black text-[#0F1B35]">Administración</h2>
-        <p className="text-[#7B90B5] mt-1 text-sm">Configura tiempos de alerta, médicos y accesos al módulo.</p>
+        <p className="text-[#5D7299] mt-1 text-sm">Configura tiempos de alerta, médicos y accesos al módulo.</p>
       </div>
 
       {/* Toast */}
@@ -92,12 +92,12 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
           <div className="bg-brand-purple/20 p-2 rounded-xl"><Clock className="w-5 h-5 text-brand-purple" /></div>
           <div>
             <h3 className="font-bold text-[#0F1B35]">Tiempos de Alerta</h3>
-            <p className="text-xs text-[#7B90B5]">Define cuántos días se toleran antes de activar alertas.</p>
+            <p className="text-xs text-[#5D7299]">Define cuántos días se toleran antes de activar alertas.</p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-[#3D5278] uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-xs font-semibold text-[#3D5278] uppercase tracking-wide flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.6)]" />
               Alerta Amarilla (días)
             </label>
@@ -106,7 +106,7 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
               className={inputClass} />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-[#3D5278] uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-xs font-semibold text-[#3D5278] uppercase tracking-wide flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
               Alerta Roja Crítica (días)
             </label>
@@ -130,7 +130,7 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
           <div className="bg-red-500/20 p-2 rounded-xl"><Trash2 className="w-5 h-5 text-red-500" /></div>
           <div>
             <h3 className="font-bold text-[#0F1B35]">Papelera de Recetas</h3>
-            <p className="text-xs text-[#7B90B5]">
+            <p className="text-xs text-[#5D7299]">
               Revisa recetas eliminadas, restáuralas o bórralas definitivamente. Todo queda registrado.
             </p>
           </div>
@@ -149,19 +149,19 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
           <div className="bg-brand-blue/10 p-2 rounded-xl"><Users className="w-5 h-5 text-brand-blue" /></div>
           <div>
             <h3 className="font-bold text-[#0F1B35]">Acceso y Roles de Usuarios</h3>
-            <p className="text-xs text-[#7B90B5]">
+            <p className="text-xs text-[#5D7299]">
               Gestiona el acceso y rol de cada usuario. Los médicos pueden autorizar recetas. Los funcionarios pueden ingresar recetas.
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-4 text-xs text-[#7B90B5]">
+        <div className="flex flex-wrap gap-4 text-xs text-[#5D7299]">
           <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-green-600" /> Acceso al módulo activo</span>
           <span className="flex items-center gap-1.5"><Stethoscope className="w-3.5 h-3.5 text-brand-blue" /> Médico — puede autorizar/rechazar</span>
           <span className="flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5 text-orange-500" /> Funcionario — puede ingresar recetas</span>
         </div>
         <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
           {users.length === 0 && (
-            <p className="text-center text-[#7B90B5] text-sm py-8">Cargando usuarios...</p>
+            <p className="text-center text-[#5D7299] text-sm py-8">Cargando usuarios...</p>
           )}
           {users
             .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
@@ -182,25 +182,25 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold leading-tight truncate text-[#0F1B35]">
                       {u.name || "Sin nombre"}
-                      {isCurrentUser && <span className="ml-1.5 text-[10px] bg-brand-blue/10 text-brand-blue px-1.5 py-0.5 rounded-full">tú</span>}
+                      {isCurrentUser && <span className="ml-1.5 text-[11px] bg-brand-blue/10 text-brand-blue px-1.5 py-0.5 rounded-full">tú</span>}
                     </p>
-                    <p className="text-xs text-[#7B90B5] truncate">{u.email}</p>
+                    <p className="text-xs text-[#5D7299] truncate">{u.email}</p>
                     <div className="flex gap-1 mt-1 flex-wrap">
                       {u.role && u.role !== "medico" && u.role !== "funcionario" && (
-                        <span className="text-[10px] bg-[#EFF3FB] px-1.5 py-0.5 rounded-full text-[#3D5278] capitalize">{u.role}</span>
+                        <span className="text-[11px] bg-[#EFF3FB] px-1.5 py-0.5 rounded-full text-[#3D5278] capitalize">{u.role}</span>
                       )}
                       {isMedico && (
-                        <span className="text-[10px] bg-brand-blue/10 text-brand-blue px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                        <span className="text-[11px] bg-brand-blue/10 text-brand-blue px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                           <Stethoscope className="w-2.5 h-2.5" /> Médico
                         </span>
                       )}
                       {isFuncionario && (
-                        <span className="text-[10px] bg-orange-500/10 text-orange-600 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                        <span className="text-[11px] bg-orange-500/10 text-orange-600 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                           <ClipboardList className="w-2.5 h-2.5" /> Funcionario
                         </span>
                       )}
                       {hasAccess && (
-                        <span className="text-[10px] bg-green-500/10 text-green-700 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                        <span className="text-[11px] bg-green-500/10 text-green-700 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                           <ShieldCheck className="w-2.5 h-2.5" /> Farmacia
                         </span>
                       )}
@@ -210,19 +210,19 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
                     {/* Toggle Médico */}
                     <button onClick={() => toggleMedicoRole(u)} disabled={isLoading || isFuncionario}
                       title={isMedico ? "Quitar rol Médico" : "Marcar como Médico"}
-                      className={`p-2 rounded-lg text-xs transition-all disabled:opacity-30 ${isMedico ? "bg-brand-blue/10 text-brand-blue hover:bg-brand-blue/20" : "bg-[#EFF3FB] text-[#7B90B5] hover:bg-brand-blue/10 hover:text-brand-blue"}`}>
+                      className={`p-2 rounded-lg text-xs transition-all disabled:opacity-30 ${isMedico ? "bg-brand-blue/10 text-brand-blue hover:bg-brand-blue/20" : "bg-[#EFF3FB] text-[#5D7299] hover:bg-brand-blue/10 hover:text-brand-blue"}`}>
                       <Stethoscope className="w-4 h-4" />
                     </button>
                     {/* Toggle Funcionario */}
                     <button onClick={() => toggleFuncionarioRole(u)} disabled={isLoading || isMedico}
                       title={isFuncionario ? "Quitar rol Funcionario" : "Marcar como Funcionario"}
-                      className={`p-2 rounded-lg text-xs transition-all disabled:opacity-30 ${isFuncionario ? "bg-orange-500/10 text-orange-600 hover:bg-orange-500/20" : "bg-[#EFF3FB] text-[#7B90B5] hover:bg-orange-500/10 hover:text-orange-500"}`}>
+                      className={`p-2 rounded-lg text-xs transition-all disabled:opacity-30 ${isFuncionario ? "bg-orange-500/10 text-orange-600 hover:bg-orange-500/20" : "bg-[#EFF3FB] text-[#5D7299] hover:bg-orange-500/10 hover:text-orange-500"}`}>
                       <ClipboardList className="w-4 h-4" />
                     </button>
                     {/* Toggle Acceso Farmacia */}
                     <button onClick={() => toggleFarmaciaAccess(u)} disabled={isLoading || isCurrentUser}
                       title={hasAccess ? "Retirar acceso a Farmacia" : "Dar acceso a Farmacia"}
-                      className={`p-2 rounded-lg text-xs transition-all disabled:opacity-40 ${hasAccess ? "bg-green-500/10 text-green-700 hover:bg-red-50 hover:text-red-500" : "bg-[#EFF3FB] text-[#7B90B5] hover:bg-green-50 hover:text-green-600"}`}>
+                      className={`p-2 rounded-lg text-xs transition-all disabled:opacity-40 ${hasAccess ? "bg-green-500/10 text-green-700 hover:bg-red-50 hover:text-red-500" : "bg-[#EFF3FB] text-[#5D7299] hover:bg-green-50 hover:text-green-600"}`}>
                       {hasAccess ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
                     </button>
                   </div>

@@ -102,12 +102,12 @@ export function PapeleraModal({
             </div>
             <div>
               <h2 className="text-xl font-black text-[#0F1B35]">Papelera de Recetas</h2>
-              <p className="text-xs text-[#7B90B5] mt-0.5">
+              <p className="text-xs text-[#5D7299] mt-0.5">
                 Solo el administrador puede restaurar o eliminar definitivamente.
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-[#EFF3FB] rounded-xl transition-colors text-[#7B90B5] hover:text-[#0F1B35]">
+          <button onClick={onClose} className="p-2 hover:bg-[#EFF3FB] rounded-xl transition-colors text-[#5D7299] hover:text-[#0F1B35]">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -122,7 +122,7 @@ export function PapeleraModal({
           {!loading && sortedItems.length === 0 && (
             <div className="text-center py-16">
               <Trash2 className="w-12 h-12 text-[#C4D4EE] mx-auto mb-3" />
-              <p className="text-[#7B90B5] text-sm">La papelera está vacía.</p>
+              <p className="text-[#5D7299] text-sm">La papelera está vacía.</p>
             </div>
           )}
           {!loading && sortedItems.length > 0 && (
@@ -133,19 +133,19 @@ export function PapeleraModal({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-[#0F1B35]">{receta.nombrePaciente}</span>
-                      <span className="text-[10px] bg-[#EFF3FB] px-1.5 py-0.5 rounded-full text-[#3D5278] font-mono">{receta.rut}</span>
-                      <span className="text-[10px] bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full text-red-600">
+                      <span className="text-[11px] bg-[#EFF3FB] px-1.5 py-0.5 rounded-full text-[#3D5278] font-mono">{receta.rut}</span>
+                      <span className="text-[11px] bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full text-red-600">
                         {coleccion === "recetas_controladas" ? "💊 Controlada" : "📋 Crónica"} — Sec. {receta.sector}
                       </span>
                     </div>
                     <p className="text-sm text-brand-purple font-semibold mt-0.5">{receta.medicamento}</p>
                     {receta.motivoEliminacion && (
-                      <p className="text-xs text-[#7B90B5] mt-1">
-                        <span className="text-[#A8BDD8]">Motivo:</span> {receta.motivoEliminacion}
+                      <p className="text-xs text-[#5D7299] mt-1">
+                        <span className="text-[#8FA3C4]">Motivo:</span> {receta.motivoEliminacion}
                       </p>
                     )}
-                    <p className="text-xs text-[#A8BDD8] mt-0.5">
-                      Enviada por <span className="text-[#7B90B5]">{receta.eliminadaPor ?? "—"}</span> • {formatFecha(receta.eliminadaEn)}
+                    <p className="text-xs text-[#8FA3C4] mt-0.5">
+                      Enviada por <span className="text-[#5D7299]">{receta.eliminadaPor ?? "—"}</span> • {formatFecha(receta.eliminadaEn)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">

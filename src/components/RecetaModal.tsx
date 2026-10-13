@@ -328,9 +328,9 @@ export function RecetaModal({
     }
   };
 
-  const inputClass = "w-full bg-white border border-[#DDE6F5] rounded-xl px-4 py-3 text-[#0F1B35] placeholder-[#A8BDD8] focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 outline-none transition-all text-sm";
-  const inputDisabledClass = "w-full bg-[#F0F4FF] border border-[#EEF3FC] rounded-xl px-4 py-3 text-[#7B90B5] text-sm cursor-not-allowed select-none";
-  const labelClass = "block text-xs font-semibold text-[#3D5278] mb-1.5 uppercase tracking-wider";
+  const inputClass = "w-full bg-white border border-[#DDE6F5] rounded-xl px-4 py-3 text-[#0F1B35] placeholder-[#8FA3C4] focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 outline-none transition-all text-sm";
+  const inputDisabledClass = "w-full bg-[#F0F4FF] border border-[#EEF3FC] rounded-xl px-4 py-3 text-[#5D7299] text-sm cursor-not-allowed select-none";
+  const labelClass = "block text-xs font-semibold text-[#3D5278] mb-1.5 uppercase tracking-wide";
 
   return (
     <div className="fixed inset-0 bg-[#0F1B35]/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 sm:p-6">
@@ -343,29 +343,29 @@ export function RecetaModal({
             <h2 className="text-xl font-black text-[#0F1B35]">
               {soloAutorizacion ? "Autorizar / Rechazar Receta" : receta ? "Editar Solicitud" : "Nueva Solicitud"}
             </h2>
-            <p className="text-xs text-[#7B90B5] mt-0.5">
+            <p className="text-xs text-[#5D7299] mt-0.5">
               {tipo === "controladas" ? "💊 Controlada" : "📋 Crónica"} — Sector {sector}
               {soloAutorizacion && (
                 <span className="ml-2 text-brand-blue">🩺 Vista de médico</span>
               )}
             </p>
           </div>
-          <button type="button" onClick={onClose} className="p-2 hover:bg-[#EFF3FB] rounded-xl transition-colors text-[#7B90B5] hover:text-[#0F1B35]">
+          <button type="button" onClick={onClose} className="p-2 hover:bg-[#EFF3FB] rounded-xl transition-colors text-[#5D7299] hover:text-[#0F1B35]">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* ── Zona scrollable (crece y encoge) ── */}
         <div className="flex-1 min-h-0 overflow-y-auto">
-          <form id="receta-form" onSubmit={handleSubmit} className="p-6 space-y-5">
+          <form id="receta-form" onSubmit={handleSubmit} className="p-6 space-y-6">
 
           {/* ── Datos del paciente ── */}
           {soloAutorizacion && receta ? (
             // Médico: ver datos en modo lectura solamente
             <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-4 space-y-3">
               <div className="flex items-center gap-2 mb-1">
-                <Lock className="w-3.5 h-3.5 text-[#A8BDD8]" />
-                <p className="text-xs font-bold text-[#7B90B5] uppercase tracking-widest">Datos del paciente (solo lectura)</p>
+                <Lock className="w-3.5 h-3.5 text-[#8FA3C4]" />
+                <p className="text-xs font-bold text-[#5D7299] uppercase tracking-widest">Datos del paciente (solo lectura)</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -413,7 +413,7 @@ export function RecetaModal({
                           </div>
                       ))}
                       {inventario.length === 0 && (
-                        <div className="px-4 py-3 text-sm text-[#7B90B5] italic">No hay inventario cargado.</div>
+                        <div className="px-4 py-3 text-sm text-[#5D7299] italic">No hay inventario cargado.</div>
                       )}
                     </div>
                   )}
@@ -444,21 +444,21 @@ export function RecetaModal({
                 {showCalc && (
                   <div className="mt-2 bg-brand-blue/5 border border-brand-blue/15 rounded-xl p-3 flex gap-3 items-end">
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-brand-blue mb-1">Dosis (u.)</label>
+                      <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Dosis (u.)</label>
                       <input type="number" min="0" step="0.5" value={calcDosis} 
                         onChange={(e) => { setCalcDosis(e.target.value); runCalculadora(e.target.value, calcHoras, calcDias); }} 
                         className="w-14 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center focus:border-brand-blue outline-none" />
                     </div>
-                    <div className="pb-1.5 text-[#7B90B5] text-xs font-bold">cada</div>
+                    <div className="pb-1.5 text-[#5D7299] text-xs font-bold">cada</div>
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-brand-blue mb-1">Horas</label>
+                      <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Horas</label>
                       <input type="number" min="1" value={calcHoras} 
                         onChange={(e) => { setCalcHoras(e.target.value); runCalculadora(calcDosis, e.target.value, calcDias); }} 
                         className="w-14 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center focus:border-brand-blue outline-none" />
                     </div>
-                    <div className="pb-1.5 text-[#7B90B5] text-xs font-bold">por</div>
+                    <div className="pb-1.5 text-[#5D7299] text-xs font-bold">por</div>
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-brand-blue mb-1">Días</label>
+                      <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Días</label>
                       <input type="number" min="1" value={calcDias} 
                         onChange={(e) => { setCalcDias(e.target.value); runCalculadora(calcDosis, calcHoras, e.target.value); }} 
                         className="w-14 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center focus:border-brand-blue outline-none" />
@@ -524,11 +524,11 @@ export function RecetaModal({
                         </div>
                     ))}
                     {inventario.length === 0 && (
-                      <div className="px-4 py-3 text-sm text-[#7B90B5] italic">No hay inventario cargado.</div>
+                      <div className="px-4 py-3 text-sm text-[#5D7299] italic">No hay inventario cargado.</div>
                     )}
                   </div>
                 )}
-                <p className="text-[10px] text-[#A8BDD8] mt-1">El médico definirá la cantidad exacta al autorizar la receta.</p>
+                <p className="text-[11px] text-[#8FA3C4] mt-1">El médico definirá la cantidad exacta al autorizar la receta.</p>
               </div>
               <div>
                 <label className={labelClass}>Nota Adicional (Opcional)</label>
@@ -544,7 +544,7 @@ export function RecetaModal({
                   <p className="text-xs font-bold text-amber-700 uppercase tracking-widest">Fecha Límite de Atención</p>
                   {form.fechaLimite && (
                     <button type="button" onClick={() => setForm({ ...form, fechaLimite: "" })}
-                      className="text-[10px] text-[#A8BDD8] hover:text-red-500 transition-colors ml-auto">
+                      className="text-[11px] text-[#8FA3C4] hover:text-red-500 transition-colors ml-auto">
                       ✕ quitar
                     </button>
                   )}
@@ -574,7 +574,7 @@ export function RecetaModal({
           )}
 
           {/* ── Estado y médico ── */}
-          <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-5 space-y-4">
+          <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-5 space-y-5">
             <p className="text-xs font-bold text-brand-purple uppercase tracking-widest">
               {soloAutorizacion ? "🩺 Decisión Médica" : "Estado de la Solicitud"}
             </p>
@@ -600,7 +600,7 @@ export function RecetaModal({
                           className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold border transition-all ${
                             form.estado === est
                               ? activeColors[est]
-                              : "border-[#DDE6F5] bg-white text-[#7B90B5] hover:border-[#C4D4EE] hover:bg-[#F5F8FF]"
+                              : "border-[#DDE6F5] bg-white text-[#5D7299] hover:border-[#C4D4EE] hover:bg-[#F5F8FF]"
                           }`}
                         >
                           {Icon && <Icon className="w-3.5 h-3.5" />}
@@ -620,7 +620,7 @@ export function RecetaModal({
                   <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
                     <Clock className="w-4 h-4 text-amber-600 flex-shrink-0" />
                     <span className="text-sm font-semibold text-amber-700">Pendiente</span>
-                    <span className="text-xs text-[#7B90B5] ml-auto">Solo un médico puede autorizar</span>
+                    <span className="text-xs text-[#5D7299] ml-auto">Solo un médico puede autorizar</span>
                   </div>
                 )}
               </div>

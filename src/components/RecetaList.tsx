@@ -54,7 +54,7 @@ function EstadoBadge({ estado }: { estado: string }) {
 }
 
 function TiempoBadge({ receta, config }: { receta: Receta; config: FarmaciaConfig }) {
-  if (receta.estado !== "pendiente") return <span className="text-[#7B90B5] text-xs">—</span>;
+  if (receta.estado !== "pendiente") return <span className="text-[#5D7299] text-xs">—</span>;
 
   // ── Modo fecha límite ──
   if (receta.fechaLimite) {
@@ -121,7 +121,7 @@ function ConfirmPapeleraModal({
         <p className="text-xs text-[#3D5278] mb-4">
           Receta de <strong className="text-[#0F1B35]">{receta.nombrePaciente}</strong>. Se guardará quién realizó esta acción.
         </p>
-        <label className="block text-xs font-semibold text-[#3D5278] uppercase tracking-wider mb-1.5">
+        <label className="block text-xs font-semibold text-[#3D5278] uppercase tracking-wide mb-1.5">
           Motivo (obligatorio)
         </label>
         <textarea
@@ -129,7 +129,7 @@ function ConfirmPapeleraModal({
           placeholder="Ej: Receta duplicada, error de carga..."
           value={motivo}
           onChange={(e) => setMotivo(e.target.value)}
-          className="w-full bg-white border border-[#DDE6F5] rounded-xl px-4 py-3 text-[#0F1B35] placeholder-[#A8BDD8] focus:border-brand-blue outline-none transition-colors text-sm resize-none"
+          className="w-full bg-white border border-[#DDE6F5] rounded-xl px-4 py-3 text-[#0F1B35] placeholder-[#8FA3C4] focus:border-brand-blue outline-none transition-colors text-sm resize-none"
         />
         <div className="flex gap-3 mt-4">
           <button onClick={onCancel}
@@ -261,7 +261,7 @@ export function RecetaList({
           { label: "Completadas", value: completadas, color: "text-green-700", bg: "bg-green-50 border-green-200" },
         ].map((s) => (
           <div key={s.label} className={`rounded-2xl border px-4 py-3 ${s.bg}`}>
-            <p className="text-[10px] text-[#7B90B5] uppercase tracking-wider font-semibold">{s.label}</p>
+            <p className="text-[11px] text-[#5D7299] uppercase tracking-wide font-semibold">{s.label}</p>
             <p className={`text-2xl font-black mt-0.5 ${s.color}`}>{s.value}</p>
           </div>
         ))}
@@ -270,10 +270,10 @@ export function RecetaList({
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-[#A8BDD8] absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#8FA3C4] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input type="text" placeholder="Buscar por nombre, RUT o medicamento..."
             value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white border border-[#DDE6F5] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#0F1B35] placeholder-[#A8BDD8] focus:border-brand-blue outline-none transition-colors" />
+            className="w-full bg-white border border-[#DDE6F5] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#0F1B35] placeholder-[#8FA3C4] focus:border-brand-blue outline-none transition-colors" />
         </div>
         <div className="relative">
           <select value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)}
@@ -283,7 +283,7 @@ export function RecetaList({
             <option value="completado">Completados</option>
             <option value="rechazado">Rechazados</option>
           </select>
-          <ChevronDown className="w-4 h-4 text-[#7B90B5] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <ChevronDown className="w-4 h-4 text-[#5D7299] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
         {puedeCrear && (
           <button onClick={openCreate}
@@ -298,7 +298,7 @@ export function RecetaList({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#F0F4FF] border-b border-[#DDE6F5] text-[#7B90B5] text-xs uppercase tracking-wider font-semibold">
+              <tr className="bg-[#F0F4FF] border-b border-[#DDE6F5] text-[#5D7299] text-xs uppercase tracking-wide font-semibold">
                 <th className="px-5 py-3.5 text-left">Estado</th>
                 <th className="px-5 py-3.5 text-left">Paciente</th>
                 <th className="px-5 py-3.5 text-left">RUT</th>
@@ -313,7 +313,7 @@ export function RecetaList({
             <tbody className="divide-y divide-[#EEF3FC]">
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-5 py-10 text-center text-[#7B90B5]">
+                  <td colSpan={9} className="px-5 py-10 text-center text-[#5D7299]">
                     No hay registros que coincidan con la búsqueda.
                   </td>
                 </tr>
@@ -342,7 +342,7 @@ export function RecetaList({
                         
                         if (currentMonth > receta.autoRenovacion) {
                           return (
-                            <span className="block mt-1.5 inline-flex items-center gap-1 text-[10px] bg-red-50 text-red-600 border border-red-200 rounded-full px-2 py-0.5 font-bold shadow-sm leading-tight" title="Las renovaciones autorizadas ya se agotaron">
+                            <span className="block mt-1.5 inline-flex items-center gap-1 text-[11px] bg-red-50 text-red-600 border border-red-200 rounded-full px-2 py-0.5 font-bold shadow-sm leading-tight" title="Las renovaciones autorizadas ya se agotaron">
                               ⚠️ Venció (eran {receta.autoRenovacion}m)
                             </span>
                           );
@@ -353,14 +353,14 @@ export function RecetaList({
                         
                         if (receta.estado === "pendiente") {
                           return (
-                            <span className="block mt-1.5 inline-flex items-center gap-1 text-[10px] bg-blue-50 text-brand-blue border border-brand-blue/20 rounded-full px-2 py-0.5 font-bold shadow-sm leading-tight">
+                            <span className="block mt-1.5 inline-flex items-center gap-1 text-[11px] bg-blue-50 text-brand-blue border border-brand-blue/20 rounded-full px-2 py-0.5 font-bold shadow-sm leading-tight">
                               🔄 Renovable por {receta.autoRenovacion}m
                             </span>
                           );
                         }
 
                         return (
-                          <span className="block mt-1.5 inline-flex items-center gap-1 text-[10px] bg-green-50 text-green-700 border border-green-200 rounded-full px-2 py-0.5 font-bold shadow-sm leading-tight">
+                          <span className="block mt-1.5 inline-flex items-center gap-1 text-[11px] bg-green-50 text-green-700 border border-green-200 rounded-full px-2 py-0.5 font-bold shadow-sm leading-tight">
                             🔄 Renovada {currentMonth} de {receta.autoRenovacion}
                           </span>
                         );
@@ -373,9 +373,9 @@ export function RecetaList({
                       <span className="font-mono text-[#3D5278] text-xs whitespace-nowrap">{receta.rut}</span>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="font-semibold text-brand-purple">{receta.medicamento}</span>
+                      <span className="font-semibold text-brand-indigo">{receta.medicamento}</span>
                     </td>
-                    <td className="px-5 py-4 text-[#7B90B5] text-xs whitespace-nowrap">
+                    <td className="px-5 py-4 text-[#5D7299] text-xs whitespace-nowrap">
                       {formatDate(receta.fechaSolicitud)}
                     </td>
                     <td className="px-5 py-4">
@@ -387,29 +387,29 @@ export function RecetaList({
                           <p className="text-green-700 font-semibold text-xs flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3"/> {receta.medicoReceta || "—"}
                           </p>
-                          <p className="text-[#7B90B5] text-[10px] mt-0.5">{formatDate(receta.fechaReceta)}</p>
+                          <p className="text-[#5D7299] text-[11px] mt-0.5">{formatDate(receta.fechaReceta)}</p>
                         </div>
                       ) : receta.medicoReceta ? (
                         <div>
                           <p className="text-brand-blue font-semibold text-xs flex items-center gap-1">
                             <Clock className="w-3 h-3"/> {receta.medicoReceta}
                           </p>
-                          <p className="text-[#7B90B5] text-[10px] mt-0.5">Asignado (Pendiente)</p>
+                          <p className="text-[#5D7299] text-[11px] mt-0.5">Asignado (Pendiente)</p>
                         </div>
                       ) : receta.estado === "rechazado" ? (
                         <div>
                           <p className="text-red-600 font-semibold text-xs">❌ Rechazado</p>
-                          {receta.motivoRechazo && <p className="text-red-400 text-[10px] mt-0.5 italic line-clamp-2">{receta.motivoRechazo}</p>}
+                          {receta.motivoRechazo && <p className="text-red-400 text-[11px] mt-0.5 italic line-clamp-2">{receta.motivoRechazo}</p>}
                         </div>
                       ) : (
-                        <span className="text-[#A8BDD8] text-xs">Sin asignar</span>
+                        <span className="text-[#8FA3C4] text-xs">Sin asignar</span>
                       )}
                     </td>
                     <td className="px-5 py-4 max-w-[180px]">
                       {receta.nota ? (
                         <p className="text-[#3D5278] text-xs line-clamp-2 leading-relaxed">{receta.nota}</p>
                       ) : (
-                        <span className="text-[#A8BDD8] text-xs">—</span>
+                        <span className="text-[#8FA3C4] text-xs">—</span>
                       )}
                       {receta.estado === "rechazado" && receta.motivoRechazo && (
                         <p className="text-red-500 text-xs mt-1 italic">❌ {receta.motivoRechazo}</p>
@@ -419,7 +419,7 @@ export function RecetaList({
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {/* Historial */}
                         <button onClick={() => setAuditoriaReceta(receta)}
-                          className="p-1.5 text-[#7B90B5] hover:text-purple-500 hover:bg-purple-500/10 rounded-lg transition-colors"
+                          className="p-1.5 text-[#5D7299] hover:text-purple-500 hover:bg-purple-500/10 rounded-lg transition-colors"
                           title="Ver historial de cambios">
                           <History className="w-4 h-4" />
                         </button>
@@ -437,7 +437,7 @@ export function RecetaList({
                             className={`p-1.5 rounded-lg transition-colors ${
                               puedeCambiarEstado(receta) && !puedeEditarDatos
                                 ? "text-brand-blue hover:text-brand-blue-dark hover:bg-brand-blue/10"
-                                : "text-[#7B90B5] hover:text-brand-blue hover:bg-brand-blue/10"
+                                : "text-[#5D7299] hover:text-brand-blue hover:bg-brand-blue/10"
                             }`}
                             title={
                               puedeCambiarEstado(receta) && !puedeEditarDatos
@@ -458,7 +458,7 @@ export function RecetaList({
                         {/* Papelera — solo admin */}
                         {isAdmin && (
                           <button onClick={() => setPapeleraReceta(receta)}
-                            className="p-1.5 text-[#7B90B5] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-1.5 text-[#5D7299] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                             title="Enviar a papelera">
                             <Trash2 className="w-4 h-4" />
                           </button>

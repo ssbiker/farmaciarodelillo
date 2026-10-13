@@ -228,7 +228,7 @@ export function InventarioAdmin({ farmaciaUser }: { farmaciaUser: FarmaciaUser }
             <Package className="w-6 h-6 text-brand-blue" />
             Inventario y Stock
           </h2>
-          <p className="text-sm text-[#7B90B5]">
+          <p className="text-sm text-[#5D7299]">
             Administra el stock maestro de medicamentos. 
           </p>
         </div>
@@ -253,13 +253,13 @@ export function InventarioAdmin({ farmaciaUser }: { farmaciaUser: FarmaciaUser }
 
       {/* Buscador */}
       <div className="relative">
-        <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-[#A8BDD8]" />
+        <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-[#8FA3C4]" />
         <input
           type="text"
           placeholder="Buscar por nombre o código de medicamento..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-white border border-[#DDE6F5] rounded-2xl pl-12 pr-4 py-3.5 text-[#0F1B35] font-medium placeholder-[#A8BDD8] focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 outline-none transition-all"
+          className="w-full bg-white border border-[#DDE6F5] rounded-2xl pl-12 pr-4 py-3.5 text-[#0F1B35] font-medium placeholder-[#8FA3C4] focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 outline-none transition-all"
         />
       </div>
 
@@ -269,15 +269,15 @@ export function InventarioAdmin({ farmaciaUser }: { farmaciaUser: FarmaciaUser }
           <table className="w-full text-sm">
             <thead className="bg-[#F8FAFF] border-b border-[#DDE6F5]">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold text-[#7B90B5] uppercase tracking-wider w-32">Código</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-[#7B90B5] uppercase tracking-wider">Medicamento</th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-[#7B90B5] uppercase tracking-wider w-40">Stock Actual</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-[#5D7299] uppercase tracking-wide w-32">Código</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-[#5D7299] uppercase tracking-wide">Medicamento</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-[#5D7299] uppercase tracking-wide w-40">Stock Actual</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EEF3FC]">
               {inventario.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-6 py-12 text-center text-[#7B90B5]">
+                  <td colSpan={3} className="px-6 py-12 text-center text-[#5D7299]">
                     <Package className="w-12 h-12 text-[#DDE6F5] mx-auto mb-3" />
                     <p className="font-semibold text-[#3D5278]">El inventario está vacío</p>
                     <p className="text-xs mt-1">Sube el archivo Excel para cargar el stock inicial.</p>
@@ -285,7 +285,7 @@ export function InventarioAdmin({ farmaciaUser }: { farmaciaUser: FarmaciaUser }
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-6 py-8 text-center text-[#7B90B5]">
+                  <td colSpan={3} className="px-6 py-8 text-center text-[#5D7299]">
                     No se encontraron medicamentos que coincidan con la búsqueda.
                   </td>
                 </tr>
@@ -293,7 +293,7 @@ export function InventarioAdmin({ farmaciaUser }: { farmaciaUser: FarmaciaUser }
                 filtered.map((item) => (
                   <tr key={item.codigo} className="hover:bg-[#F5F8FF] transition-colors group">
                     <td className="px-6 py-4">
-                      <span className="font-mono text-xs text-[#7B90B5] bg-[#F0F4FF] px-2 py-1 rounded-md border border-[#DDE6F5]">
+                      <span className="font-mono text-xs text-[#5D7299] bg-[#F0F4FF] px-2 py-1 rounded-md border border-[#DDE6F5]">
                         {item.codigo}
                       </span>
                     </td>
@@ -317,7 +317,7 @@ export function InventarioAdmin({ farmaciaUser }: { farmaciaUser: FarmaciaUser }
             </tbody>
           </table>
         </div>
-        <div className="bg-[#F8FAFF] border-t border-[#DDE6F5] px-6 py-3 text-xs text-[#7B90B5] flex justify-between items-center">
+        <div className="bg-[#F8FAFF] border-t border-[#DDE6F5] px-6 py-3 text-xs text-[#5D7299] flex justify-between items-center">
           <span>Total de ítems: <strong>{inventario.length}</strong></span>
           <span>{filtered.length !== inventario.length ? `(Filtrados: ${filtered.length})` : ''}</span>
         </div>

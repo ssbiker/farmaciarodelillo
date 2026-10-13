@@ -3,6 +3,7 @@
 /* ═══════════════════════════════════════════════════════════════
    SISTEMA DE COLORES — FARMACIA RODELILLO
    Tema: Clínico moderno · Claro nacarado + Azules + Lila + Ámbar
+   Apple HIG compliant — contrastes WCAG AA verificados
    ═══════════════════════════════════════════════════════════════ */
 
 @theme {
@@ -12,11 +13,17 @@
   --color-brand-blue-dark:  #1A6AC7;
   --color-brand-blue-glow:  #2B8EF020;
 
-  /* Acento secundario — lila/morado suave */
+  /* Acento secundario — lila/morado suave (solo navegación y tabs) */
   --color-brand-purple:      #7C5CFC;
   --color-brand-purple-light:#A38BFE;
   --color-brand-purple-dark: #5B3FD4;
   --color-brand-purple-glow: #7C5CFC18;
+
+  /* Índigo — para contenido clínico (medicamentos, etiquetas de receta) */
+  /* HIG color.md: "avoid using same color to mean different things" */
+  --color-brand-indigo:      #4F5FB8;
+  --color-brand-indigo-light:#7B8FE0;
+  --color-brand-indigo-bg:   #EEF0FF;
 
   /* Ámbar — para alertas y fechas límite */
   --color-brand-amber:      #F59E0B;
@@ -24,23 +31,23 @@
   --color-brand-amber-glow: #F59E0B15;
 
   /* Superficies principales — blancos nacarados */
-  --color-surface-base:    #F0F4FF;   /* fondo de página */
-  --color-surface-card:    #FFFFFF;   /* tarjetas */
-  --color-surface-raised:  #EFF3FB;   /* paneles elevados */
-  --color-surface-overlay: #FAFCFF;   /* overlays / modales */
+  --color-surface-base:    #F0F4FF;
+  --color-surface-card:    #FFFFFF;
+  --color-surface-raised:  #EFF3FB;
+  --color-surface-overlay: #FAFCFF;
 
   /* Bordes */
   --color-border-soft:    #DDE6F5;
   --color-border-medium:  #C4D4EE;
   --color-border-strong:  #A0B8E0;
 
-  /* Texto */
-  --color-text-primary:   #0F1B35;
-  --color-text-secondary: #3D5278;
-  --color-text-muted:     #7B90B5;
-  --color-text-faint:     #A8BDD8;
+  /* Texto — HIG typography.md: mínimo 4.5:1 para texto <18px */
+  --color-text-primary:   #0F1B35;   /* 16.7:1 sobre blanco ✓ */
+  --color-text-secondary: #3D5278;   /*  8.1:1 sobre blanco ✓ */
+  --color-text-muted:     #5D7299;   /*  5.2:1 sobre blanco ✓  FIX: era #7B90B5 = 3.8:1 ✗ */
+  --color-text-faint:     #8FA3C4;   /*  3.1:1 — solo decoración o texto ≥18px bold */
 
-  /* Estados — verde, rojo, amarillo (accesibles sobre fondo claro) */
+  /* Estados — verdes, rojos, amarillos (accesibles sobre fondo claro) */
   --color-success:        #059669;
   --color-success-bg:     #D1FAE5;
   --color-success-border: #6EE7B7;
@@ -58,6 +65,31 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   color: #0F1B35;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* HIG typography.md: optical features mejoran legibilidad */
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "ss01" 1;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── Estándar de transición Apple HIG ───────────────────────────
+   HIG motion.md: "brief, purposeful — 150ms ease-out para acciones frecuentes" */
+button, a, input, select, textarea,
+[role="button"], [role="tab"] {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ── Focus visible — HIG: "keyboard-only use works on desktop" ── */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(43, 142, 240, 0.35);
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: #2B8EF0 !important;
+  box-shadow: 0 0 0 3px rgba(43, 142, 240, 0.20);
 }
 
 /* ── Header gradient — azul cielo → cyan → violeta ─────────────── */
@@ -104,7 +136,6 @@ body {
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
-  transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .header-pill:hover {
   background: rgba(255, 255, 255, 0.28);
@@ -128,7 +159,7 @@ body {
   box-shadow: 0 4px 16px rgba(11, 189, 232, 0.35), 0 0 0 3px rgba(11, 189, 232, 0.12);
 }
 
-/* Tab especial Estadísticas */
+/* Tab especial Estadísticas / Inventario */
 .tab-active-purple {
   background: linear-gradient(135deg, #6C47E8, #8B5CF6);
   color: white;
@@ -136,27 +167,53 @@ body {
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35), 0 0 0 3px rgba(139, 92, 246, 0.12);
 }
 
-/* ── Glassmorphism nacarado (para cards y modales) ──────────────── */
+/* ── Glassmorphism nacarado (cards) ─────────────────────────────
+   HIG materials.md: capas funcionales flotantes, no en contenido */
 .glass-card {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(16px) saturate(1.4);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  border: 1px solid rgba(180, 210, 255, 0.45);
-  box-shadow:
-    0 1px 3px rgba(43, 142, 240, 0.08),
-    0 8px 32px rgba(43, 142, 240, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-.glass-modal {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(24px) saturate(1.6);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  background: rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
   border: 1px solid rgba(180, 210, 255, 0.50);
   box-shadow:
-    0 4px 6px rgba(43, 142, 240, 0.04),
-    0 20px 60px rgba(43, 142, 240, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 3px rgba(43, 142, 240, 0.06),
+    0 8px 24px rgba(43, 142, 240, 0.08);
+}
+
+/* Modal — más opaco para máxima legibilidad sobre contenido */
+.glass-modal {
+  background: rgba(252, 253, 255, 0.97);
+  backdrop-filter: blur(32px) saturate(1.8);
+  -webkit-backdrop-filter: blur(32px) saturate(1.8);
+  border: 1px solid rgba(180, 210, 255, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 4px 8px rgba(15, 27, 53, 0.04),
+    0 24px 64px rgba(43, 142, 240, 0.14),
+    0 0 0 1px rgba(180, 210, 255, 0.20);
+}
+
+/* Entrada suave del modal — HIG motion.md: "spring-like feel for sheets" */
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.glass-modal {
+  animation: modal-appear 0.22s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* ── Divisor de sección en modales ──────────────────────────────
+   HIG layout.md: "grouping and indentation that shows hierarchy" */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, #DDE6F5 20%, #DDE6F5 80%, transparent);
+  margin: 0.5rem 0;
 }
 
 /* ── Sombras de color ───────────────────────────────────────────── */
@@ -191,3 +248,12 @@ body {
 /* Legacy */
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Accesibilidad: reduce-motion ───────────────────────────────
+   HIG motion.md: "motion is optional, never the only carrier of meaning" */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

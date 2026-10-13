@@ -1,0 +1,6 @@
+{
+  "name": "guia-trabajo",
+  "private": true,
+  "type": "module",
+  "description": "Archivos de trabajo temporales para generar la guia PDF (no es parte del proyecto)"
+}

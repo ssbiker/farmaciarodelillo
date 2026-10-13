@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Guía de Uso — Sistema de Recetas de Farmacia</title>
+<style>
+  :root {
+    --navy: #0F1B35;
+    --blue: #1A55CC;
+    --blue-soft: #EAF2FF;
+    --purple: #6C47E8;
+    --purple-soft: #F3EFFF;
+    --cyan: #0BBDE8;
+    --cyan-soft: #E5F9FF;
+    --green: #15803D;
+    --green-soft: #ECFDF3;
+    --amber: #B45309;
+    --amber-soft: #FFF8E6;
+    --red: #DC2626;
+    --red-soft: #FEEEEE;
+    --gray: #5D7299;
+    --line: #DDE6F5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    color: #1c2a47;
+    margin: 0;
+    padding: 0;
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  .page-inner { max-width: 700px; margin: 0 auto; padding: 0 8px; }
+
+  /* ── Portada ── */
+  .cover {
+    min-height: 950px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    page-break-after: always;
+  }
+  .cover .badge-line {
+    display: inline-block;
+    background: var(--blue-soft);
+    color: var(--blue);
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-size: 11px;
+    padding: 6px 18px;
+    border-radius: 999px;
+    margin-bottom: 26px;
+  }
+  .cover h1 {
+    font-size: 34px;
+    font-weight: 900;
+    color: var(--navy);
+    margin: 0 0 10px;
+    line-height: 1.15;
+  }
+  .cover h2 {
+    font-size: 16px;
+    color: var(--gray);
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  .cover .org {
+    font-size: 13px;
+    color: var(--purple);
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .cover .rule { width: 90px; height: 5px; border-radius: 4px; background: linear-gradient(90deg, #1A55CC, #0BBDE8, #6C47E8); margin: 26px 0; }
+  .cover .desc {
+    max-width: 560px;
+    font-size: 13px;
+    color: #3D5278;
+    margin: 0 0 30px;
+  }
+  .cover img.logo { width: 110px; margin-bottom: 20px; }
+  .cover .roles {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .cover .role {
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 18px;
+    background: #fff;
+    min-width: 150px;
+  }
+  .cover .role .r-name { font-weight: 800; font-size: 13px; color: var(--navy); }
+  .cover .role .r-do { font-size: 11px; color: var(--gray); margin-top: 3px; }
+  .cover .foot { margin-top: 60px; font-size: 11px; color: #8FA3C4; }
+
+  /* ── Índice ── */
+  .toc { page-break-after: always; }
+  .toc h2 { font-size: 22px; color: var(--navy); margin-bottom: 18px; }
+  .toc ol { list-style: none; counter-reset: toc; padding: 0; margin: 0; }
+  .toc li {
+    counter-increment: toc;
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    padding: 7px 4px;
+    border-bottom: 1px dashed var(--line);
+    font-size: 13px;
+  }
+  .toc li::before {
+    content: counter(toc);
+    color: var(--blue);
+    font-weight: 900;
+    min-width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    background: var(--blue-soft);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  /* ── Secciones ── */
+  section.guide { page-break-before: always; padding: 6px 0 10px; }
+  section.guide:first-of-type { page-break-before: auto; }
+  .sec-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 6px; }
+  .sec-num {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 900;
+    font-size: 19px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .sec-head h2 { font-size: 21px; margin: 0; color: var(--navy); line-height: 1.2; }
+  .sec-head .sub { font-size: 12px; color: var(--gray); margin-top: 3px; }
+  .lead { font-size: 12.5px; color: #2b3a5c; margin: 8px 0 14px; }
+
+  h3 { font-size: 15px; color: var(--navy); margin: 20px 0 8px; }
+  h3 .t { display: inline-block; background: var(--blue-soft); color: var(--blue); border-radius: 8px; padding: 1px 9px; margin-right: 6px; font-size: 13px; }
+  p { margin: 6px 0; }
+  ul, ol { margin: 6px 0 10px; padding-left: 22px; }
+  li { margin: 3px 0; }
+  strong { color: var(--navy); }
+
+  /* Cajas de ayuda */
+  .tip {
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 12px;
+  }
+  .tip.blue   { background: var(--blue-soft);   border: 1px solid #BFD7FF; }
+  .tip.green  { background: var(--green-soft);  border: 1px solid #BBE8CC; }
+  .tip.amber  { background: var(--amber-soft);  border: 1px solid #F3DFA8; }
+  .tip.red    { background: var(--red-soft);    border: 1px solid #F5C6C6; }
+  .tip.purple { background: var(--purple-soft); border: 1px solid #DDD0FF; }
+  .tip b.tip-title { display: block; margin-bottom: 3px; }
+  .tip.blue b.tip-title   { color: var(--blue); }
+  .tip.green b.tip-title  { color: var(--green); }
+  .tip.amber b.tip-title  { color: var(--amber); }
+  .tip.red b.tip-title    { color: var(--red); }
+  .tip.purple b.tip-title { color: var(--purple); }
+
+  /* Figuras */
+  .fig {
+    display: inline-block;   /* necesario para que Chrome respete "no dividir" al imprimir */
+    width: 100%;
+    vertical-align: top;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 14px 0 18px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #F8FAFF;
+  }
+  .fig img { display: block; width: 100%; page-break-inside: avoid; break-inside: avoid; }
+  .fig .cap {
+    padding: 9px 14px;
+    font-size: 11.5px;
+    color: #3D5278;
+    border-top: 1px solid var(--line);
+  }
+  .fig .cap b { color: var(--navy); }
+
+  /* Leyenda numerada */
+  .legend { margin: 10px 0 16px; break-inside: avoid; page-break-inside: avoid; }
+  .legend ol { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 5px 18px; }
+  .legend li { display: flex; gap: 8px; align-items: flex-start; font-size: 11.5px; color: #33446a; }
+  .legend .m {
+    min-width: 19px; height: 19px;
+    border-radius: 999px;
+    background: #E11D48;
+    color: #fff;
+    font-weight: 900;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .legend.single ol { grid-template-columns: 1fr; }
+
+  /* Tabla comparativa */
+  table.roles-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
+  table.roles-table th, table.roles-table td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.roles-table th { background: #F0F4FF; color: var(--navy); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.4px; }
+  table.roles-table td.yes { color: var(--green); font-weight: 700; }
+  table.roles-table td.no  { color: #B9C6DE; }
+  table.roles-table td.part { color: var(--amber); font-weight: 700; }
+  table.roles-table tr:nth-child(even) td { background: #FAFCFF; }
+
+  .faq { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin: 10px 0; break-inside: avoid; }
+  .faq .q { font-weight: 800; color: var(--navy); font-size: 12.5px; margin-bottom: 4px; }
+  .faq .q::before { content: "❓ "; }
+  .faq .a { color: #33446a; font-size: 12px; }
+
+  .steps { counter-reset: step; list-style: none; padding-left: 0; }
+  .steps li {
+    counter-increment: step;
+    display: flex;
+    gap: 10px;
+    margin: 7px 0;
+    font-size: 12.5px;
+  }
+  .steps li::before {
+    content: counter(step);
+    background: var(--blue);
+    color: #fff;
+    font-weight: 900;
+    min-width: 21px;
+    height: 21px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .note-end { page-break-before: always; }
+  .note-end .box { background: #F8FAFF; border: 1px solid var(--line); border-radius: 18px; padding: 26px; margin-top: 30px; text-align: center; }
+  .note-end h2 { color: var(--navy); margin-top: 0; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ PORTADA ══════════════ -->
+<div class="cover page-inner">
+  <img class="logo" src="../public/logo.png" alt="Logo CESFAM Rodelillo">
+  <span class="badge-line">Manual para el usuario</span>
+  <h1>Guía de Uso del Sistema<br>de Recetas de Farmacia</h1>
+  <h2>CESFAM Rodelillo</h2>
+  <div class="org">Instrucciones paso a paso · Todas las funciones · Edición: Octubre 2026</div>
+  <div class="rule"></div>
+  <p class="desc">
+    Esta guía explica, con imágenes reales del sistema, cómo usar cada pantalla y cada botón
+    del módulo de <strong>Recetas de Farmacia</strong>: cómo ingresar recetas, cómo se autorizan,
+    cómo se imprimen los tickets, cómo funciona el inventario, las estadísticas y la administración.
+  </p>
+  <div class="roles">
+    <div class="role"><div class="r-name">🩺 Médicos</div><div class="r-do">Autorizan o rechazan recetas en su panel personal</div></div>
+    <div class="role"><div class="r-name">📋 Funcionarios</div><div class="r-do">Ingresan las solicitudes de recetas de los pacientes</div></div>
+    <div class="role"><div class="r-name">🧪 Químico Farmacéutico</div><div class="r-do">Administra usuarios, inventario, estadísticas y papelera</div></div>
+  </div>
+  <div class="foot">Documento de apoyo para el personal del CESFAM Rodelillo · Las imágenes muestran datos de ejemplo<br>
+  Soporte y problemas: encargado de informática · <a href="mailto:difusionrodelillo@cmvalparaiso.cl" style="color:#1A55CC;font-weight:700;">difusionrodelillo@cmvalparaiso.cl</a></div>
+</div>
+
+<!-- ══════════════ ÍNDICE ══════════════ -->
+<div class="toc page-inner">
+  <h2>Contenido de esta guía</h2>
+  <ol>
+    <li>¿Qué es el sistema y para qué sirve?</li>
+    <li>Cómo ingresar al sistema (inicio de sesión)</li>
+    <li>La barra superior</li>
+    <li>Las pestañas del tablero</li>
+    <li>La lista de recetas: entender cada columna y cada aviso</li>
+    <li>Ingresar una nueva solicitud de receta</li>
+    <li>El ticket de receta y su impresión</li>
+    <li>El historial de auditoría de una receta</li>
+    <li>La papelera de recetas</li>
+    <li>Mi Panel: el trabajo diario del médico</li>
+    <li>Inventario y stock (administración)</li>
+    <li>Estadísticas generales (administración)</li>
+    <li>Administración: alertas, usuarios y permisos</li>
+    <li>La vista del funcionario</li>
+    <li>Resumen: qué puede hacer cada rol</li>
+    <li>Preguntas frecuentes y problemas comunes</li>
+    <li>Un día típico de trabajo, paso a paso</li>
+  </ol>
+</div>
+
+<!-- ══════════════ 1. QUÉ ES ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#1A55CC,#0BBDE8);">1</div>
+    <div><h2>¿Qué es el sistema y para qué sirve?</h2><div class="sub">Una sola herramienta para toda la cadena de la receta</div></div>
+  </div>
+  <p class="lead">
+    El módulo <strong>Recetas de Farmacia</strong> es una página web interna del CESFAM Rodelillo que permite
+    <strong>registrar, autorizar y controlar las recetas médicas</strong> de los pacientes, organizadas por sector
+    (<strong>A</strong>, <strong>B</strong> y <strong>CECOSF</strong>) y por tipo (<strong>controladas</strong> y <strong>crónicas</strong>).
+  </p>
+  <p>Con este sistema, todo el equipo trabaja sobre la misma información en tiempo real:</p>
+  <ul>
+    <li><strong>Los funcionarios ingresan</strong> la solicitud de receta del paciente (quién es, qué medicamento necesita, hasta cuándo debe atenderse).</li>
+    <li><strong>Los médicos autorizan o rechazan</strong> cada receta desde su panel personal, eligen el medicamento exacto del inventario y definen la cantidad.</li>
+    <li><strong>El químico farmacéutico administra</strong> el stock de medicamentos, los usuarios, los tiempos de alerta y revisa estadísticas.</li>
+    <li>Todos pueden <strong>buscar, filtrar e imprimir</strong> los tickets de receta para entregarlos al paciente.</li>
+  </ul>
+  <div class="tip blue">
+    <b class="tip-title">💡 ¿Por qué es importante usarlo?</b>
+    El sistema avisa automáticamente cuándo una receta está <strong>por vencer o vencida</strong>, evita que se pierdan
+    solicitudes en papel, descuenta el stock automáticamente cuando un médico autoriza, y deja <strong>registro de quién hizo cada cambio</strong>.
+  </div>
+  <p>Las recetas se clasifican así:</p>
+  <ul>
+    <li><strong>💊 Controladas:</strong> medicamentos con fiscalización especial (clonazepam, diazepam, tramadol, etc.).</li>
+    <li><strong>📋 Crónicas:</strong> tratamientos de largo plazo (losartán, metformina, levotiroxina, etc.).</li>
+    <li>Cada tipo se organiza además por sector de atención: <strong>A</strong>, <strong>B</strong> o <strong>CECOSF</strong>.</li>
+  </ul>
+</section>
+
+<!-- ══════════════ 2. INGRESO ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#1A55CC,#0BBDE8);">2</div>
+    <div><h2>Cómo ingresar al sistema</h2><div class="sub">Inicio de sesión con correo institucional</div></div>
+  </div>
+  <p class="lead">
+    Al abrir la página del sistema aparece la pantalla de inicio de sesión. Solo puede entrar
+    <strong>personal autorizado</strong> del CESFAM con su correo y contraseña.
+  </p>
+  <div class="fig">
+    <img src="screens/01-login.png" alt="Pantalla de inicio de sesión">
+    <div class="cap"><b>Pantalla de inicio de sesión.</b> Aquí comienza todo: se ingresa el correo y la contraseña.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> Logo del CESFAM.</li>
+      <li><span class="m">2</span> Nombre del sistema y aviso de que es un acceso restringido.</li>
+      <li><span class="m">3</span> Aquí se escribe el <strong>correo electrónico</strong>.</li>
+      <li><span class="m">4</span> Aquí se escribe la <strong>contraseña</strong>.</li>
+      <li><span class="m">5</span> Botón <strong>“Ingresar al Sistema”</strong>: se presiona para entrar.</li>
+      <li><span class="m">6</span> Aviso: solo puede acceder personal autorizado.</li>
+    </ol>
+  </div>
+  <h3><span class="t">Paso a paso</span>Para entrar</h3>
+  <ol class="steps">
+    <li>Escriba su <strong>correo electrónico</strong> en el primer campo (número 3).</li>
+    <li>Escriba su <strong>contraseña</strong> en el segundo campo (número 4).</li>
+    <li>Presione el botón azul <strong>“Ingresar al Sistema”</strong> (número 5).</li>
+    <li>En segundos verá el tablero principal con las pestañas de recetas.</li>
+  </ol>
+  <h3><span class="t">Error</span>Si dice “Credenciales incorrectas”</h3>
+  <div class="fig">
+    <img src="screens/02-login-error.png" alt="Error de credenciales">
+    <div class="cap"><b>Mensaje de error de credenciales.</b> Aparece cuando el correo o la contraseña no son correctos.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> El sistema avisa: <strong>“Credenciales incorrectas. Verifica tu correo y contraseña.”</strong></li>
+    </ol>
+  </div>
+  <div class="tip amber">
+    <b class="tip-title">⚠️ ¿Qué hacer en ese caso?</b>
+    Revise que el correo esté bien escrito (sin espacios ni mayúsculas de más) y vuelva a escribir la contraseña con cuidado.
+    Si el problema continúa, contacte al <strong>encargado de informática</strong> o escriba a
+    <a href="mailto:difusionrodelillo@cmvalparaiso.cl"><strong>difusionrodelillo@cmvalparaiso.cl</strong></a>
+    para revisar su acceso o restablecer su contraseña.
+  </div>
+  <h3><span class="t">Aviso</span>Si dice “Acceso Denegado”</h3>
+  <div class="fig">
+    <img src="screens/03-acceso-denegado.png" alt="Acceso denegado">
+    <div class="cap"><b>Aviso de acceso denegado.</b> Su cuenta existe, pero no tiene permisos para este módulo.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> Mensaje <strong>“Acceso Denegado”</strong>: la cuenta no tiene permisos para el módulo de Farmacia.</li>
+    </ol>
+  </div>
+  <div class="tip red">
+    <b class="tip-title">🔒 ¿Qué significa?</b>
+    Significa que su correo y contraseña son correctos, pero su usuario aún no tiene habilitado el permiso de Farmacia.
+    Solicite la habilitación de su acceso al <strong>encargado de informática</strong> o escriba a
+    <a href="mailto:difusionrodelillo@cmvalparaiso.cl"><strong>difusionrodelillo@cmvalparaiso.cl</strong></a>.
+  </div>
+</section>
+
+<!-- ══════════════ 3. BARRA SUPERIOR ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#1A55CC,#0BBDE8);">3</div>
+    <div><h2>La barra superior</h2><div class="sub">Lo que ve en la parte de arriba, en todo momento</div></div>
+  </div>
+  <p class="lead">
+    Después de ingresar, la <strong>franja de color de arriba</strong> se mantiene visible en todas las pantallas.
+    Desde ahí se reconoce quién está conectado y se accede a las herramientas principales.
+  </p>
+  <div class="fig">
+    <img src="screens/04-barra-superior.png" alt="Barra superior del sistema">
+    <div class="cap"><b>La barra superior.</b> Es igual en todas las pantallas del sistema.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> <strong>Logo y nombre del sistema</strong>. Al hacer clic se vuelve al tablero principal.</li>
+      <li><span class="m">2</span> Botón <strong>“Portal”</strong>: abre el Portal de Funcionarios del CESFAM (página externa).</li>
+      <li><span class="m">3</span> <strong>Correo de la sesión activa</strong>: confirma con qué cuenta está conectado.</li>
+      <li><span class="m">4</span> Insignia <strong>🩺 Médico</strong>: aparece si su usuario tiene permiso para autorizar/rechazar recetas.</li>
+      <li><span class="m">5</span> Insignia <strong>📋 Funcionario</strong>: aparece si su usuario puede ingresar recetas.</li>
+      <li><span class="m">6</span> <strong>Rueda de Administración</strong>: entra a la configuración del sistema. Solo la ven los administradores.</li>
+      <li><span class="m">7</span> Botón <strong>salir</strong>: cierra la sesión. Úselo siempre al terminar, sobre todo en computadores compartidos.</li>
+    </ol>
+  </div>
+  <div class="tip blue">
+    <b class="tip-title">💡 Recuerde</b>
+    Las insignias 🩺 y 📋 le muestran <strong>qué permisos tiene su cuenta</strong>. Si cree que le falta alguno,
+    escríbale al <strong>encargado de informática</strong> (<a href="mailto:difusionrodelillo@cmvalparaiso.cl">difusionrodelillo@cmvalparaiso.cl</a>) para que lo revisen.
+  </div>
+</section>
+
+<!-- ══════════════ 4. PESTAÑAS ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#1A55CC,#0BBDE8);">4</div>
+    <div><h2>Las pestañas del tablero</h2><div class="sub">Cada pestaña es una “carpeta” con un grupo de recetas</div></div>
+  </div>
+  <p class="lead">
+    Debajo de la barra superior están las <strong>pestañas</strong>. Cada una contiene las recetas de un grupo distinto.
+    Para cambiar de grupo solo hay que hacer clic sobre la pestaña.
+  </p>
+  <div class="fig">
+    <img src="screens/05-pestanas.png" alt="Pestañas del tablero">
+    <div class="cap"><b>Pestañas del tablero</b> (vista de un administrador, que las ve todas).</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> <strong>Ctrl A</strong> — recetas controladas del sector A.</li>
+      <li><span class="m">2</span> <strong>Ctrl B</strong> — recetas controladas del sector B.</li>
+      <li><span class="m">3</span> <strong>Ctrl CECOSF</strong> — recetas controladas del CECOSF.</li>
+      <li><span class="m">4</span> <strong>Crón A</strong> — recetas crónicas del sector A.</li>
+      <li><span class="m">5</span> <strong>Crón B</strong> — recetas crónicas del sector B.</li>
+      <li><span class="m">6</span> <strong>Crón CECOSF</strong> — recetas crónicas del CECOSF.</li>
+      <li><span class="m">7</span> <strong>Número rojo</strong>: cuántas recetas urgentes (vencidas) hay en esa pestaña.</li>
+      <li><span class="m">8</span> <strong>Mi Panel</strong> — vista personal del médico (solo la ven los médicos).</li>
+      <li><span class="m">9</span> <strong>Inventario (Stock)</strong> — stock de medicamentos. Solo administradores.</li>
+      <li><span class="m">10</span> <strong>Estadísticas</strong> — resúmenes y ranking. Solo administradores.</li>
+      <li><span class="m">11</span> <strong>Papelera</strong> — recetas eliminadas. Solo administradores.</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/06-banner-alerta.png" alt="Banner de alerta de recetas vencidas">
+    <div class="cap"><b>Franja roja de alerta.</b> Aparece arriba del tablero cuando hay solicitudes con tiempo vencido.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> <strong>Aviso rojo</strong>: indica cuántas solicitudes llevan más días de los permitidos sin ser atendidas. Hay que atenderlas <strong>de inmediato</strong>.</li>
+    </ol>
+  </div>
+  <div class="tip green">
+    <b class="tip-title">✅ Orden de trabajo sugerido</b>
+    Empiece siempre por las pestañas que muestran un <strong>número rojo</strong>: ahí están las recetas más urgentes.
+  </div>
+</section>
+
+<!-- ══════════════ 5. LISTA DE RECETAS ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#1A55CC,#0BBDE8);">5</div>
+    <div><h2>La lista de recetas</h2><div class="sub">Cómo leer el resumen, la barra de herramientas y la tabla</div></div>
+  </div>
+  <p class="lead">
+    Al abrir una pestaña (por ejemplo <strong>Ctrl A</strong>) se ve: un <strong>resumen con números</strong>,
+    la <strong>barra de herramientas</strong> y la <strong>tabla</strong> con todas las recetas de ese grupo.
+  </p>
+  <div class="fig">
+    <img src="screens/07-resumen-y-toolbar.png" alt="Resumen y barra de herramientas">
+    <div class="cap"><b>Resumen y barra de herramientas.</b> Es lo primero que se ve en cada pestaña.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> <strong>Total</strong>: cuántas recetas hay en esta pestaña.</li>
+      <li><span class="m">2</span> <strong>Pendientes</strong>: recetas que aún esperan autorización.</li>
+      <li><span class="m">3</span> <strong>Vencidas</strong>: pendientes que ya sobrepasaron su plazo (fondo rojo).</li>
+      <li><span class="m">4</span> <strong>Completadas</strong>: recetas ya autorizadas.</li>
+      <li><span class="m">5</span> <strong>Buscador</strong>: escriba un nombre, RUT o medicamento para encontrar una receta al instante.</li>
+      <li><span class="m">6</span> <strong>Filtro por estado</strong>: muestra solo Pendientes, Completadas o Rechazadas.</li>
+      <li><span class="m">7</span> Botón <strong>“Nueva Solicitud”</strong>: abre el formulario para ingresar una receta.</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/08-tabla-recetas.png" alt="Tabla de recetas">
+    <div class="cap"><b>La tabla de recetas.</b> Cada fila es la solicitud de un paciente; los colores indican urgencia.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> <strong>Estado</strong>: <span style="background:#FEF9C3;border:1px solid #EAB308;border-radius:99px;padding:0 7px;font-weight:700;color:#A16207;">Pendiente</span> (amarillo), <span style="background:#DCFCE7;border:1px solid #22C55E;border-radius:99px;padding:0 7px;font-weight:700;color:#15803D;">Completado</span> (verde) o <span style="background:#F1F5F9;border:1px solid #CBD5E1;border-radius:99px;padding:0 7px;font-weight:700;color:#64748B;">Rechazado</span> (gris).</li>
+      <li><span class="m">2</span> <strong>Plazo / Tiempo</strong>: “Vencida Xd” (rojo, pulsante), “Xd restantes” (amarillo o verde) o “Xd activa”.</li>
+      <li><span class="m">3</span> <strong>Fila con fondo rojo</strong>: receta vencida; requiere acción inmediata.</li>
+      <li><span class="m">4</span> <strong>Badge de renovación</strong>: “Renovada 1 de 3” indica cuántos meses de renovación automática lleva la receta.</li>
+      <li><span class="m">5</span> <strong>Columna Médico / Receta</strong>: quién tiene asignada la receta o quién la autorizó y en qué fecha.</li>
+    </ol>
+  </div>
+  <p>Las columnas de la tabla son: <strong>Estado, Paciente, RUT, Medicamento, Solicitud</strong> (fecha en que se pidió),
+  <strong>Plazo/Tiempo, Médico/Receta, Nota y Acciones</strong>. La columna <strong>Nota</strong> muestra instrucciones especiales que dejó quien ingresó la receta.</p>
+  <div class="fig">
+    <img src="screens/09-acciones-fila.png" alt="Botones de acción de una fila">
+    <div class="cap"><b>Botones de acción de una fila.</b> Aparecen al pasar el mouse sobre la fila del paciente.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> <strong>Reloj / historial</strong> (morado al pasar el mouse): abre el historial de auditoría de la receta.</li>
+      <li><span class="m">2</span> <strong>Impresora</strong> (azul): solo en recetas completadas — abre el ticket para imprimir.</li>
+      <li><span class="m">3</span> <strong>Lápiz</strong>: editar la solicitud (funcionarios/admin) o autorizar/rechazar (médicos).</li>
+      <li><span class="m">4</span> <strong>Basurero</strong> (rojo al pasar el mouse): enviar la receta a la papelera. Solo administradores.</li>
+    </ol>
+  </div>
+  <div class="tip blue">
+    <b class="tip-title">💡 Si no ve los botones</b>
+    Los botones de cada fila se <strong>ocultan hasta que se pasa el mouse por encima de la fila</strong>. En pantallas táctiles, toque la fila.
+  </div>
+</section>
+
+<!-- ══════════════ 6. NUEVA SOLICITUD ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#6C47E8,#0BBDE8);">6</div>
+    <div><h2>Ingresar una nueva solicitud de receta</h2><div class="sub">El formulario para registrar la receta de un paciente</div></div>
+  </div>
+  <p class="lead">
+    Para registrar una receta se presiona el botón azul <strong>“Nueva Solicitud”</strong> (está sobre la tabla, a la derecha).
+    Se abre una ventana con el formulario. <strong>La receta quedará guardada en la pestaña en la que esté parado</strong>
+    (por ejemplo, si está en “Ctrl A”, se guardará como controlada del sector A).
+  </p>
+  <div class="fig">
+    <img src="screens/10-nueva-solicitud.png" alt="Formulario de nueva solicitud (parte superior)">
+    <div class="cap"><b>Formulario de nueva solicitud (parte superior).</b> Datos del paciente, medicamento, nota y fecha límite.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> <strong>Título de la ventana</strong>: confirma el tipo y sector donde se guardará (💊 Controlada / 📋 Crónica).</li>
+      <li><span class="m">2</span> La <strong>X</strong> de la esquina cierra la ventana sin guardar.</li>
+      <li><span class="m">3</span> <strong>Nombre del paciente</strong> (obligatorio).</li>
+      <li><span class="m">4</span> <strong>RUT</strong> (obligatorio): se formatea solo, con puntos y guion, y se valida al guardar.</li>
+      <li><span class="m">5</span> <strong>Medicamento solicitado</strong>: al escribir, el sistema sugiere los medicamentos del inventario.</li>
+      <li><span class="m">6</span> <strong>Nota adicional</strong> (opcional): indicaciones especiales para el médico o la farmacia.</li>
+      <li><span class="m">7</span> <strong>Fecha límite de atención</strong>: día máximo para atender esta receta (controla las alertas).</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/11-buscador-medicamento.png" alt="Buscador de medicamentos con stock">
+    <div class="cap"><b>Buscador de medicamentos.</b> Al escribir, aparece la lista del inventario con el stock disponible.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> <strong>Lista de sugerencias</strong>: medicamentos del inventario que coinciden con lo escrito.</li>
+      <li><span class="m">2</span> <strong>Stock de cada uno</strong>: verde = hay unidades; rojo = agotado. Se elige haciendo clic.</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/12-nueva-solicitud-abajo.png" alt="Formulario de nueva solicitud (parte inferior)">
+    <div class="cap"><b>Formulario de nueva solicitud (parte inferior).</b> Estado, médico asignado y duración de la receta.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> <strong>Estado</strong>: por defecto queda <strong>Pendiente</strong> (el médico lo cambiará al autorizar).</li>
+      <li><span class="m">2</span> <strong>Médico asignado / tratante</strong>: se puede dejar “Sin asignar” o elegir un médico de la lista.</li>
+      <li><span class="m">3</span> <strong>Duración de la receta</strong>: meses de validez (1 a 6) para renovación automática, o “Sin renovación”.</li>
+      <li><span class="m">4</span> <strong>Cancelar</strong>: cierra sin guardar.</li>
+      <li><span class="m">5</span> <strong>Guardar Registro</strong>: guarda la solicitud y la deja visible para los médicos.</li>
+    </ol>
+  </div>
+  <h3><span class="t">Paso a paso</span>Para ingresar una receta</h3>
+  <ol class="steps">
+    <li>Ubíquese en la pestaña correcta (por ejemplo, <strong>Ctrl B</strong> si la receta controlada es del sector B).</li>
+    <li>Presione <strong>“Nueva Solicitud”</strong>.</li>
+    <li>Escriba el <strong>nombre del paciente</strong> y su <strong>RUT</strong> (se formatea solo).</li>
+    <li>Empiece a escribir el <strong>medicamento</strong> y elíjalo de la lista con su stock.</li>
+    <li>Si corresponde, escriba una <strong>nota</strong> (por ejemplo: “paciente retira los jueves”).</li>
+    <li>Elija la <strong>fecha límite</strong> si la receta debe atenderse antes de cierto día.</li>
+    <li>Opcional: asigne el <strong>médico tratante</strong>.</li>
+    <li>Presione <strong>“Guardar Registro”</strong>. La receta aparecerá de inmediato en la tabla como <strong>Pendiente</strong>.</li>
+  </ol>
+  <div class="tip amber">
+    <b class="tip-title">⚠️ Importante</b>
+    El sistema valida el RUT. Si está mal escrito, aparecerá un aviso y no se guardará hasta corregirlo.
+    La <strong>cantidad exacta</strong> a despachar la define el médico al autorizar; por eso el formulario no la pide al ingresar.
+  </div>
+</section>
+
+<!-- ══════════════ 7. TICKET ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#6C47E8,#0BBDE8);">7</div>
+    <div><h2>El ticket de receta y su impresión</h2><div class="sub">El comprobante que se entrega al paciente</div></div>
+  </div>
+  <p class="lead">
+    Cuando una receta ya está <strong>completada (autorizada)</strong>, el sistema genera un <strong>ticket</strong>
+    con todos los datos, listo para imprimir y entregar al paciente.
+  </p>
+  <div class="fig">
+    <img src="screens/13-ticket.png" alt="Ticket de receta">
+    <div class="cap"><b>Ticket de receta.</b> Se abre desde el botón de impresora de la fila del paciente.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> Título: <strong>“Ticket de Receta”</strong>.</li>
+      <li><span class="m">2</span> Tipo de receta (<strong>Controlada</strong> o <strong>Crónica</strong>) y su <strong>sector</strong>.</li>
+      <li><span class="m">3</span> <strong>Datos del paciente</strong>: nombre completo y RUT.</li>
+      <li><span class="m">4</span> <strong>Medicamento</strong> autorizado.</li>
+      <li><span class="m">5</span> <strong>Médico tratante</strong> y <strong>fecha de la receta</strong>.</li>
+      <li><span class="m">6</span> Espacio para la <strong>firma del médico</strong>.</li>
+      <li><span class="m">7</span> Botón <strong>“Imprimir”</strong>: envía el ticket a la impresora.</li>
+      <li><span class="m">8</span> Botón <strong>“Cerrar”</strong>: vuelve a la lista.</li>
+    </ol>
+  </div>
+  <h3><span class="t">Paso a paso</span>Para imprimir un ticket</h3>
+  <ol class="steps">
+    <li>Abra la pestaña donde está la receta ya <strong>completada</strong>.</li>
+    <li>Pase el mouse sobre la fila del paciente y presione el botón de <strong>impresora</strong> (azul).</li>
+    <li>Revise los datos del ticket.</li>
+    <li>Presione <strong>“Imprimir”</strong> y elija la impresora.</li>
+  </ol>
+  <div class="tip blue">
+    <b class="tip-title">💡 Consejo</b>
+    El ticket solo está disponible para recetas <strong>completadas</strong>. Si la receta sigue pendiente o fue rechazada, no se puede imprimir.
+  </div>
+</section>
+
+<!-- ══════════════ 8. AUDITORÍA ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#6C47E8,#0BBDE8);">8</div>
+    <div><h2>El historial de auditoría de una receta</h2><div class="sub">Quién hizo cada cambio y cuándo</div></div>
+  </div>
+  <p class="lead">
+    Cada receta guarda un <strong>historial</strong>: quién la creó, quién la modificó y qué cambió en cada paso.
+    Es muy útil para aclarar dudas y para la trazabilidad de las recetas controladas.
+  </p>
+  <div class="fig">
+    <img src="screens/14-auditoria.png" alt="Historial de auditoría de una receta">
+    <div class="cap"><b>Historial de auditoría.</b> Se abre con el botón de reloj de la fila del paciente.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> Título del panel: <strong>“Historial de Auditoría”</strong>, con el nombre del paciente.</li>
+      <li><span class="m">2</span> <strong>Línea de tiempo</strong>: los eventos ordenados del más reciente al más antiguo.</li>
+      <li><span class="m">3</span> En cada evento se ve <strong>qué se hizo, quién lo hizo y cuándo</strong>.</li>
+      <li><span class="m">4</span> Cuando hubo cambios, se muestra el <strong>valor anterior (rojo, tachado)</strong> y el <strong>nuevo (verde)</strong>.</li>
+    </ol>
+  </div>
+  <p>Los tipos de evento que pueden aparecer son: <strong>Creación, Modificación, Enviada a papelera, Restaurada y Eliminación definitiva</strong>, cada uno con su color propio.</p>
+</section>
+
+<!-- ══════════════ 9. PAPELERA ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#DC2626,#F97316);">9</div>
+    <div><h2>La papelera de recetas</h2><div class="sub">Eliminar con seguridad, restaurar si hubo un error</div></div>
+  </div>
+  <p class="lead">
+    Si una receta está mal ingresada o duplicada, <strong>no se borra de inmediato</strong>: primero va a la
+    <strong>papelera</strong>, donde el administrador puede <strong>restaurarla</strong> o <strong>eliminarla definitivamente</strong>.
+    Solo los administradores tienen acceso a la papelera.
+  </p>
+  <h3><span class="t">Enviar a papelera</span>Desde la fila de la receta</h3>
+  <div class="fig">
+    <img src="screens/15-enviar-papelera.png" alt="Ventana de enviar a papelera">
+    <div class="cap"><b>Ventana “Enviar a Papelera”.</b> Pide un motivo antes de mover la receta a la papelera.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> Aviso de a quién pertenece la receta y que <strong>quedará registro de quién la envía</strong>.</li>
+      <li><span class="m">2</span> <strong>Motivo (obligatorio)</strong>: escriba por qué se elimina (ej.: “receta duplicada”).</li>
+      <li><span class="m">3</span> Botón <strong>“Enviar”</strong>: se activa recién cuando se escribe el motivo.</li>
+      <li><span class="m">4</span> Botón <strong>“Cancelar”</strong>: cierra sin hacer cambios.</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/16-enviar-papelera-motivo.png" alt="Motivo escrito en la ventana de papelera">
+    <div class="cap"><b>Con el motivo escrito</b>, el botón “Enviar” queda disponible (en rojo).</div>
+  </div>
+  <h3><span class="t">Revisar la papelera</span>Botón Papelera del tablero</h3>
+  <div class="fig">
+    <img src="screens/17-papelera.png" alt="Papelera de recetas">
+    <div class="cap"><b>Papelera de recetas.</b> Lista todo lo eliminado, con su motivo y quién lo envió.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> Título y aviso: <strong>solo el administrador</strong> puede restaurar o eliminar definitivamente.</li>
+      <li><span class="m">2</span> Cada tarjeta muestra el paciente, el medicamento, <strong>el motivo</strong>, quién la envió y cuándo.</li>
+      <li><span class="m">3</span> Botón <strong>“Restaurar”</strong> (verde): devuelve la receta a su lista original, como si nada hubiera pasado.</li>
+      <li><span class="m">4</span> Botón <strong>“Eliminar definitivo”</strong> (rojo): borra la receta para siempre.</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/18-papelera-confirmacion.png" alt="Confirmación de eliminación definitiva">
+    <div class="cap"><b>Confirmación de eliminación definitiva.</b> El sistema pide confirmar porque no se puede deshacer.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> Aviso <strong>“¡Acción irreversible!”</strong>: esta operación no se puede deshacer.</li>
+      <li><span class="m">2</span> Botón <strong>“Sí, eliminar”</strong>: borra definitivamente (queda registrado quién lo hizo).</li>
+      <li><span class="m">3</span> Botón <strong>“Cancelar”</strong>: se arrepintió — la receta sigue en la papelera.</li>
+    </ol>
+  </div>
+  <div class="tip red">
+    <b class="tip-title">🔒 Regla de oro</b>
+    Antes de “Eliminar definitivo”, revise bien la tarjeta. Prefiera <strong>“Restaurar”</strong> si la receta era correcta.
+  </div>
+</section>
+
+<!-- ══════════════ 10. MI PANEL ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#0BBDE8,#1A55CC);">10</div>
+    <div><h2>Mi Panel: el trabajo diario del médico</h2><div class="sub">Autorizar y rechazar recetas en un solo lugar</div></div>
+  </div>
+  <p class="lead">
+    Al ingresar con una cuenta de <strong>médico</strong>, el sistema abre directamente <strong>“Mi Panel”</strong>:
+    un resumen personal con todas las recetas que le corresponden y las que están esperando médico.
+  </p>
+  <div class="fig">
+    <img src="screens/26-mi-panel.png" alt="Mi Panel del médico">
+    <div class="cap"><b>Mi Panel.</b> El resumen personal del médico: pendientes, autorizadas, rechazadas y urgentes.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> Título <strong>“Mi Panel”</strong> con su nombre.</li>
+      <li><span class="m">2</span> <strong>Aviso rojo de urgentes</strong>: recetas vencidas que esperan su autorización.</li>
+      <li><span class="m">3</span> Tarjetas con sus números: <strong>Mis Pendientes, Autorizadas, Rechazadas y Urgentes</strong>.</li>
+      <li><span class="m">4</span> <strong>Tasa de resolución</strong>: porcentaje de sus recetas ya resueltas.</li>
+      <li><span class="m">5</span> <strong>“Pendientes asignadas a mí”</strong>: recetas con su nombre. Haga clic en una tarjeta para atenderla.</li>
+      <li><span class="m">6</span> <strong>“Sin médico asignado”</strong>: recetas que cualquier médico puede atender.</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/27-mi-panel-historial.png" alt="Historial reciente del médico">
+    <div class="cap"><b>Historial reciente.</b> Más abajo se ven las últimas recetas que el médico autorizó o rechazó.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> <strong>Historial reciente</strong> (últimas 10 decisiones del médico).</li>
+      <li><span class="m">2</span> Tarjeta <strong>verde</strong> = receta autorizada (completada).</li>
+      <li><span class="m">3</span> Tarjeta <strong>gris</strong> = receta rechazada.</li>
+    </ol>
+  </div>
+  <h3><span class="t">Autorizar o rechazar</span>La ventana de decisión médica</h3>
+  <p>Al hacer clic en una tarjeta de receta pendiente se abre la ventana <strong>“Autorizar / Rechazar Receta”</strong>.</p>
+  <div class="fig">
+    <img src="screens/28-autorizar-1.png" alt="Ventana de autorización del médico">
+    <div class="cap"><b>Ventana de decisión médica.</b> Los datos del paciente son de solo lectura; el médico decide el tratamiento.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> Título <strong>“Autorizar / Rechazar Receta”</strong> con el tipo y sector.</li>
+      <li><span class="m">2</span> <strong>Datos del paciente (solo lectura)</strong>: el médico no puede modificarlos.</li>
+      <li><span class="m">3</span> <strong>Medicamento</strong>: el médico lo elige del inventario (con su stock).</li>
+      <li><span class="m">4</span> <strong>Cantidad de unidades</strong> a despachar al paciente.</li>
+      <li><span class="m">5</span> <strong>Asistente de cálculo</strong>: calcula la cantidad por dosis, horas y días.</li>
+      <li><span class="m">6</span> <strong>Nota</strong> dejada por el funcionario (solo lectura).</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/29-asistente-calculo.png" alt="Asistente de cálculo de dosis">
+    <div class="cap"><b>Asistente de cálculo.</b> Al abrirlo, calcula automáticamente la cantidad total a despachar.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> <strong>Dosis por toma</strong> (ej.: 1 comprimido).</li>
+      <li><span class="m">2</span> <strong>Cada cuántas horas</strong> (ej.: cada 8 horas).</li>
+      <li><span class="m">3</span> <strong>Por cuántos días</strong> (ej.: 30 días).</li>
+      <li><span class="m">4</span> El sistema llena solo la <strong>cantidad total</strong>. Ejemplo: 1 cada 8 horas × 30 días = 90 unidades.</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/30-autorizar-2.png" alt="Botones de decisión del médico">
+    <div class="cap"><b>La decisión médica.</b> Tres opciones: mantener Pendiente, Autorizar o Rechazar.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> Botones <strong>Pendiente / Autorizar / Rechazar</strong>: elija uno.</li>
+      <li><span class="m">2</span> <strong>“Rechazar”</strong> en rojo: la receta no se entrega (pedirá un motivo).</li>
+      <li><span class="m">3</span> <strong>“Confirmar Decisión”</strong>: guarda su decisión.</li>
+      <li><span class="m">4</span> <strong>“Cancelar”</strong>: sale sin guardar.</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/31-autorizar-renovacion.png" alt="Auto-renovación al autorizar">
+    <div class="cap"><b>Al elegir “Autorizar”</b> aparece la opción de auto-renovación: meses de validez de la receta.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> Sección <strong>“Auto-Renovación”</strong>: cuántos meses durará la receta.</li>
+      <li><span class="m">2</span> Selector de <strong>1 a 6 meses</strong>. Con renovación, el stock se descuenta mes a mes automáticamente.</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/32-rechazar.png" alt="Motivo de rechazo">
+    <div class="cap"><b>Al elegir “Rechazar”</b> el sistema exige escribir el motivo del rechazo.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> Campo <strong>“Motivo del Rechazo”</strong> (obligatorio): quedará visible para el funcionario y en el historial.</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/33-candado-medico.png" alt="Candado en receta de otro médico">
+    <div class="cap"><b>Candado en la lista.</b> Si un médico mira la lista general, las recetas asignadas a otro médico muestran un candado 🔒: solo el médico asignado puede autorizarlas.</div>
+  </div>
+  <h3><span class="t">Paso a paso</span>Autorizar una receta</h3>
+  <ol class="steps">
+    <li>Abra <strong>“Mi Panel”</strong> y revise la alerta de urgentes.</li>
+    <li>Haga clic en la tarjeta de la receta a atender (sección “Pendientes asignadas a mí” o “Sin médico asignado”).</li>
+    <li>Elija el <strong>medicamento</strong> del inventario y la <strong>cantidad</strong> (use el asistente de cálculo si lo necesita).</li>
+    <li>Presione <strong>“Autorizar”</strong> y, si corresponde, elija los <strong>meses de renovación</strong>.</li>
+    <li>Presione <strong>“Confirmar Decisión”</strong>. La receta pasa a “Completada” y el stock se descuenta solo.</li>
+  </ol>
+  <h3><span class="t">Paso a paso</span>Rechazar una receta</h3>
+  <ol class="steps">
+    <li>Abra la receta pendiente desde su panel.</li>
+    <li>Presione <strong>“Rechazar”</strong>.</li>
+    <li>Escriba el <strong>motivo del rechazo</strong> (obligatorio).</li>
+    <li>Presione <strong>“Confirmar Decisión”</strong>. El funcionario verá el motivo y podrá corregir la solicitud.</li>
+  </ol>
+  <div class="tip green">
+    <b class="tip-title">✅ Tranquilidad con el stock</b>
+    Si rechaza una receta que ya había descontado stock, el sistema <strong>devuelve las unidades automáticamente</strong> al inventario.
+  </div>
+</section>
+
+<!-- ══════════════ 11. INVENTARIO ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#6C47E8,#1A55CC);">11</div>
+    <div><h2>Inventario y stock (administración)</h2><div class="sub">El stock maestro de medicamentos</div></div>
+  </div>
+  <p class="lead">
+    La pestaña <strong>“Inventario (Stock)”</strong> muestra todos los medicamentos disponibles y sus unidades.
+    El stock se <strong>descuenta solo</strong> cada vez que un médico autoriza una receta. Solo la ven los administradores.
+  </p>
+  <div class="fig">
+    <img src="screens/19-inventario.png" alt="Pantalla de inventario">
+    <div class="cap"><b>Inventario y stock.</b> Tabla con código, medicamento y unidades disponibles.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> Título de la sección.</li>
+      <li><span class="m">2</span> <strong>“Subir Excel (Stock Master)”</strong>: actualiza todo el stock desde la planilla oficial.</li>
+      <li><span class="m">3</span> <strong>Buscador</strong>: filtrar por nombre o código de medicamento.</li>
+      <li><span class="m">4</span> Tabla con <strong>código, medicamento y stock actual</strong>.</li>
+      <li><span class="m">5</span> Colores del stock: <span style="font-weight:700;color:#15803D;">verde</span> = suficiente · <span style="font-weight:700;color:#B45309;">amarillo</span> = bajo (10 o menos) · <span style="font-weight:700;color:#DC2626;">rojo</span> = agotado (0).</li>
+      <li><span class="m">6</span> <strong>Total de ítems</strong> cargados en el sistema.</li>
+    </ol>
+  </div>
+  <h3><span class="t">Actualizar el stock</span>Subir la planilla Excel</h3>
+  <div class="fig">
+    <img src="screens/20-inventario-preview.png" alt="Vista previa de sincronización de Excel">
+    <div class="cap"><b>Vista previa al subir el Excel.</b> El sistema muestra qué va a cargar antes de tocar nada.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> <strong>Vista previa</strong>: cuántos medicamentos encontró en el archivo.</li>
+      <li><span class="m">2</span> <strong>Advertencia importante</strong>: el stock del sistema será reemplazado exactamente por los números del Excel.</li>
+      <li><span class="m">3</span> Tabla de vista previa: código, medicamento y stock que se subirá.</li>
+      <li><span class="m">4</span> <strong>Cancelar</strong>: no se cambia nada.</li>
+      <li><span class="m">5</span> <strong>“Confirmar y Subir Stock”</strong>: aplica el Excel al inventario.</li>
+    </ol>
+  </div>
+  <h3><span class="t">Paso a paso</span>Subir el Excel de stock</h3>
+  <ol class="steps">
+    <li>Abra la pestaña <strong>“Inventario (Stock)”</strong>.</li>
+    <li>Presione <strong>“Subir Excel (Stock Master)”</strong> y elija el archivo .xlsx, .xls o .csv.</li>
+    <li>Revise la <strong>vista previa</strong>: verifique que el número de medicamentos sea el esperado.</li>
+    <li>Si está correcto, presione <strong>“Confirmar y Subir Stock”</strong>.</li>
+    <li>Aparecerá el aviso “Inventario sincronizado exitosamente”.</li>
+  </ol>
+  <div class="tip amber">
+    <b class="tip-title">⚠️ Cuidado</b>
+    Al confirmar, el Excel <strong>reemplaza</strong> el stock actual (incluidos los descuentos del día).
+    Conviene subir la planilla oficial al inicio de la jornada o cuando la farmacia indique.
+  </div>
+</section>
+
+<!-- ══════════════ 12. ESTADÍSTICAS ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#6C47E8,#1A55CC);">12</div>
+    <div><h2>Estadísticas generales (administración)</h2><div class="sub">La foto completa de la farmacia</div></div>
+  </div>
+  <p class="lead">
+    La pestaña <strong>“Estadísticas”</strong> resume toda la actividad: cuántas recetas hay, cómo van los médicos
+    y cuáles son los medicamentos más entregados. Solo la ven los administradores.
+  </p>
+  <div class="fig">
+    <img src="screens/21-estadisticas-1.png" alt="Estadísticas generales (parte superior)">
+    <div class="cap"><b>Estadísticas (parte superior).</b> Totales, tasa de resolución y resumen por sector.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> Título de la sección.</li>
+      <li><span class="m">2</span> <strong>Tarjetas resumen</strong>: total de recetas, pendientes, completadas, rechazadas, urgentes y médicos activos.</li>
+      <li><span class="m">3</span> <strong>Tasa de resolución global</strong>: porcentaje de recetas ya completadas.</li>
+      <li><span class="m">4</span> <strong>Por tipo y sector</strong>: barra de avance de cada grupo (Controladas/Crónicas × A/B).</li>
+      <li><span class="m">5</span> <strong>Recetas más urgentes</strong>: las vencidas, ordenadas por gravedad.</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/22-estadisticas-2.png" alt="Actividad por médico">
+    <div class="cap"><b>Actividad por médico.</b> Pendientes, autorizadas y rechazadas de cada doctor, con su avance.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> Panel <strong>“Actividad por médico”</strong>: los doctores con urgentes aparecen con fondo rojo.</li>
+      <li><span class="m">2</span> Barra de progreso de cada médico y su <strong>% de recetas resueltas</strong>.</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/23-estadisticas-3.png" alt="Top medicamentos entregados">
+    <div class="cap"><b>Top de medicamentos entregados.</b> Útil para planificar compras y reposición.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> Ranking <strong>“Top Medicamentos Entregados”</strong>.</li>
+      <li><span class="m">2</span> <strong>Unidades totales</strong> y <strong>cantidad de recetas</strong> por medicamento, con el médico que más lo receta.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ══════════════ 13. ADMINISTRACIÓN ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#6C47E8,#1A55CC);">13</div>
+    <div><h2>Administración: alertas, usuarios y permisos</h2><div class="sub">La configuración del sistema (solo administradores)</div></div>
+  </div>
+  <p class="lead">
+    La <strong>rueda de Administración</strong> (barra superior) abre la página de configuración. Desde aquí el
+    administrador ajusta los tiempos de alerta, gestiona los permisos de cada usuario y accede a la papelera.
+  </p>
+  <div class="fig">
+    <img src="screens/24-administracion-1.png" alt="Página de administración (parte superior)">
+    <div class="cap"><b>Administración (parte superior).</b> Tiempos de alerta y acceso a la papelera.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> Título de la página: <strong>“Administración”</strong>.</li>
+      <li><span class="m">2</span> <strong>Alerta amarilla (días)</strong>: a partir de cuántos días una receta empieza a marcarse en amarillo.</li>
+      <li><span class="m">3</span> <strong>Alerta roja crítica (días)</strong>: a partir de cuántos días se considera vencida.</li>
+      <li><span class="m">4</span> Botón <strong>“Guardar Tiempos”</strong>: aplica los valores.</li>
+      <li><span class="m">5</span> Sección <strong>Papelera</strong>: acceso directo a las recetas eliminadas.</li>
+      <li><span class="m">6</span> Botón <strong>“Abrir Papelera”</strong>.</li>
+      <li><span class="m">7</span> Sección <strong>“Acceso y Roles de Usuarios”</strong>: la lista de todo el personal.</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/25-administracion-2.png" alt="Gestión de usuarios y permisos">
+    <div class="cap"><b>Usuarios y permisos.</b> Con tres botones por persona: Médico, Funcionario y acceso a Farmacia.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> Cada usuario con su nombre, correo e <strong>insignias de permisos</strong> activos.</li>
+      <li><span class="m">2</span> Botón <strong>estetoscopio</strong>: activa o quita el permiso de Médico (autorizar/rechazar).</li>
+      <li><span class="m">3</span> Botón <strong>tabla</strong>: activa o quita el permiso de Funcionario (ingresar recetas).</li>
+      <li><span class="m">4</span> Botón <strong>escudo</strong>: da o retira el acceso general al módulo de Farmacia.</li>
+    </ol>
+  </div>
+  <div class="tip blue">
+    <b class="tip-title">💡 Cómo se usan</b>
+    <strong>Médico</strong> → la persona ve “Mi Panel” y puede autorizar/rechazar. <strong>Funcionario</strong> → puede ingresar y editar recetas.
+    <strong>Farmacia (escudo)</strong> → puede entrar al módulo. Un administrador puede tener varios permisos a la vez; los cambios se aplican al instante y la persona verá el efecto al volver a entrar.
+  </div>
+</section>
+
+<!-- ══════════════ 14. VISTA FUNCIONARIO ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#F97316,#F59E0B);">14</div>
+    <div><h2>La vista del funcionario</h2><div class="sub">Ingresar recetas de forma simple y segura</div></div>
+  </div>
+  <p class="lead">
+    El funcionario ve las <strong>mismas pestañas de recetas</strong> (Ctrl A/B/CECOSF y Crón A/B/CECOSF), pero
+    <strong>no ve</strong> Mi Panel, Inventario, Estadísticas ni Papelera. Su trabajo es <strong>ingresar y mantener las solicitudes</strong>.
+  </p>
+  <div class="fig">
+    <img src="screens/34-funcionario.png" alt="Tablero del funcionario">
+    <div class="cap"><b>Tablero del funcionario.</b> Pestañas de recetas, buscador y botón Nueva Solicitud.</div>
+  </div>
+  <div class="legend">
+    <ol>
+      <li><span class="m">1</span> Insignia <strong>📋 Funcionario</strong> en la barra superior (confirma su rol).</li>
+      <li><span class="m">2</span> Solo las <strong>pestañas de recetas</strong> (sin Inventario ni Estadísticas).</li>
+      <li><span class="m">3</span> Botón <strong>“Nueva Solicitud”</strong> para ingresar recetas.</li>
+    </ol>
+  </div>
+  <div class="fig">
+    <img src="screens/35-funcionario-modal.png" alt="Formulario del funcionario: estado fijo pendiente">
+    <div class="cap"><b>Formulario del funcionario (parte inferior).</b> El estado queda fijo en Pendiente.</div>
+  </div>
+  <div class="legend single">
+    <ol>
+      <li><span class="m">1</span> El estado queda <strong>fijo en “Pendiente”</strong>: “Solo un médico puede autorizar”. El funcionario no puede completar ni rechazar.</li>
+      <li><span class="m">2</span> El funcionario puede asignar el <strong>médico tratante</strong>.</li>
+      <li><span class="m">3</span> <strong>“Guardar Registro”</strong> deja la solicitud visible para los médicos.</li>
+    </ol>
+  </div>
+  <div class="tip green">
+    <b class="tip-title">✅ Flujo correcto</b>
+    Funcionario ingresa la solicitud → queda <strong>Pendiente</strong> → el médico la autoriza (elige medicamento y cantidad)
+    → la farmacia entrega e imprime el <strong>ticket</strong>. Así se mantiene la separación de responsabilidades.
+  </div>
+</section>
+
+<!-- ══════════════ 15. RESUMEN ROLES ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#1A55CC,#6C47E8);">15</div>
+    <div><h2>Resumen: qué puede hacer cada rol</h2><div class="sub">Tabla rápida de permisos</div></div>
+  </div>
+  <table class="roles-table">
+    <tr>
+      <th>Función</th>
+      <th>🩺 Médico</th>
+      <th>📋 Funcionario</th>
+      <th>🧪 Admin / Químico F.</th>
+    </tr>
+    <tr><td>Ver las listas de recetas (Ctrl/Crón por sector)</td><td class="yes">✔ Sí</td><td class="yes">✔ Sí</td><td class="yes">✔ Sí</td></tr>
+    <tr><td>Buscar y filtrar recetas</td><td class="yes">✔ Sí</td><td class="yes">✔ Sí</td><td class="yes">✔ Sí</td></tr>
+    <tr><td>Ingresar nuevas solicitudes</td><td class="yes">✔ Sí</td><td class="yes">✔ Sí</td><td class="yes">✔ Sí</td></tr>
+    <tr><td>Editar datos de una solicitud</td><td class="no">✘ No</td><td class="yes">✔ Sí</td><td class="yes">✔ Sí</td></tr>
+    <tr><td>Autorizar / rechazar recetas</td><td class="yes">✔ Sí (solo las asignadas a él o sin asignar)</td><td class="no">✘ No</td><td class="yes">✔ Sí</td></tr>
+    <tr><td>Ver “Mi Panel” personal</td><td class="yes">✔ Sí</td><td class="no">✘ No</td><td class="part">◐ Si tiene permiso médico</td></tr>
+    <tr><td>Imprimir tickets</td><td class="yes">✔ Sí</td><td class="yes">✔ Sí</td><td class="yes">✔ Sí</td></tr>
+    <tr><td>Ver historial de auditoría</td><td class="yes">✔ Sí</td><td class="yes">✔ Sí</td><td class="yes">✔ Sí</td></tr>
+    <tr><td>Enviar recetas a la papelera</td><td class="no">✘ No</td><td class="no">✘ No</td><td class="yes">✔ Sí</td></tr>
+    <tr><td>Restaurar / eliminar definitivo</td><td class="no">✘ No</td><td class="no">✘ No</td><td class="yes">✔ Sí</td></tr>
+    <tr><td>Ver Inventario (Stock)</td><td class="no">✘ No</td><td class="no">✘ No</td><td class="yes">✔ Sí</td></tr>
+    <tr><td>Subir el Excel de stock</td><td class="no">✘ No</td><td class="no">✘ No</td><td class="yes">✔ Sí</td></tr>
+    <tr><td>Ver Estadísticas</td><td class="no">✘ No</td><td class="no">✘ No</td><td class="yes">✔ Sí</td></tr>
+    <tr><td>Administrar usuarios y permisos</td><td class="no">✘ No</td><td class="no">✘ No</td><td class="yes">✔ Sí</td></tr>
+    <tr><td>Configurar tiempos de alerta</td><td class="no">✘ No</td><td class="no">✘ No</td><td class="yes">✔ Sí</td></tr>
+  </table>
+  <div class="tip blue">
+    <b class="tip-title">💡 Un usuario puede tener varios permisos</b>
+    Por ejemplo, un químico farmacéutico puede tener además el permiso 🩺 Médico y el 📋 Funcionario
+    activados, y entonces verá todas las secciones a la vez (como en las capturas de administración de esta guía).
+  </div>
+</section>
+
+<!-- ══════════════ 16. FAQ ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#1A55CC,#0BBDE8);">16</div>
+    <div><h2>Preguntas frecuentes y problemas comunes</h2><div class="sub">Soluciones rápidas a lo más habitual</div></div>
+  </div>
+  <div class="faq">
+    <div class="q">No recuerdo mi contraseña o no me deja entrar.</div>
+    <div class="a">El sistema no cambia contraseñas por sí solo. Contacte al <strong>encargado de informática</strong> o escriba a
+    <a href="mailto:difusionrodelillo@cmvalparaiso.cl"><strong>difusionrodelillo@cmvalparaiso.cl</strong></a> para gestionar las cuentas de acceso.</div>
+  </div>
+  <div class="faq">
+    <div class="q">Me aparece “Acceso Denegado” aunque mi clave es correcta.</div>
+    <div class="a">Su cuenta existe, pero no tiene el permiso de Farmacia activado. Solicítelo al <strong>encargado de informática</strong>
+    o escriba a <a href="mailto:difusionrodelillo@cmvalparaiso.cl"><strong>difusionrodelillo@cmvalparaiso.cl</strong></a>: la habilitación se realiza en
+    <strong>Administración → Acceso y Roles de Usuarios</strong> (botón de escudo).</div>
+  </div>
+  <div class="faq">
+    <div class="q">Soy médico y no veo la pestaña “Mi Panel”.</div>
+    <div class="a">“Mi Panel” solo aparece cuando la cuenta tiene el permiso de <strong>Médico</strong> activado (insignia 🩺 en la barra superior).
+    Si no la ve, solicítelo al <strong>encargado de informática</strong> (<a href="mailto:difusionrodelillo@cmvalparaiso.cl">difusionrodelillo@cmvalparaiso.cl</a>)
+    para que activen el permiso de Médico en su usuario.</div>
+  </div>
+  <div class="faq">
+    <div class="q">No encuentro una receta que ingresé.</div>
+    <div class="a">Revise que esté mirando la <strong>pestaña correcta</strong> (Ctrl vs. Crón y el sector A/B/CECOSF). También pruebe el <strong>buscador</strong> por nombre, RUT o medicamento, y revise que el filtro de estado esté en “Todos los estados”.</div>
+  </div>
+  <div class="faq">
+    <div class="q">La receta desapareció de la lista.</div>
+    <div class="a">Probablemente fue enviada a la <strong>papelera</strong>. Solicite su revisión al <strong>encargado de informática</strong>
+    o escriba a <a href="mailto:difusionrodelillo@cmvalparaiso.cl"><strong>difusionrodelillo@cmvalparaiso.cl</strong></a> para que la restauren si corresponde.</div>
+  </div>
+  <div class="faq">
+    <div class="q">¿Qué significa la franja roja de “solicitudes con tiempo vencido”?</div>
+    <div class="a">Que hay recetas pendientes que sobrepasaron su plazo (o los días máximos configurados). Deben atenderse <strong>de inmediato</strong>: aparecen en rojo en la tabla y con contador en las pestañas.</div>
+  </div>
+  <div class="faq">
+    <div class="q">¿Cuándo puedo imprimir el ticket?</div>
+    <div class="a">Solo cuando la receta está <strong>completada</strong>. Pase el mouse sobre la fila y use el botón de impresora.</div>
+  </div>
+  <div class="faq">
+    <div class="q">Rechacé una receta por error, ¿se perdió el stock?</div>
+    <div class="a">No. Si la receta ya había descontado stock, el sistema <strong>devuelve las unidades automáticamente</strong> al rechazar. Además, el administrador puede volver a editarla para dejarla pendiente.</div>
+  </div>
+  <div class="faq">
+    <div class="q">El stock de un medicamento aparece en rojo o amarillo, ¿qué hago?</div>
+    <div class="a">Rojo = agotado (0 unidades); amarillo = bajo (10 o menos). Avise al administrador para reponer o actualizar la planilla de stock.</div>
+  </div>
+  <div class="faq">
+    <div class="q">¿Quién puede ver los datos de los pacientes?</div>
+    <div class="a">Solo el personal con acceso al módulo. Los datos sensibles (nombre y RUT) se guardan <strong>cifrados</strong>, y todos los cambios quedan registrados en el historial de auditoría de cada receta.</div>
+  </div>
+  <div class="faq">
+    <div class="q">Quiero saber quién modificó una receta.</div>
+    <div class="a">Pase el mouse sobre la fila y abra el <strong>historial (botón de reloj)</strong>. Ahí se ve cada creación, cambio y envío a papelera, con nombre, correo, fecha y hora.</div>
+  </div>
+  <div class="faq">
+    <div class="q">¿Debo cerrar la sesión al terminar?</div>
+    <div class="a">Sí, especialmente en computadores compartidos. Use el botón de <strong>salir</strong> de la barra superior (último icono a la derecha).</div>
+  </div>
+</section>
+
+<!-- ══════════════ 17. DÍA TÍPICO ══════════════ -->
+<section class="guide page-inner">
+  <div class="sec-head">
+    <div class="sec-num" style="background:linear-gradient(135deg,#1A55CC,#0BBDE8);">17</div>
+    <div><h2>Un día típico de trabajo, paso a paso</h2><div class="sub">El circuito completo de una receta</div></div>
+  </div>
+  <h3><span class="t">Mañana</span>Revisión y prioridades</h3>
+  <ol class="steps">
+    <li><strong>Funcionarios:</strong> ingresan al sistema y revisan la <strong>franja roja</strong> y las pestañas con contador rojo (recetas vencidas).</li>
+    <li><strong>Funcionarios:</strong> registran las nuevas recetas de los pacientes con el botón <strong>“Nueva Solicitud”</strong>, en la pestaña de su sector.</li>
+    <li><strong>Administrador:</strong> revisa el <strong>inventario</strong> y, si corresponde, sube la planilla Excel de stock actualizada.</li>
+  </ol>
+  <h3><span class="t">Durante el día</span>Atención de recetas</h3>
+  <ol class="steps">
+    <li><strong>Médicos:</strong> abren <strong>“Mi Panel”</strong>, atienden primero las <strong>urgentes</strong> (rojas) y luego el resto de las pendientes.</li>
+    <li>Al autorizar, el médico elige el <strong>medicamento del inventario</strong>, la <strong>cantidad</strong> y los meses de renovación si corresponde. El stock se descuenta solo.</li>
+    <li>Si una receta no corresponde, el médico la <strong>rechaza con su motivo</strong>, que queda visible para el funcionario.</li>
+    <li><strong>Farmacia/funcionarios:</strong> buscan la receta completada, abren el <strong>ticket</strong> e imprimen para entregar al paciente.</li>
+  </ol>
+  <h3><span class="t">Cierre</span>Control y limpieza</h3>
+  <ol class="steps">
+    <li><strong>Administrador:</strong> revisa las <strong>estadísticas</strong> (pendientes por médico, urgentes, top de medicamentos).</li>
+    <li>Revisa la <strong>papelera</strong>: restaura lo que se eliminó por error y confirma las eliminaciones definitivas pendientes.</li>
+    <li>Todos cierran sesión con el botón de salir.</li>
+  </ol>
+  <div class="tip purple">
+    <b class="tip-title">🎯 La idea en una frase</b>
+    El funcionario ingresa, el médico autoriza, la farmacia entrega — y el sistema cuida los tiempos,
+    el stock y el registro de cada paso.
+  </div>
+</section>
+
+<!-- ══════════════ NOTA FINAL ══════════════ -->
+<div class="note-end page-inner">
+  <div class="box">
+    <h2>¡Eso es todo!</h2>
+    <p>
+      Con esta guía ya conoce cada pantalla y cada botón del sistema de Recetas de Farmacia.<br>
+      Ante cualquier duda o problema, contacte al <strong>encargado de informática</strong> o escriba a
+      <a href="mailto:difusionrodelillo@cmvalparaiso.cl"><strong>difusionrodelillo@cmvalparaiso.cl</strong></a>.
+    </p>
+    <p style="color:#8FA3C4; font-size:11px;">
+      Las imágenes de este manual son capturas reales del sistema con <strong>datos de ejemplo</strong>.
+    </p>
+  </div>
+</div>
+
+</body>
+</html>

@@ -155,7 +155,7 @@ export function EstadisticasAdmin({
         </div>
         <div>
           <h2 className="text-2xl font-black text-[#0F1B35]">Estadísticas Generales</h2>
-          <p className="text-[#7B90B5] text-sm mt-0.5">Resumen completo de todos los médicos y recetas del sistema</p>
+          <p className="text-[#5D7299] text-sm mt-0.5">Resumen completo de todos los médicos y recetas del sistema</p>
         </div>
       </div>
 
@@ -176,10 +176,10 @@ export function EstadisticasAdmin({
           <div key={label} className={`rounded-2xl border px-4 py-4 ${bg}`}>
             <div className="flex items-center gap-1.5 mb-2">
               <Icon className={`w-3 h-3 ${color}`} />
-              <p className="text-[10px] text-[#7B90B5] uppercase tracking-wider font-semibold leading-tight">{label}</p>
+              <p className="text-[11px] text-[#5D7299] uppercase tracking-wide font-semibold leading-tight">{label}</p>
             </div>
             <p className={`text-3xl font-black ${color}`}>{value}</p>
-            <p className="text-[10px] text-[#A8BDD8] mt-1">{sub}</p>
+            <p className="text-[11px] text-[#8FA3C4] mt-1">{sub}</p>
           </div>
         ))}
       </div>
@@ -187,7 +187,7 @@ export function EstadisticasAdmin({
       {/* Barra de resolución global */}
       <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-5">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-semibold text-[#7B90B5] uppercase tracking-wider">Tasa de resolución global</p>
+          <p className="text-xs font-semibold text-[#5D7299] uppercase tracking-wide">Tasa de resolución global</p>
           <p className="text-sm font-black text-[#0F1B35]">{pctResolucion}%</p>
         </div>
         <div className="h-2.5 bg-[#EEF3FC] rounded-full overflow-hidden">
@@ -196,7 +196,7 @@ export function EstadisticasAdmin({
             style={{ width: `${pctResolucion}%` }}
           />
         </div>
-        <div className="flex justify-between mt-2 text-[10px] text-[#A8BDD8]">
+        <div className="flex justify-between mt-2 text-[11px] text-[#8FA3C4]">
           <span>{completadasGlobal} completadas</span>
           <span>{pendientesGlobal} pendientes</span>
           <span>{rechazadasGlobal} rechazadas</span>
@@ -208,7 +208,7 @@ export function EstadisticasAdmin({
 
         {/* Por tipo/sector */}
         <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-5 space-y-4">
-          <p className="text-xs font-bold text-[#7B90B5] uppercase tracking-wider">Por tipo y sector</p>
+          <p className="text-xs font-bold text-[#5D7299] uppercase tracking-wide">Por tipo y sector</p>
           {porTipo.map(({ label, total, pendientes, completadas, vencidas, color, icon: Icon }) => (
             <div key={label} className="space-y-1.5">
               <div className="flex items-center justify-between">
@@ -216,13 +216,13 @@ export function EstadisticasAdmin({
                   <Icon className={`w-3.5 h-3.5 ${color}`} />
                   <span className="text-xs font-semibold text-[#0F1B35]">{label}</span>
                   {vencidas > 0 && (
-                    <span className="text-[10px] text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full font-bold">{vencidas} urgente{vencidas > 1 ? "s" : ""}</span>
+                    <span className="text-[11px] text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full font-bold">{vencidas} urgente{vencidas > 1 ? "s" : ""}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-3 text-[11px]">
                   <span className="text-yellow-700">{pendientes}⏳</span>
                   <span className="text-green-700">{completadas}✅</span>
-                  <span className="text-[#7B90B5] font-semibold">{total} total</span>
+                  <span className="text-[#5D7299] font-semibold">{total} total</span>
                 </div>
               </div>
               <MiniBar
@@ -236,13 +236,13 @@ export function EstadisticasAdmin({
 
         {/* Recetas más urgentes */}
         <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-5 space-y-3">
-          <p className="text-xs font-bold text-[#7B90B5] uppercase tracking-wider">
+          <p className="text-xs font-bold text-[#5D7299] uppercase tracking-wide">
             {urgentes.length > 0 ? "Recetas más urgentes" : "Sin recetas urgentes"}
           </p>
           {urgentes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 gap-2">
               <CheckCircle2 className="w-8 h-8 text-green-500/40" />
-              <p className="text-sm text-[#7B90B5]">¡Todo en tiempo!</p>
+              <p className="text-sm text-[#5D7299]">¡Todo en tiempo!</p>
             </div>
           ) : (
             <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
@@ -251,23 +251,23 @@ export function EstadisticasAdmin({
                   <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-[#0F1B35] truncate">{r.nombrePaciente}</p>
-                    <p className="text-[10px] text-brand-purple font-medium truncate">{r.medicamento}</p>
+                    <p className="text-[11px] text-brand-purple font-medium truncate">{r.medicamento}</p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className="text-[10px] text-[#7B90B5]">
+                      <span className="text-[11px] text-[#5D7299]">
                         {r.tipo === "controlado" ? "💊" : "📋"} {r.sector}
                       </span>
                       {r.medicoReceta
-                        ? <span className="text-[10px] text-brand-blue">Dr(a). {r.medicoReceta}</span>
-                        : <span className="text-[10px] text-[#A8BDD8] italic">Sin asignar</span>
+                        ? <span className="text-[11px] text-brand-blue">Dr(a). {r.medicoReceta}</span>
+                        : <span className="text-[11px] text-[#8FA3C4] italic">Sin asignar</span>
                       }
-                      <span className="text-[10px] text-red-600 font-bold">
+                      <span className="text-[11px] text-red-600 font-bold">
                         {r.fechaLimite
                           ? `Venció hace ${Math.abs(daysToDeadline(r.fechaLimite))}d`
                           : `${daysSince(r.fechaSolicitud)}d activa`}
                       </span>
                     </div>
                   </div>
-                  <span className="text-[10px] text-[#A8BDD8] flex-shrink-0">{formatDate(r.fechaSolicitud)}</span>
+                  <span className="text-[11px] text-[#8FA3C4] flex-shrink-0">{formatDate(r.fechaSolicitud)}</span>
                 </div>
               ))}
             </div>
@@ -279,11 +279,11 @@ export function EstadisticasAdmin({
       <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-brand-blue" />
-          <p className="text-xs font-bold text-[#7B90B5] uppercase tracking-wider">Actividad por médico</p>
+          <p className="text-xs font-bold text-[#5D7299] uppercase tracking-wide">Actividad por médico</p>
         </div>
 
         {porMedico.length === 0 ? (
-          <p className="text-sm text-[#7B90B5] text-center py-6">No hay médicos registrados con recetas aún.</p>
+          <p className="text-sm text-[#5D7299] text-center py-6">No hay médicos registrados con recetas aún.</p>
         ) : (
           <div className="space-y-3">
             {porMedico.map(({ medico, total, pendientes, completadas, rechazadas, vencidas, pct }) => (
@@ -298,7 +298,7 @@ export function EstadisticasAdmin({
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold text-sm text-[#0F1B35]">Dr(a). {medico.name}</p>
                       {vencidas.length > 0 && (
-                        <span className="text-[10px] text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full font-bold animate-pulse">
+                        <span className="text-[11px] text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full font-bold animate-pulse">
                           {vencidas.length} urgente{vencidas.length > 1 ? "s" : ""}
                         </span>
                       )}
@@ -312,10 +312,10 @@ export function EstadisticasAdmin({
                       <span className="flex items-center gap-1 text-green-700">
                         <CheckCircle2 className="w-3 h-3" /> {completadas.length} autorizada{completadas.length !== 1 ? "s" : ""}
                       </span>
-                      <span className="flex items-center gap-1 text-[#7B90B5]">
+                      <span className="flex items-center gap-1 text-[#5D7299]">
                         <XCircle className="w-3 h-3" /> {rechazadas.length} rechazada{rechazadas.length !== 1 ? "s" : ""}
                       </span>
-                      <span className="text-[#A8BDD8] ml-auto">{total} total</span>
+                      <span className="text-[#8FA3C4] ml-auto">{total} total</span>
                     </div>
 
                     {/* Barra de progreso del médico */}
@@ -335,7 +335,7 @@ export function EstadisticasAdmin({
                             style={{ width: `${(rechazadas.length / total) * 100}%` }}
                           />
                         </div>
-                        <p className="text-[10px] text-[#A8BDD8]">{pct}% resueltas</p>
+                        <p className="text-[11px] text-[#8FA3C4]">{pct}% resueltas</p>
                       </div>
                     )}
                   </div>
@@ -350,16 +350,16 @@ export function EstadisticasAdmin({
       <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Pill className="w-4 h-4 text-brand-purple" />
-          <p className="text-xs font-bold text-[#7B90B5] uppercase tracking-wider">Top Medicamentos Entregados</p>
+          <p className="text-xs font-bold text-[#5D7299] uppercase tracking-wide">Top Medicamentos Entregados</p>
         </div>
 
         {topMedicamentos.length === 0 ? (
-          <p className="text-sm text-[#7B90B5] text-center py-6">No hay datos de medicamentos entregados aún.</p>
+          <p className="text-sm text-[#5D7299] text-center py-6">No hay datos de medicamentos entregados aún.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-[#DDE6F5] text-[10px] uppercase tracking-wider text-[#7B90B5]">
+                <tr className="border-b border-[#DDE6F5] text-[11px] uppercase tracking-wide text-[#5D7299]">
                   <th className="pb-3 px-2 font-bold">Medicamento</th>
                   <th className="pb-3 px-2 font-bold text-center">Unidades Total</th>
                   <th className="pb-3 px-2 font-bold text-center">Cant. Recetas</th>
@@ -371,16 +371,16 @@ export function EstadisticasAdmin({
                   <tr key={med.nombre} className="border-b border-[#EEF3FC] last:border-0 hover:bg-white transition-colors">
                     <td className="py-3 px-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-[#A8BDD8] font-bold text-xs w-4">{idx + 1}.</span>
-                        <span className="font-semibold text-brand-purple">{med.nombre}</span>
+                        <span className="text-[#8FA3C4] font-bold text-xs w-4">{idx + 1}.</span>
+                        <span className="font-semibold text-brand-indigo">{med.nombre}</span>
                       </div>
                     </td>
                     <td className="py-3 px-2 text-center font-black text-[#0F1B35]">{med.totalUnidades}</td>
-                    <td className="py-3 px-2 text-center text-[#7B90B5] font-medium">{med.countRecetas}</td>
+                    <td className="py-3 px-2 text-center text-[#5D7299] font-medium">{med.countRecetas}</td>
                     <td className="py-3 px-2 text-right">
                       <div className="flex flex-col items-end">
                         <span className="font-semibold text-brand-blue text-xs">Dr(a). {med.medicoFrecuente}</span>
-                        <span className="text-[10px] text-[#A8BDD8]">{med.medicoRecetas} recetas</span>
+                        <span className="text-[11px] text-[#8FA3C4]">{med.medicoRecetas} recetas</span>
                       </div>
                     </td>
                   </tr>
