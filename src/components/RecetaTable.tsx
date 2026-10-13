@@ -1,10 +1,11 @@
 import { useState } from "react";
 import type { Receta, FarmaciaConfig, FarmaciaUser } from "../types";
-import { CheckCircle2, XCircle, Clock, Trash2, Edit, Printer, Plus, ChevronDown, ChevronRight } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Trash2, Edit, Printer, Plus, ChevronDown, ChevronRight, History } from "lucide-react";
 import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { RecetaModal } from "./RecetaModal";
 import { TicketModal } from "./TicketModal";
+import { AuditoriaDrawer } from "./AuditoriaDrawer";
 import { getItemsDeReceta, getEstadoItemRenovacion } from "../lib/recetaHelpers";
 
 export function RecetaTable({ 
@@ -27,6 +28,7 @@ export function RecetaTable({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReceta, setEditingReceta] = useState<Receta | null>(null);
   const [ticketReceta, setTicketReceta] = useState<Receta | null>(null);
+  const [auditoriaReceta, setAuditoriaReceta] = useState<Receta | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const toggleRow = (id: string) => setExpandedRows(prev => {
@@ -261,6 +263,13 @@ export function RecetaTable({
                         >
                           <Edit className="w-4 h-4" />
                         </button>
+                        <button
+                          onClick={() => setAuditoriaReceta(receta)}
+                          className="p-1.5 text-[#5D7299] hover:text-brand-purple hover:bg-brand-purple/10 rounded-lg transition-colors"
+                          title="Historial de cambios"
+                        >
+                          <History className="w-4 h-4" />
+                        </button>
                         {(isAdmin || farmaciaUser.email === "ssanchez@cmvalparaiso.cl") && (
                           <button 
                             onClick={() => handleDelete(receta)}
@@ -297,6 +306,15 @@ export function RecetaTable({
         <TicketModal 
           receta={ticketReceta}
           onClose={() => setTicketReceta(null)}
+        />
+      )}
+
+      {auditoriaReceta && (
+        <AuditoriaDrawer
+          recetaId={auditoriaReceta.id}
+          collectionName={auditoriaReceta.tipo === "controlado" ? "recetas_controladas" : "recetas_cronicas"}
+          paciente={auditoriaReceta.nombrePaciente}
+          onClose={() => setAuditoriaReceta(null)}
         />
       )}
 

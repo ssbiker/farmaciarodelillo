@@ -60,7 +60,34 @@ export function RecetaModal({
   const isDoctorMode = soloAutorizacion || isDoctorUser;
   const [formTipo, setFormTipo] = useState<"controladas" | "cronicas">(tipo);
   const [formSector, setFormSector] = useState<"A" | "B" | "CECOSF">(sector);
+  const [recetaVinculada, setRecetaVinculada] = useState<Receta | null>(null);
   const comboboxRef = useRef<HTMLDivElement>(null);
+
+  const recetaObjetivo = receta || recetaVinculada;
+
+  const vincularReceta = (r: Receta) => {
+    setRecetaVinculada(r);
+    setFormTipo(r.tipo === "controlado" ? "controladas" : "cronicas");
+    setFormSector(r.sector);
+    setForm(prev => ({
+      ...prev,
+      nombrePaciente: r.nombrePaciente,
+      rut: r.rut,
+      nota: r.nota || prev.nota,
+      estado: r.estado === "rechazado" ? "completado" : r.estado,
+    }));
+    const itemsExistentes = getItemsDeReceta(r).map(it => ({ ...it }));
+    if (itemsExistentes.length === 1 && itemsExistentes[0].medicamento === "SOLICITUD_RECETA") {
+      setFormItems([nuevoItemVacio()]);
+    } else {
+      setFormItems([...itemsExistentes, nuevoItemVacio()]);
+    }
+  };
+
+  const desvincularReceta = () => {
+    setRecetaVinculada(null);
+    setFormItems([nuevoItemVacio()]);
+  };
 
   // Buscar recetas activas del mismo RUT (en tiempo real basado en la prop)
   const rutNormalizado = form.rut.replace(/[^0-9kK]/gi, "").toUpperCase();
@@ -81,7 +108,7 @@ export function RecetaModal({
           </p>
           <p className="text-xs text-amber-700 mt-0.5">
             {isDoctorMode
-              ? "Este paciente ya tiene medicamentos prescritos. Puede abrir cada receta para agregar un nuevo medicamento sin crear un expediente duplicado."
+              ? "Este paciente ya tiene medicamentos prescritos. Puede presionar 'Agregar medicamento a esta receta' para incorporar nuevos fármacos sin duplicar recetas."
               : "Este paciente ya cuenta con recetas en el sistema. Verifique con el médico tratante antes de crear una nueva solicitud."
             }
           </p>
@@ -90,8 +117,11 @@ export function RecetaModal({
       <div className="space-y-1.5">
         {recetasActivasDelPaciente.slice(0, 3).map(r => {
           const items = getItemsDeReceta(r);
+          const yaVinculada = recetaVinculada?.id === r.id;
           return (
-            <div key={r.id} className="bg-white border border-amber-200 rounded-xl px-3 py-2">
+            <div key={r.id} className={`bg-white border rounded-xl px-3 py-2.5 transition-all ${
+              yaVinculada ? "border-brand-blue ring-2 ring-brand-blue/20 bg-blue-50/40" : "border-amber-200"
+            }`}>
               <div className="flex justify-between items-start gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] font-bold text-amber-800">
@@ -113,6 +143,25 @@ export function RecetaModal({
                   "bg-yellow-100 text-yellow-700"
                 }`}>{r.estado}</span>
               </div>
+
+              {/* Botón para que el médico agregue fármacos directamente a esta receta */}
+              {isDoctorMode && !receta && (
+                <div className="mt-2 pt-2 border-t border-amber-100 flex justify-end">
+                  {yaVinculada ? (
+                    <span className="text-xs font-bold text-brand-blue flex items-center gap-1">
+                      ✓ Receta seleccionada para agregar fármaco
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => vincularReceta(r)}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-blue bg-brand-blue/10 hover:bg-brand-blue/20 border border-brand-blue/20 rounded-lg px-2.5 py-1 transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Agregar medicamento a esta receta
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
@@ -151,6 +200,7 @@ export function RecetaModal({
   }, []);
 
   useEffect(() => {
+    setRecetaVinculada(null);
     setFormTipo(tipo);
     setFormSector(sector);
     if (receta) {
@@ -198,13 +248,13 @@ export function RecetaModal({
   if (!isOpen) return null;
 
   const collectionName = tipo === "controladas" ? "recetas_controladas" : "recetas_cronicas";
-  const targetCollection = !receta
+  const targetCollection = !recetaObjetivo
     ? (formTipo === "controladas" ? "recetas_controladas" : "recetas_cronicas")
-    : collectionName;
-  const targetSector = !receta ? formSector : sector;
-  const targetTipo = !receta
+    : (recetaObjetivo.tipo === "controlado" ? "recetas_controladas" : "recetas_cronicas");
+  const targetSector = !recetaObjetivo ? formSector : recetaObjetivo.sector;
+  const targetTipo = !recetaObjetivo
     ? (formTipo === "controladas" ? "controlado" : "cronico")
-    : (tipo === "controladas" ? "controlado" : "cronico");
+    : (recetaObjetivo.tipo === "controlado" ? "controlado" : "cronico");
 
   const formatRut = (raw: string) => {
     const clean = raw.replace(/[^0-9kK]/g, "").toUpperCase();
@@ -277,9 +327,10 @@ export function RecetaModal({
       const now = Timestamp.now();
 
       if (isDoctorMode) {
-        if (receta) {
+        if (recetaObjetivo) {
           // ── Modo médico: guarda items[] + estado en receta existente ──────────────────────────────
-          const snapAntes = await getDoc(doc(db, collectionName, receta.id));
+          const targetDocCollection = recetaObjetivo.tipo === "controlado" ? "recetas_controladas" : "recetas_cronicas";
+          const snapAntes = await getDoc(doc(db, targetDocCollection, recetaObjetivo.id));
           const dataAntes = snapAntes.data() as Record<string, unknown>;
 
           // Mantener mesesDescontados de los items que ya existían
@@ -302,28 +353,28 @@ export function RecetaModal({
             items: itemsConMeses,
             actualizadoEn: now,
             medicoReceta: form.estado !== "pendiente"
-              ? (receta.medicoReceta || farmaciaUser.name)
-              : receta.medicoReceta,
+              ? (recetaObjetivo.medicoReceta || farmaciaUser.name)
+              : recetaObjetivo.medicoReceta,
             medicoUid: form.estado !== "pendiente"
-              ? (receta.medicoUid || farmaciaUser.id)
-              : receta.medicoUid,
-            fechaReceta: form.estado === "completado" ? (receta.fechaReceta ?? now) : null,
+              ? (recetaObjetivo.medicoUid || farmaciaUser.id)
+              : recetaObjetivo.medicoUid,
+            fechaReceta: form.estado === "completado" ? (recetaObjetivo.fechaReceta ?? now) : null,
             motivoRechazo: form.estado === "rechazado" ? (form.motivoRechazo || "") : "",
           };
           const payloadCifrado = encryptRecetaFields(payload as any);
-          await updateDoc(doc(db, collectionName, receta.id), payloadCifrado);
+          await updateDoc(doc(db, targetDocCollection, recetaObjetivo.id), payloadCifrado);
           const cambios = detectarCambios(
             dataAntes,
             payloadCifrado as Record<string, unknown>,
             ["estado", "medicoReceta", "motivoRechazo", "medicamento", "cantidad", "items"]
           );
-          await registrarAccion(collectionName, receta.id, "MODIFICACION", farmaciaUser, cambios);
+          await registrarAccion(targetDocCollection, recetaObjetivo.id, "MODIFICACION", farmaciaUser, cambios);
 
           // ── Lógica de stock por ítem ──────────────────────────────────────────
           const { increment, updateDoc: uDoc, doc: fDoc } = await import("firebase/firestore");
           const oldItems: ItemReceta[] = Array.isArray(dataAntes.items)
             ? (dataAntes.items as ItemReceta[])
-            : getItemsDeReceta(receta);
+            : getItemsDeReceta(recetaObjetivo);
 
           if (payload.estado === "rechazado") {
             // Devolver stock de todos los ítems que ya se habían descontado
@@ -336,7 +387,7 @@ export function RecetaModal({
             });
             // Marcar mesesDescontados = 0 en todos los ítems
             const itemsReset = itemsConMeses.map(it => ({ ...it, mesesDescontados: 0, autoRenovacion: 0 }));
-            await updateDoc(doc(db, collectionName, receta.id), { items: itemsReset });
+            await updateDoc(doc(db, targetDocCollection, recetaObjetivo.id), { items: itemsReset });
 
           } else {
             // Para cada ítem nuevo/modificado, calcular delta de stock
@@ -380,7 +431,7 @@ export function RecetaModal({
             }
 
             // Guardar items actualizados con mesesDescontados correctos
-            await updateDoc(doc(db, collectionName, receta.id), { items: itemsActualizados });
+            await updateDoc(doc(db, targetDocCollection, recetaObjetivo.id), { items: itemsActualizados });
           }
         } else {
           // ── Modo médico: CREAR NUEVA RECETA CON MULTI-MEDICAMENTO ──────────────────
@@ -455,17 +506,18 @@ export function RecetaModal({
           motivoRechazo: form.estado === "rechazado" ? (form.motivoRechazo || "") : "",
         };
 
-        if (receta) {
-          const snapAntes = await getDoc(doc(db, collectionName, receta.id));
+        if (recetaObjetivo) {
+          const targetDocCollection = recetaObjetivo.tipo === "controlado" ? "recetas_controladas" : "recetas_cronicas";
+          const snapAntes = await getDoc(doc(db, targetDocCollection, recetaObjetivo.id));
           const dataAntes = snapAntes.data() as Record<string, unknown>;
           const payloadCifrado = encryptRecetaFields(payload);
-          await updateDoc(doc(db, collectionName, receta.id), payloadCifrado);
+          await updateDoc(doc(db, targetDocCollection, recetaObjetivo.id), payloadCifrado);
           const cambios = detectarCambios(
             dataAntes,
             payloadCifrado as Record<string, unknown>,
             ["nombrePaciente", "rut", "medicamento", "nota", "estado", "medicoReceta", "fechaLimite", "autoRenovacion", "motivoRechazo", "cantidad"]
           );
-          await registrarAccion(collectionName, receta.id, "MODIFICACION", farmaciaUser, cambios);
+          await registrarAccion(targetDocCollection, recetaObjetivo.id, "MODIFICACION", farmaciaUser, cambios);
           
           // Lógica de stock si se rechaza una receta que ya había descontado
           // O si cambia la cantidad (simplificado: si se rechaza, devolvemos el stock; si cambia cantidad, ajustamos)
@@ -546,7 +598,9 @@ export function RecetaModal({
         <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#DDE6F5] bg-[#F8FAFF] rounded-t-3xl">
           <div>
             <h2 className="text-xl font-black text-[#0F1B35]">
-              {isDoctorMode && receta
+              {recetaVinculada
+                ? "Agregar Fármaco a Receta Activa"
+                : isDoctorMode && receta
                 ? "Autorizar / Rechazar Receta"
                 : isDoctorMode && !receta
                 ? "Nueva Receta Médica"
@@ -555,7 +609,11 @@ export function RecetaModal({
                 : "Nueva Solicitud"}
             </h2>
             <p className="text-xs text-[#5D7299] mt-0.5">
-              {!receta ? (
+              {recetaVinculada ? (
+                <span>
+                  {recetaVinculada.tipo === "controlado" ? "💊 Controlada" : "🩺 Crónica"} — Sector {recetaVinculada.sector} (Prescripción activa)
+                </span>
+              ) : !receta ? (
                 <span>
                   {formTipo === "controladas" ? "💊 Controlada" : "🩺 Crónica"} — Sector {formSector}
                 </span>
@@ -675,6 +733,30 @@ export function RecetaModal({
 
               {bannerRecetasActivas}
 
+              {/* Banner receta vinculada */}
+              {recetaVinculada && (
+                <div className="bg-blue-50 border border-brand-blue/30 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl flex-shrink-0">📎</span>
+                    <div>
+                      <p className="text-xs font-bold text-brand-blue-dark uppercase tracking-wider">
+                        Agregando fármaco a Receta activa ({recetaVinculada.tipo === "controlado" ? "Controlada" : "Crónica"} · Sector {recetaVinculada.sector})
+                      </p>
+                      <p className="text-xs text-[#3D5278] mt-0.5">
+                        Los medicamentos previos se conservan intactos. Solo se descontará del inventario el nuevo fármaco prescrito.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={desvincularReceta}
+                    className="text-xs font-semibold text-red-600 hover:text-red-700 bg-white border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-xl transition-colors shadow-sm flex-shrink-0"
+                  >
+                    Desvincular
+                  </button>
+                </div>
+              )}
+
               {/* Lista de medicamentos — editable por el médico */}
               <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
@@ -682,196 +764,233 @@ export function RecetaModal({
                   <span className="text-[11px] text-[#8FA3C4]">{formItems.length} ítem{formItems.length !== 1 ? "s" : ""}</span>
                 </div>
 
-                {formItems.map((item, idx) => (
-                  <div key={idx} className="bg-white border border-[#DDE6F5] rounded-xl p-3 space-y-2.5">
-                    {/* Encabezado del ítem */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-[#5D7299] uppercase tracking-widest">
-                        Medicamento {idx + 1}
-                        {item.medicamento === "SOLICITUD_RECETA" && (
-                          <span className="ml-2 text-amber-600 normal-case font-semibold">— Solicitud sin med.</span>
-                        )}
-                      </span>
-                      {/* Solo mostrar quitar si hay más de 1 ítem */}
-                      {formItems.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFormItems(prev => prev.filter((_, i) => i !== idx));
-                            setActiveComboIdx(null);
-                          }}
-                          className="flex items-center gap-1 text-[11px] text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-3 h-3" /> Quitar
-                        </button>
-                      )}
-                    </div>
+                {formItems.map((item, idx) => {
+                  const isItemExistente = Boolean(
+                    (recetaObjetivo && (item.mesesDescontados ?? 0) > 0) ||
+                    (recetaVinculada && idx < getItemsDeReceta(recetaVinculada).length)
+                  );
 
-                    {/* Aviso de solicitud genérica */}
-                    {item.medicamento === "SOLICITUD_RECETA" && (
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2">
-                        <span className="text-sm">📋</span>
-                        <p className="text-xs text-amber-700 font-semibold">Asigne un medicamento del inventario</p>
-                      </div>
-                    )}
-
-                    {/* Combobox de medicamento */}
-                    <div className="relative">
-                      <label className={labelClass}>Medicamento</label>
-                      <input
-                        required={item.medicamento !== "SOLICITUD_RECETA"}
-                        type="text"
-                        placeholder="Buscar en el inventario..."
-                        value={item.medicamento === "SOLICITUD_RECETA" ? "" : item.medicamento}
-                        onChange={(e) => {
-                          setFormItems(prev => prev.map((it, i) =>
-                            i === idx ? { ...it, medicamento: e.target.value, codigoMedicamento: "" } : it
-                          ));
-                          setActiveComboIdx(idx);
-                        }}
-                        onFocus={() => setActiveComboIdx(idx)}
-                        className={`${inputClass} text-brand-indigo font-semibold placeholder-brand-indigo/30 focus:border-brand-indigo border-brand-indigo/30`}
-                      />
-                      {activeComboIdx === idx && (
-                        <div className="absolute z-20 w-full mt-1 bg-white border border-[#DDE6F5] rounded-xl shadow-lg max-h-52 overflow-y-auto">
-                          {inventario
-                            .filter(inv =>
-                              inv.nombre.toLowerCase().includes(item.medicamento.toLowerCase()) ||
-                              inv.codigo.includes(item.medicamento)
-                            )
-                            .slice(0, 50)
-                            .map(inv => (
-                              <div
-                                key={inv.codigo}
-                                className="px-4 py-2 hover:bg-[#F0F4FF] cursor-pointer flex justify-between items-center border-b border-[#EEF3FC] last:border-0"
-                                onMouseDown={(e) => {
-                                  e.preventDefault(); // evitar blur antes de click
-                                  setFormItems(prev => prev.map((it, i) =>
-                                    i === idx ? { ...it, medicamento: inv.nombre, codigoMedicamento: inv.codigo } : it
-                                  ));
-                                  setActiveComboIdx(null);
-                                }}
-                              >
-                                <span className="text-sm font-semibold text-[#0F1B35]">{inv.nombre}</span>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${inv.stock <= 0 ? "bg-red-50 text-red-600" : "bg-green-50 text-green-700"}`}>
-                                  Stock: {inv.stock}
-                                </span>
-                              </div>
-                            ))}
-                          {inventario.length === 0 && (
-                            <div className="px-4 py-3 text-sm text-[#5D7299] italic">No hay inventario cargado.</div>
+                  return (
+                    <div key={idx} className="bg-white border border-[#DDE6F5] rounded-xl p-3 space-y-2.5">
+                      {/* Encabezado del ítem */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-[#5D7299] uppercase tracking-widest flex items-center gap-1.5">
+                          Medicamento {idx + 1}
+                          {item.medicamento === "SOLICITUD_RECETA" && (
+                            <span className="text-amber-600 normal-case font-semibold">— Solicitud sin med.</span>
                           )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Cantidad + Auto-renovación en fila */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className={labelClass} title="Cantidad total a despachar">Cant. (Unid.)</label>
-                        <input
-                          required
-                          type="number"
-                          min="1"
-                          placeholder="Ej: 30"
-                          value={item.cantidad > 0 ? item.cantidad : ""}
-                          onChange={(e) => setFormItems(prev => prev.map((it, i) =>
-                            i === idx ? { ...it, cantidad: Number(e.target.value) } : it
-                          ))}
-                          className={`${inputClass} text-center font-bold`}
-                        />
+                        </span>
+                        {isItemExistente ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#5D7299] bg-[#EFF3FB] border border-[#DDE6F5] px-2 py-0.5 rounded-lg">
+                            <Lock className="w-3 h-3 text-[#8FA3C4]" /> Prescrito previamente
+                          </span>
+                        ) : formItems.length > 1 ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormItems(prev => prev.filter((_, i) => i !== idx));
+                              setActiveComboIdx(null);
+                            }}
+                            className="flex items-center gap-1 text-[11px] text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" /> Quitar
+                          </button>
+                        ) : null}
                       </div>
-                      <div>
-                        <label className={labelClass}>Auto-Renovación</label>
-                        <select
-                          value={item.autoRenovacion ?? 0}
-                          onChange={(e) => setFormItems(prev => prev.map((it, i) =>
-                            i === idx ? { ...it, autoRenovacion: Number(e.target.value) } : it
-                          ))}
-                          className={`${inputClass} text-sm`}
-                        >
-                          <option value={0}>Sin renovación</option>
-                          <option value={1}>1 mes</option>
-                          <option value={2}>2 meses</option>
-                          <option value={3}>3 meses</option>
-                          <option value={4}>4 meses</option>
-                          <option value={5}>5 meses</option>
-                          <option value={6}>6 meses</option>
-                        </select>
-                      </div>
-                    </div>
 
-                    {/* Asistente matemático por ítem */}
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (calcOpenIdx === idx) {
-                            setCalcOpenIdx(null);
-                          } else {
-                            setCalcOpenIdx(idx);
-                            runCalculadora(calcDosis, calcHoras, calcDias, idx);
-                          }
-                        }}
-                        className="text-[11px] text-brand-blue font-bold flex items-center gap-1 hover:underline outline-none"
-                      >
-                        {calcOpenIdx === idx ? "Ocultar asistente de cálculo" : "✦ Asistente de cálculo matemático"}
-                      </button>
-                      {calcOpenIdx === idx && (
-                        <div className="mt-2 bg-brand-blue/5 border border-brand-blue/15 rounded-xl p-3 flex flex-wrap gap-3 items-end">
+                      {isItemExistente ? (
+                        <div className="space-y-2">
                           <div>
-                            <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Dosis (u.)</label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.5"
-                              value={calcDosis}
-                              onChange={(e) => {
-                                setCalcDosis(e.target.value);
-                                runCalculadora(e.target.value, calcHoras, calcDias, idx);
-                              }}
-                              className="w-16 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center font-bold focus:border-brand-blue outline-none"
-                            />
+                            <label className={labelClass}>Medicamento</label>
+                            <div className={`${inputDisabledClass} font-semibold text-brand-indigo`}>
+                              {item.medicamento}
+                            </div>
                           </div>
-                          <div className="pb-1.5 text-[#5D7299] text-xs font-bold">cada</div>
-                          <div>
-                            <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Horas</label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={calcHoras}
-                              onChange={(e) => {
-                                setCalcHoras(e.target.value);
-                                runCalculadora(calcDosis, e.target.value, calcDias, idx);
-                              }}
-                              className="w-16 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center font-bold focus:border-brand-blue outline-none"
-                            />
-                          </div>
-                          <div className="pb-1.5 text-[#5D7299] text-xs font-bold">por</div>
-                          <div>
-                            <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Días</label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={calcDias}
-                              onChange={(e) => {
-                                setCalcDias(e.target.value);
-                                runCalculadora(calcDosis, calcHoras, e.target.value, idx);
-                              }}
-                              className="w-16 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center font-bold focus:border-brand-blue outline-none"
-                            />
-                          </div>
-                          <div className="pb-1.5 ml-auto text-right">
-                            <span className="text-[10px] font-bold text-brand-blue/70 uppercase block">Total calculado</span>
-                            <span className="text-sm font-black text-brand-blue bg-white border border-brand-blue/20 rounded-lg px-2.5 py-1 inline-block shadow-sm">
-                              {Math.ceil((24 / (parseFloat(calcHoras) || 24)) * (parseFloat(calcDosis) || 0) * (parseFloat(calcDias) || 0))} unid.
-                            </span>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className={labelClass}>Cant. (Unid.)</label>
+                              <div className={`${inputDisabledClass} text-center font-bold`}>
+                                {item.cantidad}
+                              </div>
+                            </div>
+                            <div>
+                              <label className={labelClass}>Auto-Renovación</label>
+                              <div className={`${inputDisabledClass} text-sm font-semibold`}>
+                                {item.autoRenovacion ? `${item.autoRenovacion} meses` : "Sin renovación"}
+                              </div>
+                            </div>
                           </div>
                         </div>
+                      ) : (
+                        <>
+                          {/* Aviso de solicitud genérica */}
+                          {item.medicamento === "SOLICITUD_RECETA" && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2">
+                              <span className="text-sm">📋</span>
+                              <p className="text-xs text-amber-700 font-semibold">Asigne un medicamento del inventario</p>
+                            </div>
+                          )}
+
+                          {/* Combobox de medicamento */}
+                          <div className="relative">
+                            <label className={labelClass}>Medicamento</label>
+                            <input
+                              required={item.medicamento !== "SOLICITUD_RECETA"}
+                              type="text"
+                              placeholder="Buscar en el inventario..."
+                              value={item.medicamento === "SOLICITUD_RECETA" ? "" : item.medicamento}
+                              onChange={(e) => {
+                                setFormItems(prev => prev.map((it, i) =>
+                                  i === idx ? { ...it, medicamento: e.target.value, codigoMedicamento: "" } : it
+                                ));
+                                setActiveComboIdx(idx);
+                              }}
+                              onFocus={() => setActiveComboIdx(idx)}
+                              className={`${inputClass} text-brand-indigo font-semibold placeholder-brand-indigo/30 focus:border-brand-indigo border-brand-indigo/30`}
+                            />
+                            {activeComboIdx === idx && (
+                              <div className="absolute z-20 w-full mt-1 bg-white border border-[#DDE6F5] rounded-xl shadow-lg max-h-52 overflow-y-auto">
+                                {inventario
+                                  .filter(inv =>
+                                    inv.nombre.toLowerCase().includes(item.medicamento.toLowerCase()) ||
+                                    inv.codigo.includes(item.medicamento)
+                                  )
+                                  .slice(0, 50)
+                                  .map(inv => (
+                                    <div
+                                      key={inv.codigo}
+                                      className="px-4 py-2 hover:bg-[#F0F4FF] cursor-pointer flex justify-between items-center border-b border-[#EEF3FC] last:border-0"
+                                      onMouseDown={(e) => {
+                                        e.preventDefault(); // evitar blur antes de click
+                                        setFormItems(prev => prev.map((it, i) =>
+                                          i === idx ? { ...it, medicamento: inv.nombre, codigoMedicamento: inv.codigo } : it
+                                        ));
+                                        setActiveComboIdx(null);
+                                      }}
+                                    >
+                                      <span className="text-sm font-semibold text-[#0F1B35]">{inv.nombre}</span>
+                                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${inv.stock <= 0 ? "bg-red-50 text-red-600" : "bg-green-50 text-green-700"}`}>
+                                        Stock: {inv.stock}
+                                      </span>
+                                    </div>
+                                  ))}
+                                {inventario.length === 0 && (
+                                  <div className="px-4 py-3 text-sm text-[#5D7299] italic">No hay inventario cargado.</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Cantidad + Auto-renovación en fila */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className={labelClass} title="Cantidad total a despachar">Cant. (Unid.)</label>
+                              <input
+                                required
+                                type="number"
+                                min="1"
+                                placeholder="Ej: 30"
+                                value={item.cantidad > 0 ? item.cantidad : ""}
+                                onChange={(e) => setFormItems(prev => prev.map((it, i) =>
+                                  i === idx ? { ...it, cantidad: Number(e.target.value) } : it
+                                ))}
+                                className={`${inputClass} text-center font-bold`}
+                              />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Auto-Renovación</label>
+                              <select
+                                value={item.autoRenovacion ?? 0}
+                                onChange={(e) => setFormItems(prev => prev.map((it, i) =>
+                                  i === idx ? { ...it, autoRenovacion: Number(e.target.value) } : it
+                                ))}
+                                className={`${inputClass} text-sm`}
+                              >
+                                <option value={0}>Sin renovación</option>
+                                <option value={1}>1 mes</option>
+                                <option value={2}>2 meses</option>
+                                <option value={3}>3 meses</option>
+                                <option value={4}>4 meses</option>
+                                <option value={5}>5 meses</option>
+                                <option value={6}>6 meses</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Asistente matemático por ítem */}
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (calcOpenIdx === idx) {
+                                  setCalcOpenIdx(null);
+                                } else {
+                                  setCalcOpenIdx(idx);
+                                  runCalculadora(calcDosis, calcHoras, calcDias, idx);
+                                }
+                              }}
+                              className="text-[11px] text-brand-blue font-bold flex items-center gap-1 hover:underline outline-none"
+                            >
+                              {calcOpenIdx === idx ? "Ocultar asistente de cálculo" : "✦ Asistente de cálculo matemático"}
+                            </button>
+                            {calcOpenIdx === idx && (
+                              <div className="mt-2 bg-brand-blue/5 border border-brand-blue/15 rounded-xl p-3 flex flex-wrap gap-3 items-end">
+                                <div>
+                                  <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Dosis (u.)</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.5"
+                                    value={calcDosis}
+                                    onChange={(e) => {
+                                      setCalcDosis(e.target.value);
+                                      runCalculadora(e.target.value, calcHoras, calcDias, idx);
+                                    }}
+                                    className="w-16 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center font-bold focus:border-brand-blue outline-none"
+                                  />
+                                </div>
+                                <div className="pb-1.5 text-[#5D7299] text-xs font-bold">cada</div>
+                                <div>
+                                  <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Horas</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={calcHoras}
+                                    onChange={(e) => {
+                                      setCalcHoras(e.target.value);
+                                      runCalculadora(calcDosis, e.target.value, calcDias, idx);
+                                    }}
+                                    className="w-16 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center font-bold focus:border-brand-blue outline-none"
+                                  />
+                                </div>
+                                <div className="pb-1.5 text-[#5D7299] text-xs font-bold">por</div>
+                                <div>
+                                  <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Días</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={calcDias}
+                                    onChange={(e) => {
+                                      setCalcDias(e.target.value);
+                                      runCalculadora(calcDosis, calcHoras, e.target.value, idx);
+                                    }}
+                                    className="w-16 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center font-bold focus:border-brand-blue outline-none"
+                                  />
+                                </div>
+                                <div className="pb-1.5 ml-auto text-right">
+                                  <span className="text-[10px] font-bold text-brand-blue/70 uppercase block">Total calculado</span>
+                                  <span className="text-sm font-black text-brand-blue bg-white border border-brand-blue/20 rounded-lg px-2.5 py-1 inline-block shadow-sm">
+                                    {Math.ceil((24 / (parseFloat(calcHoras) || 24)) * (parseFloat(calcDosis) || 0) * (parseFloat(calcDias) || 0))} unid.
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {/* Botón agregar ítem */}
                 <button

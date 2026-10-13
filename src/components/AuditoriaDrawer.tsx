@@ -24,10 +24,28 @@ const CAMPO_LABELS: Record<string, string> = {
   nombrePaciente: "Nombre paciente",
   rut:            "RUT",
   medicamento:    "Medicamento",
+  items:          "Medicamentos (lista)",
+  cantidad:       "Cantidad",
   nota:           "Nota",
   estado:         "Estado",
-  medicoReceta:   "Médico",
+  medicoReceta:   "Médico tratante",
+  medicoUid:      "UID médico",
+  motivoRechazo:  "Motivo rechazo",
+  autoRenovacion: "Auto-renovación (meses)",
+  fechaLimite:    "Fecha límite",
+  fechaReceta:    "Fecha receta",
+  motivo:         "Motivo papelera",
+  codigoMedicamento: "Código medicamento",
 };
+
+function limpiarValorAuditoria(val: string | null): string | null {
+  if (!val) return null;
+  if (val.includes("[object Object]")) {
+    const count = (val.match(/\[object Object\]/g) || []).length;
+    return `📋 Lista previa (${count} medicamento${count > 1 ? "s" : ""})`;
+  }
+  return val;
+}
 
 export function AuditoriaDrawer({
   recetaId,
@@ -118,27 +136,59 @@ export function AuditoriaDrawer({
 
                         {/* Cambios */}
                         {entry.cambios && entry.cambios.length > 0 && (
-                          <div className="mt-2 space-y-1.5">
-                            {entry.cambios.map((c, ci) => (
-                              <div key={ci} className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-lg px-3 py-2 text-xs">
-                                <span className="text-[#5D7299] font-medium">
-                                  {CAMPO_LABELS[c.campo] ?? c.campo}:
-                                </span>
-                                <div className="flex gap-2 mt-1 flex-wrap">
-                                  {c.antes && (
-                                    <span className="bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded line-through max-w-[120px] truncate">
-                                      {String(decryptAuditoriaValue(c.antes))}
-                                    </span>
-                                  )}
-                                  <span className="text-[#8FA3C4]">→</span>
-                                  {c.despues && (
-                                    <span className="bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded max-w-[120px] truncate">
-                                      {String(decryptAuditoriaValue(c.despues))}
-                                    </span>
+                          <div className="mt-2 space-y-2">
+                            {entry.cambios.map((c, ci) => {
+                              const label = CAMPO_LABELS[c.campo] ?? c.campo;
+                              const rawAntes = c.antes ? String(decryptAuditoriaValue(c.antes)) : null;
+                              const rawDespues = c.despues ? String(decryptAuditoriaValue(c.despues)) : null;
+                              const antes = limpiarValorAuditoria(rawAntes);
+                              const despues = limpiarValorAuditoria(rawDespues);
+                              // Valores largos (listas de medicamentos, notas, etc.)
+                              const esLargo = (antes && antes.length > 60) || (despues && despues.length > 60);
+                              return (
+                                <div key={ci} className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-lg px-3 py-2 text-xs space-y-1.5">
+                                  <span className="text-[#5D7299] font-semibold uppercase tracking-wider text-[10px]">
+                                    {label}
+                                  </span>
+                                  {esLargo ? (
+                                    // Renderizado vertical para valores largos
+                                    <div className="space-y-1">
+                                      {antes && (
+                                        <div>
+                                          <span className="text-[10px] text-red-500 font-bold uppercase tracking-wide">Antes</span>
+                                          <p className="bg-red-50 text-red-700 border border-red-200 rounded-lg px-2 py-1.5 mt-0.5 leading-relaxed whitespace-pre-wrap break-words">
+                                            {antes}
+                                          </p>
+                                        </div>
+                                      )}
+                                      {despues && (
+                                        <div>
+                                          <span className="text-[10px] text-green-600 font-bold uppercase tracking-wide">Después</span>
+                                          <p className="bg-green-50 text-green-700 border border-green-200 rounded-lg px-2 py-1.5 mt-0.5 leading-relaxed whitespace-pre-wrap break-words">
+                                            {despues}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    // Renderizado horizontal para valores cortos
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      {antes && (
+                                        <span className="bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-lg line-through">
+                                          {antes}
+                                        </span>
+                                      )}
+                                      {antes && despues && <span className="text-[#8FA3C4] font-bold">→</span>}
+                                      {despues && (
+                                        <span className="bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-lg font-semibold">
+                                          {despues}
+                                        </span>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
 
