@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Save, AlertCircle, CheckCircle2, XCircle, Lock, Clock, Calendar, Plus, Trash2 } from "lucide-react";
+import { X, Save, AlertCircle, CheckCircle2, XCircle, Lock, Clock, Calendar, Plus, Trash2, History } from "lucide-react";
 import { db } from "../lib/firebase";
 import { collection, addDoc, updateDoc, doc, Timestamp, getDoc } from "firebase/firestore";
 import { registrarAccion, detectarCambios } from "../lib/auditoria";
+import { AuditoriaDrawer } from "./AuditoriaDrawer";
 import { encryptRecetaFields } from "../lib/crypto";
 import type { Receta, FarmaciaUser, ItemReceta } from "../types";
 import { getItemsDeReceta, nuevoItemVacio } from "../lib/recetaHelpers";
@@ -61,7 +62,16 @@ export function RecetaModal({
   const [formTipo, setFormTipo] = useState<"controladas" | "cronicas">(tipo);
   const [formSector, setFormSector] = useState<"A" | "B" | "CECOSF">(sector);
   const [recetaVinculada, setRecetaVinculada] = useState<Receta | null>(null);
+  const [auditoriaOpen, setAuditoriaOpen] = useState(false);
   const comboboxRef = useRef<HTMLDivElement>(null);
+
+  const getCollectionForReceta = (r: Receta | null | undefined, fallbackTipo?: string): string => {
+    const t = r?.tipo as string | undefined;
+    if (t === "controlado" || t === "controladas") return "recetas_controladas";
+    if (t === "cronico" || t === "cronicas") return "recetas_cronicas";
+    if (fallbackTipo === "controladas" || fallbackTipo === "controlado") return "recetas_controladas";
+    return "recetas_cronicas";
+  };
 
   const recetaObjetivo = receta || recetaVinculada;
 
@@ -329,9 +339,18 @@ export function RecetaModal({
       if (isDoctorMode) {
         if (recetaObjetivo) {
           // ── Modo médico: guarda items[] + estado en receta existente ──────────────────────────────
-          const targetDocCollection = recetaObjetivo.tipo === "controlado" ? "recetas_controladas" : "recetas_cronicas";
-          const snapAntes = await getDoc(doc(db, targetDocCollection, recetaObjetivo.id));
-          const dataAntes = snapAntes.data() as Record<string, unknown>;
+          const targetDocCollection = getCollectionForReceta(recetaObjetivo, formTipo || tipo);
+          let finalCollection = targetDocCollection;
+          let snapAntes = await getDoc(doc(db, targetDocCollection, recetaObjetivo.id));
+          if (!snapAntes.exists()) {
+            const altCollection = targetDocCollection === "recetas_controladas" ? "recetas_cronicas" : "recetas_controladas";
+            const snapAlt = await getDoc(doc(db, altCollection, recetaObjetivo.id));
+            if (snapAlt.exists()) {
+              snapAntes = snapAlt;
+              finalCollection = altCollection;
+            }
+          }
+          const dataAntes = snapAntes.data() || {};
 
           // Mantener mesesDescontados de los items que ya existían
           const itemsConMeses: ItemReceta[] = formItems.map((it) => ({
@@ -362,13 +381,13 @@ export function RecetaModal({
             motivoRechazo: form.estado === "rechazado" ? (form.motivoRechazo || "") : "",
           };
           const payloadCifrado = encryptRecetaFields(payload as any);
-          await updateDoc(doc(db, targetDocCollection, recetaObjetivo.id), payloadCifrado);
+          await updateDoc(doc(db, finalCollection, recetaObjetivo.id), payloadCifrado);
           const cambios = detectarCambios(
             dataAntes,
-            payloadCifrado as Record<string, unknown>,
+            { ...payloadCifrado, items: itemsConMeses } as Record<string, unknown>,
             ["estado", "medicoReceta", "motivoRechazo", "medicamento", "cantidad", "items"]
           );
-          await registrarAccion(targetDocCollection, recetaObjetivo.id, "MODIFICACION", farmaciaUser, cambios);
+          await registrarAccion(finalCollection, recetaObjetivo.id, "MODIFICACION", farmaciaUser, cambios);
 
           // ── Lógica de stock por ítem ──────────────────────────────────────────
           const { increment, updateDoc: uDoc, doc: fDoc } = await import("firebase/firestore");
@@ -387,7 +406,7 @@ export function RecetaModal({
             });
             // Marcar mesesDescontados = 0 en todos los ítems
             const itemsReset = itemsConMeses.map(it => ({ ...it, mesesDescontados: 0, autoRenovacion: 0 }));
-            await updateDoc(doc(db, targetDocCollection, recetaObjetivo.id), { items: itemsReset });
+            await updateDoc(doc(db, finalCollection, recetaObjetivo.id), { items: itemsReset });
 
           } else {
             // Para cada ítem nuevo/modificado, calcular delta de stock
@@ -431,7 +450,7 @@ export function RecetaModal({
             }
 
             // Guardar items actualizados con mesesDescontados correctos
-            await updateDoc(doc(db, targetDocCollection, recetaObjetivo.id), { items: itemsActualizados });
+            await updateDoc(doc(db, finalCollection, recetaObjetivo.id), { items: itemsActualizados });
           }
         } else {
           // ── Modo médico: CREAR NUEVA RECETA CON MULTI-MEDICAMENTO ──────────────────
@@ -476,7 +495,18 @@ export function RecetaModal({
 
           const payloadCifrado = encryptRecetaFields(payload as any);
           const docRef = await addDoc(collection(db, targetCollection), payloadCifrado);
-          await registrarAccion(targetCollection, docRef.id, "CREACION", farmaciaUser);
+          const cambiosCreacion = [
+            {
+              campo: "medicamentos_agregados",
+              antes: null,
+              despues: itemsConMeses.map((it) => {
+                const cant = it.cantidad ? ` ×${it.cantidad}` : "";
+                const reno = it.autoRenovacion && it.autoRenovacion > 0 ? ` (${it.autoRenovacion} meses)` : "";
+                return `${it.medicamento}${cant}${reno}`;
+              }).join(" | "),
+            },
+          ];
+          await registrarAccion(targetCollection, docRef.id, "CREACION", farmaciaUser, cambiosCreacion);
 
           // Descontar stock en inventario para cada medicamento prescrito
           const { increment, updateDoc: uDoc, doc: fDoc } = await import("firebase/firestore");
@@ -507,17 +537,26 @@ export function RecetaModal({
         };
 
         if (recetaObjetivo) {
-          const targetDocCollection = recetaObjetivo.tipo === "controlado" ? "recetas_controladas" : "recetas_cronicas";
-          const snapAntes = await getDoc(doc(db, targetDocCollection, recetaObjetivo.id));
-          const dataAntes = snapAntes.data() as Record<string, unknown>;
+          const targetDocCollection = getCollectionForReceta(recetaObjetivo, tipo);
+          let finalCollection = targetDocCollection;
+          let snapAntes = await getDoc(doc(db, targetDocCollection, recetaObjetivo.id));
+          if (!snapAntes.exists()) {
+            const altCollection = targetDocCollection === "recetas_controladas" ? "recetas_cronicas" : "recetas_controladas";
+            const snapAlt = await getDoc(doc(db, altCollection, recetaObjetivo.id));
+            if (snapAlt.exists()) {
+              snapAntes = snapAlt;
+              finalCollection = altCollection;
+            }
+          }
+          const dataAntes = snapAntes.data() || {};
           const payloadCifrado = encryptRecetaFields(payload);
-          await updateDoc(doc(db, targetDocCollection, recetaObjetivo.id), payloadCifrado);
+          await updateDoc(doc(db, finalCollection, recetaObjetivo.id), payloadCifrado);
           const cambios = detectarCambios(
             dataAntes,
             payloadCifrado as Record<string, unknown>,
-            ["nombrePaciente", "rut", "medicamento", "nota", "estado", "medicoReceta", "fechaLimite", "autoRenovacion", "motivoRechazo", "cantidad"]
+            ["nombrePaciente", "rut", "medicamento", "nota", "estado", "medicoReceta", "fechaLimite", "autoRenovacion", "motivoRechazo", "cantidad", "items"]
           );
-          await registrarAccion(targetDocCollection, recetaObjetivo.id, "MODIFICACION", farmaciaUser, cambios);
+          await registrarAccion(finalCollection, recetaObjetivo.id, "MODIFICACION", farmaciaUser, cambios);
           
           // Lógica de stock si se rechaza una receta que ya había descontado
           // O si cambia la cantidad (simplificado: si se rechaza, devolvemos el stock; si cambia cantidad, ajustamos)
@@ -571,7 +610,16 @@ export function RecetaModal({
             eliminada: false,
             mesesDescontados: 0, // El médico aún no ha recetado — se descuenta al autorizar
           } as Omit<Receta, "id">);
-          await registrarAccion(collectionName, docRef.id, "CREACION", farmaciaUser);
+          const cambiosCreacion = [
+            {
+              campo: "medicamentos_agregados",
+              antes: null,
+              despues: payload.medicamento && payload.medicamento !== "SOLICITUD_RECETA"
+                ? `${payload.medicamento}${payload.cantidad ? ` ×${payload.cantidad}` : ""}`
+                : "📋 Solicitud de receta (pendiente de indicación médica)",
+            },
+          ];
+          await registrarAccion(collectionName, docRef.id, "CREACION", farmaciaUser, cambiosCreacion);
           // ⚠️ NO se descuenta stock aquí — el funcionario no puede recetar.
           //    El descuento ocurre cuando el médico autoriza y selecciona medicamento + cantidad.
         }
@@ -627,9 +675,21 @@ export function RecetaModal({
               )}
             </p>
           </div>
-          <button type="button" onClick={onClose} className="p-2 hover:bg-[#EFF3FB] rounded-xl transition-colors text-[#5D7299] hover:text-[#0F1B35]">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {recetaObjetivo?.id && (
+              <button
+                type="button"
+                onClick={() => setAuditoriaOpen(true)}
+                className="p-2 hover:bg-[#EFF3FB] rounded-xl transition-colors text-[#5D7299] hover:text-brand-purple"
+                title="Ver historial de auditoría de esta receta"
+              >
+                <History className="w-5 h-5" />
+              </button>
+            )}
+            <button type="button" onClick={onClose} className="p-2 hover:bg-[#EFF3FB] rounded-xl transition-colors text-[#5D7299] hover:text-[#0F1B35]">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* ── Zona scrollable (crece y encoge) ── */}
@@ -1297,6 +1357,15 @@ export function RecetaModal({
         </div>
 
       </div>
+
+      {auditoriaOpen && recetaObjetivo?.id && (
+        <AuditoriaDrawer
+          recetaId={recetaObjetivo.id}
+          collectionName={getCollectionForReceta(recetaObjetivo, formTipo || tipo)}
+          paciente={form.nombrePaciente || recetaObjetivo.nombrePaciente}
+          onClose={() => setAuditoriaOpen(false)}
+        />
+      )}
     </div>
   );
 }

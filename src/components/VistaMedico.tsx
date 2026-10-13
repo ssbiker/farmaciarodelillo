@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { Receta, FarmaciaUser, FarmaciaConfig } from "../types";
-import { CheckCircle2, Clock, XCircle, AlertCircle, Stethoscope, Pill, ArrowRight, Plus } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, AlertCircle, Stethoscope, Pill, ArrowRight, Plus, History } from "lucide-react";
 import { RecetaModal } from "./RecetaModal";
+import { AuditoriaDrawer } from "./AuditoriaDrawer";
 import { getItemsDeReceta } from "../lib/recetaHelpers";
 
 function formatDate(ts: any): string {
@@ -35,7 +36,7 @@ function UrgenciaBadge({ receta, config }: { receta: Receta; config: FarmaciaCon
   return <span className="text-[11px] text-[#3D5278] bg-[#EFF3FB] border border-[#DDE6F5] px-2 py-0.5 rounded-full">{days}d activa</span>;
 }
 
-function RecetaCard({ receta, config, onAction }: { receta: Receta; config: FarmaciaConfig; onAction?: () => void }) {
+function RecetaCard({ receta, config, onAction, onAuditoria }: { receta: Receta; config: FarmaciaConfig; onAction?: () => void; onAuditoria?: () => void }) {
   const tipoBadge = receta.tipo === "controlado"
     ? <span className="flex items-center gap-0.5 text-[11px] text-brand-purple bg-brand-purple/10 px-1.5 py-0.5 rounded-full"><Pill className="w-2.5 h-2.5" /> Controlada</span>
     : <span className="flex items-center gap-0.5 text-[11px] text-brand-blue bg-brand-blue/10 px-1.5 py-0.5 rounded-full"><Stethoscope className="w-2.5 h-2.5" /> Crónica</span>;
@@ -106,13 +107,25 @@ function RecetaCard({ receta, config, onAction }: { receta: Receta; config: Farm
           )}
         </div>
       </div>
-      <div className="flex flex-col items-end justify-between self-stretch">
+      <div className="flex flex-col items-end justify-between self-stretch gap-1">
         <div className="text-[11px] text-[#8FA3C4] whitespace-nowrap">{formatDate(receta.fechaSolicitud)}</div>
-        {onAction && (
-          <div className="bg-brand-blue/10 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity mt-auto">
-            <ArrowRight className="w-3.5 h-3.5 text-brand-blue" />
-          </div>
-        )}
+        <div className="flex items-center gap-1 mt-auto">
+          {onAuditoria && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onAuditoria(); }}
+              className="p-1.5 hover:bg-brand-purple/10 rounded-lg transition-colors text-[#8FA3C4] hover:text-brand-purple"
+              title="Ver historial de auditoría"
+            >
+              <History className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {onAction && (
+            <div className="bg-brand-blue/10 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+              <ArrowRight className="w-3.5 h-3.5 text-brand-blue" />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -137,6 +150,7 @@ export function VistaMedico({
 }) {
   const [selectedReceta, setSelectedReceta] = useState<Receta | null>(null);
   const [crearRecetaOpen, setCrearRecetaOpen] = useState(false);
+  const [auditoriaReceta, setAuditoriaReceta] = useState<Receta | null>(null);
 
   // Recetas donde este médico está asignado O que él autorizó/rechazó
   const misRecetas = todasRecetas.filter(
@@ -262,7 +276,7 @@ export function VistaMedico({
                   const bUrgente = b.fechaLimite ? daysToDeadline(b.fechaLimite) : (config.diasAlertaRoja - daysSince(b.fechaSolicitud));
                   return aUrgente - bUrgente;
                 })
-                .map((r) => <RecetaCard key={r.id} receta={r} config={config} onAction={() => setSelectedReceta(r)} />)
+                .map((r) => <RecetaCard key={r.id} receta={r} config={config} onAction={() => setSelectedReceta(r)} onAuditoria={() => setAuditoriaReceta(r)} />)
               }
             </div>
           )}
@@ -290,7 +304,7 @@ export function VistaMedico({
                   const bUrgente = b.fechaLimite ? daysToDeadline(b.fechaLimite) : (config.diasAlertaRoja - daysSince(b.fechaSolicitud));
                   return aUrgente - bUrgente;
                 })
-                .map((r) => <RecetaCard key={r.id} receta={r} config={config} onAction={() => setSelectedReceta(r)} />)
+                .map((r) => <RecetaCard key={r.id} receta={r} config={config} onAction={() => setSelectedReceta(r)} onAuditoria={() => setAuditoriaReceta(r)} />)
               }
             </div>
           )}
@@ -308,7 +322,7 @@ export function VistaMedico({
             {[...autorizadas, ...rechazadas]
               .sort((a, b) => (b.actualizadoEn?.toDate?.() ?? 0) as any - ((a.actualizadoEn?.toDate?.() ?? 0) as any))
               .slice(0, 10)
-              .map((r) => <RecetaCard key={r.id} receta={r} config={config} />)
+              .map((r) => <RecetaCard key={r.id} receta={r} config={config} onAuditoria={() => setAuditoriaReceta(r)} />)
             }
           </div>
         </div>
@@ -343,6 +357,15 @@ export function VistaMedico({
           puedeEditarDatos={true}
           puedeAutorizar={true}
           todasRecetas={todasRecetas}
+        />
+      )}
+
+      {auditoriaReceta && (
+        <AuditoriaDrawer
+          recetaId={auditoriaReceta.id}
+          collectionName={auditoriaReceta.tipo === "controlado" ? "recetas_controladas" : "recetas_cronicas"}
+          paciente={auditoriaReceta.nombrePaciente}
+          onClose={() => setAuditoriaReceta(null)}
         />
       )}
     </div>

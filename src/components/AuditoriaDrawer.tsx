@@ -25,6 +25,8 @@ const CAMPO_LABELS: Record<string, string> = {
   rut:            "RUT",
   medicamento:    "Medicamento",
   items:          "Medicamentos (lista)",
+  medicamentos_agregados: "➕ Fármaco(s) agregado(s)",
+  medicamentos_eliminados: "➖ Fármaco(s) retirado(s)",
   cantidad:       "Cantidad",
   nota:           "Nota",
   estado:         "Estado",
@@ -72,12 +74,12 @@ export function AuditoriaDrawer({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110]"
         onClick={onClose}
       />
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white border-l border-[#DDE6F5] z-50 flex flex-col shadow-2xl overflow-hidden">
+      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white border-l border-[#DDE6F5] z-[110] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#DDE6F5] bg-[#F8FAFF] flex-shrink-0">
           <div>
@@ -143,6 +145,57 @@ export function AuditoriaDrawer({
                               const rawDespues = c.despues ? String(decryptAuditoriaValue(c.despues)) : null;
                               const antes = limpiarValorAuditoria(rawAntes);
                               const despues = limpiarValorAuditoria(rawDespues);
+
+                              // ── CASO ESPECIAL: Medicamento agregado por el médico ──
+                              if (c.campo === "medicamentos_agregados" && despues) {
+                                const items = despues.split(" | ");
+                                return (
+                                  <div key={ci} className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs space-y-2 shadow-xs">
+                                    <div className="flex items-center gap-1.5 text-emerald-800 font-bold text-[11px] uppercase tracking-wide">
+                                      <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black">+</span>
+                                      <span>Fármaco(s) agregado(s)</span>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      {items.map((item, idx) => (
+                                        <div key={idx} className="bg-white border border-emerald-200 rounded-lg px-3 py-2 flex items-center justify-between gap-2 shadow-2xs">
+                                          <span className="font-semibold text-emerald-950 flex items-center gap-1.5">
+                                            💊 {item}
+                                          </span>
+                                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full flex-shrink-0">
+                                            Nuevo
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              // ── CASO ESPECIAL: Medicamento retirado ──
+                              if (c.campo === "medicamentos_eliminados" && antes) {
+                                const items = antes.split(" | ");
+                                return (
+                                  <div key={ci} className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs space-y-2 shadow-xs">
+                                    <div className="flex items-center gap-1.5 text-red-800 font-bold text-[11px] uppercase tracking-wide">
+                                      <span className="w-4 h-4 rounded-full bg-red-600 text-white flex items-center justify-center text-[10px] font-black">-</span>
+                                      <span>Fármaco(s) retirado(s)</span>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      {items.map((item, idx) => (
+                                        <div key={idx} className="bg-white border border-red-200 rounded-lg px-3 py-2 flex items-center justify-between gap-2 shadow-2xs line-through text-red-900">
+                                          <span className="font-semibold flex items-center gap-1.5">
+                                            💊 {item}
+                                          </span>
+                                          <span className="text-[10px] font-bold bg-red-100 text-red-800 border border-red-200 px-2 py-0.5 rounded-full no-underline flex-shrink-0">
+                                            Retirado
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              }
+
                               // Valores largos (listas de medicamentos, notas, etc.)
                               const esLargo = (antes && antes.length > 60) || (despues && despues.length > 60);
                               return (

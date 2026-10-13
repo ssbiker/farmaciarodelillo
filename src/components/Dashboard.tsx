@@ -52,13 +52,13 @@ export function Dashboard({
 
     const qCtrl = query(collection(db, "recetas_controladas"), orderBy("fechaSolicitud", "desc"));
     const unsubCtrl = onSnapshot(qCtrl,
-      (s) => setRecetasControladas(s.docs.map((d) => decryptRecetaFields({ id: d.id, ...d.data() } as Receta))),
+      (s) => setRecetasControladas(s.docs.map((d) => decryptRecetaFields({ id: d.id, ...d.data(), tipo: "controlado" } as Receta))),
       () => setRecetasControladas([])
     );
 
     const qCron = query(collection(db, "recetas_cronicas"), orderBy("fechaSolicitud", "desc"));
     const unsubCron = onSnapshot(qCron,
-      (s) => { setRecetasCronicas(s.docs.map((d) => decryptRecetaFields({ id: d.id, ...d.data() } as Receta))); setLoading(false); },
+      (s) => { setRecetasCronicas(s.docs.map((d) => decryptRecetaFields({ id: d.id, ...d.data(), tipo: "cronico" } as Receta))); setLoading(false); },
       () => { setRecetasCronicas([]); setLoading(false); }
     );
 
