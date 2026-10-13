@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Receta, FarmaciaUser, FarmaciaConfig } from "../types";
 import { CheckCircle2, Clock, XCircle, AlertCircle, Stethoscope, Pill, ArrowRight } from "lucide-react";
 import { RecetaModal } from "./RecetaModal";
+import { getItemsDeReceta } from "../lib/recetaHelpers";
 
 function formatDate(ts: any): string {
   if (!ts) return "—";
@@ -65,7 +66,34 @@ function RecetaCard({ receta, config, onAction }: { receta: Receta; config: Farm
           <p className={`font-semibold text-sm truncate transition-colors ${onAction ? 'text-[#0F1B35] group-hover:text-brand-blue' : 'text-[#0F1B35]'}`}>{receta.nombrePaciente}</p>
           <span className="font-mono text-[11px] text-[#5D7299] whitespace-nowrap">{receta.rut}</span>
         </div>
-        <p className="text-xs text-brand-purple font-semibold mt-0.5">{receta.medicamento}</p>
+        {(() => {
+          const items = getItemsDeReceta(receta);
+          const first = items[0] || { medicamento: receta.medicamento, cantidad: receta.cantidad };
+          const extra = items.length - 1;
+          const itemsTooltip = items.map((it, idx) => `${idx + 1}. ${it.medicamento === "SOLICITUD_RECETA" ? "Solicitud s/med" : it.medicamento}${it.cantidad ? ` ×${it.cantidad}` : ""}`).join("\n");
+
+          return (
+            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+              {first.medicamento === "SOLICITUD_RECETA" ? (
+                <span className="text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
+                  📋 Solicitud s/med
+                </span>
+              ) : (
+                <span className="text-xs text-brand-indigo font-bold">{first.medicamento}</span>
+              )}
+              {first.cantidad ? (
+                <span className="text-[10px] font-bold text-[#5D7299] bg-[#F0F4FF] px-1.5 py-0.2 rounded border border-[#DDE6F5]">
+                  ×{first.cantidad}
+                </span>
+              ) : null}
+              {extra > 0 && (
+                <span title={itemsTooltip} className="text-[10px] font-bold bg-brand-blue/10 text-brand-blue border border-brand-blue/20 rounded-full px-1.5 py-0.2 cursor-help">
+                  +{extra} más
+                </span>
+              )}
+            </div>
+          );
+        })()}
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           {tipoBadge}
           <span className="text-[11px] text-[#5D7299]">Sec. {receta.sector}</span>

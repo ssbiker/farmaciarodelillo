@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Receta, FarmaciaUser, FarmaciaConfig } from "../types";
+import { getItemsDeReceta } from "../lib/recetaHelpers";
 import {
   CheckCircle2, Clock, XCircle, AlertCircle,
   Stethoscope, Users, Pill, TrendingUp, Activity
@@ -108,16 +109,21 @@ export function EstadisticasAdmin({
     const medsMap = new Map<string, { totalUnidades: number, countRecetas: number, medicos: Record<string, number> }>();
     
     activas.forEach(r => {
-      if (r.estado === "completado" && r.medicamento && r.cantidad) {
-        const nombre = r.medicamento.trim().toUpperCase();
-        if (!medsMap.has(nombre)) {
-          medsMap.set(nombre, { totalUnidades: 0, countRecetas: 0, medicos: {} });
-        }
-        const data = medsMap.get(nombre)!;
-        data.totalUnidades += Number(r.cantidad) || 0;
-        data.countRecetas += 1;
-        const medicoName = r.medicoReceta || "Desconocido";
-        data.medicos[medicoName] = (data.medicos[medicoName] || 0) + 1;
+      if (r.estado === "completado") {
+        const items = getItemsDeReceta(r);
+        items.forEach(it => {
+          if (it.medicamento && it.medicamento !== "SOLICITUD_RECETA" && it.cantidad > 0) {
+            const nombre = it.medicamento.trim().toUpperCase();
+            if (!medsMap.has(nombre)) {
+              medsMap.set(nombre, { totalUnidades: 0, countRecetas: 0, medicos: {} });
+            }
+            const data = medsMap.get(nombre)!;
+            data.totalUnidades += Number(it.cantidad) || 0;
+            data.countRecetas += 1;
+            const medicoName = r.medicoReceta || "Desconocido";
+            data.medicos[medicoName] = (data.medicos[medicoName] || 0) + 1;
+          }
+        });
       }
     });
 

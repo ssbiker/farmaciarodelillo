@@ -10,6 +10,7 @@ import { registrarAccion } from "../lib/auditoria";
 import { RecetaModal } from "./RecetaModal";
 import { TicketModal } from "./TicketModal";
 import { AuditoriaDrawer } from "./AuditoriaDrawer";
+import { getPrimerMedicamento, esMultiMedicamento, contarMedsExtra, getItemsDeReceta } from "../lib/recetaHelpers";
 
 function daysSince(ts: any): number {
   const now = new Date();
@@ -201,10 +202,14 @@ export function RecetaList({
   const visibles = recetas.filter((r) => !r.eliminada);
 
   const filtered = visibles.filter((r) => {
-    const matchSearch =
-      r.nombrePaciente.toLowerCase().includes(search.toLowerCase()) ||
-      r.rut.includes(search) ||
-      r.medicamento.toLowerCase().includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    const matchNombre = r.nombrePaciente.toLowerCase().includes(q);
+    const matchRut = r.rut.includes(search);
+    // Buscar en todos los medicamentos (multi-ítem o plano)
+    const matchMed = getItemsDeReceta(r).some(it =>
+      it.medicamento.toLowerCase().includes(q) && it.medicamento !== "SOLICITUD_RECETA"
+    );
+    const matchSearch = matchNombre || matchRut || matchMed;
     const matchEstado = filterEstado === "all" || r.estado === filterEstado;
     return matchSearch && matchEstado;
   });
@@ -373,13 +378,45 @@ export function RecetaList({
                       <span className="font-mono text-[#3D5278] text-xs whitespace-nowrap">{receta.rut}</span>
                     </td>
                     <td className="px-5 py-4">
-                      {receta.medicamento === "SOLICITUD_RECETA" ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-3 py-1">
-                          📋 Pendiente médico
-                        </span>
-                      ) : (
-                        <span className="font-semibold text-brand-indigo">{receta.medicamento}</span>
-                      )}
+                      {(() => {
+                        const items = getItemsDeReceta(receta);
+                        const isMulti = items.length > 1;
+                        const firstItem = items[0] || { medicamento: receta.medicamento, cantidad: receta.cantidad };
+                        const extraCount = items.length - 1;
+                        const itemsTooltip = items
+                          .map((it, idx) => `${idx + 1}. ${it.medicamento === "SOLICITUD_RECETA" ? "Solicitud s/med" : it.medicamento}${it.cantidad ? ` ×${it.cantidad}` : ""}`)
+                          .join("\n");
+
+                        return (
+                          <div className="flex flex-col gap-1 items-start">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {firstItem.medicamento === "SOLICITUD_RECETA" ? (
+                                <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5">
+                                  📋 Pendiente médico
+                                </span>
+                              ) : (
+                                <span className="font-semibold text-brand-indigo">
+                                  {firstItem.medicamento}
+                                </span>
+                              )}
+                              {firstItem.cantidad ? (
+                                <span className="text-[11px] font-bold text-[#5D7299] bg-[#F0F4FF] px-1.5 py-0.5 rounded border border-[#DDE6F5]">
+                                  ×{firstItem.cantidad}
+                                </span>
+                              ) : null}
+                            </div>
+
+                            {isMulti && (
+                              <span
+                                title={itemsTooltip}
+                                className="inline-flex items-center gap-1 text-[11px] font-bold bg-brand-blue/10 text-brand-blue border border-brand-blue/20 rounded-full px-2 py-0.5 shadow-sm cursor-help hover:bg-brand-blue/20 transition-colors"
+                              >
+                                💊 +{extraCount} más
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-5 py-4 text-[#5D7299] text-xs whitespace-nowrap">
                       {formatDate(receta.fechaSolicitud)}

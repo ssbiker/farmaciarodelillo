@@ -1,5 +1,6 @@
 import { X, Printer } from "lucide-react";
 import type { Receta } from "../types";
+import { getItemsDeReceta } from "../lib/recetaHelpers";
 
 export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () => void }) {
   const formatDate = (ts: any) => {
@@ -59,10 +60,20 @@ export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () =
 
           {/* Datos de la Receta */}
           <div className="bg-brand-purple/10 border border-brand-purple/30 rounded-2xl p-5 space-y-4">
-            <h4 className="text-xs font-bold text-brand-purple/80 uppercase tracking-widest">Datos de la Receta</h4>
-            <div>
-              <p className="text-xs text-[#5D7299] mb-1">Medicamento</p>
-              <p className="font-bold text-xl text-brand-purple">{receta.medicamento}</p>
+            <h4 className="text-xs font-bold text-brand-purple/80 uppercase tracking-widest">Medicamentos</h4>
+            <div className="space-y-2">
+              {getItemsDeReceta(receta).map((it, idx) => (
+                <div key={idx} className="flex justify-between items-center bg-white/60 p-2.5 rounded-xl border border-brand-purple/20">
+                  <span className="font-bold text-base text-[#0F1B35]">
+                    {it.medicamento === "SOLICITUD_RECETA" ? "Solicitud sin med. asignado" : it.medicamento}
+                  </span>
+                  {it.cantidad > 0 && (
+                    <span className="font-extrabold text-sm text-brand-blue bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200">
+                      Cant: {it.cantidad}
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { collection, onSnapshot, query, orderBy, doc, setDoc, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { decryptRecetaFields } from "../lib/crypto";
-import type { Receta, FarmaciaUser, FarmaciaConfig } from "../types";
+import type { Receta, FarmaciaUser, FarmaciaConfig, ItemReceta } from "../types";
 import { Pill, Stethoscope, AlertCircle, Trash2, TrendingUp, LayoutDashboard, Package } from "lucide-react";
 import { RecetaList } from "./RecetaList";
 import { PapeleraModal } from "./PapeleraModal";
@@ -73,43 +73,95 @@ export function Dashboard({
     // Procesar descuentos de auto-renovaciones automáticamente
     const procesarRenovaciones = async () => {
       const now = new Date();
-      const renovables = todasRecetas.filter(r => 
-        !r.eliminada && r.estado === "completado" && r.autoRenovacion && r.autoRenovacion > 0 
-        && r.codigoMedicamento && r.cantidad
-        && r.mesesDescontados && r.mesesDescontados >= 1 // Solo si el médico ya recetó
-      );
-
-      if (renovables.length === 0) return;
 
       import("firebase/firestore").then(({ doc, runTransaction }) => {
-        for (const r of renovables) {
+        for (const r of todasRecetas) {
+          if (r.eliminada || r.estado !== "completado" || !r.fechaSolicitud) continue;
+
           const start = r.fechaSolicitud.toDate();
           let elapsedMonths = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
           if (now.getDate() < start.getDate()) elapsedMonths--;
-          
-          const maxMonths = r.autoRenovacion! + 1; // 1 base + N renovaciones
-          const currentMonth = Math.min(Math.max(1, elapsedMonths + 1), maxMonths);
-          const localMeses = r.mesesDescontados || 1;
 
-          if (currentMonth > localMeses) {
-            const colName = r.tipo === "controlado" ? "recetas_controladas" : "recetas_cronicas";
-            const recRef = doc(db, colName, r.id);
-            const invRef = doc(db, "inventario", r.codigoMedicamento as string);
-            
-            // Transacción segura para evitar doble descuento si 2 usuarios abren la web a la vez
-            runTransaction(db, async (transaction) => {
-              const recDoc = await transaction.get(recRef);
-              if (!recDoc.exists()) return;
-              const currentMeses = recDoc.data().mesesDescontados || 1;
-              if (currentMonth > currentMeses) {
-                const diff = currentMonth - currentMeses;
-                transaction.update(recRef, { mesesDescontados: currentMonth });
-                const invDoc = await transaction.get(invRef);
-                if (invDoc.exists()) {
-                  transaction.update(invRef, { stock: invDoc.data().stock - (r.cantidad! * diff) });
+          const colName = r.tipo === "controlado" ? "recetas_controladas" : "recetas_cronicas";
+          const recRef = doc(db, colName, r.id);
+
+          // Caso 1: Receta con items[] (Multi-medicamento)
+          if (r.items && r.items.length > 0) {
+            const itemsRenovables = r.items.filter(it =>
+              it.autoRenovacion && it.autoRenovacion > 0 &&
+              it.codigoMedicamento && it.cantidad > 0 &&
+              (it.mesesDescontados ?? 0) >= 1
+            );
+
+            const hayPendientes = itemsRenovables.some(it => {
+              const maxMonths = it.autoRenovacion + 1;
+              const currentMonth = Math.min(Math.max(1, elapsedMonths + 1), maxMonths);
+              return currentMonth > (it.mesesDescontados || 1);
+            });
+
+            if (hayPendientes) {
+              runTransaction(db, async (transaction) => {
+                const recDoc = await transaction.get(recRef);
+                if (!recDoc.exists()) return;
+                const data = recDoc.data();
+                const currentItems: ItemReceta[] = data.items || [];
+                
+                let huboCambios = false;
+                const itemsActualizados: ItemReceta[] = [];
+
+                for (const item of currentItems) {
+                  if (item.autoRenovacion && item.autoRenovacion > 0 && item.codigoMedicamento && item.cantidad > 0) {
+                    const maxMonths = item.autoRenovacion + 1;
+                    const currentMonth = Math.min(Math.max(1, elapsedMonths + 1), maxMonths);
+                    const localMeses = item.mesesDescontados || 1;
+
+                    if (currentMonth > localMeses) {
+                      const diff = currentMonth - localMeses;
+                      const invRef = doc(db, "inventario", item.codigoMedicamento);
+                      const invDoc = await transaction.get(invRef);
+                      if (invDoc.exists()) {
+                        transaction.update(invRef, { stock: invDoc.data().stock - (item.cantidad * diff) });
+                      }
+                      itemsActualizados.push({ ...item, mesesDescontados: currentMonth });
+                      huboCambios = true;
+                      continue;
+                    }
+                  }
+                  itemsActualizados.push(item);
                 }
-              }
-            }).catch(e => console.error("Error en transacción de renovación:", e));
+
+                if (huboCambios) {
+                  transaction.update(recRef, { items: itemsActualizados });
+                }
+              }).catch(e => console.error("Error renovando items multi-med:", e));
+            }
+
+          } else if (
+            // Caso 2: Receta antigua (campos planos)
+            r.autoRenovacion && r.autoRenovacion > 0 &&
+            r.codigoMedicamento && r.cantidad &&
+            r.mesesDescontados && r.mesesDescontados >= 1
+          ) {
+            const maxMonths = r.autoRenovacion + 1;
+            const currentMonth = Math.min(Math.max(1, elapsedMonths + 1), maxMonths);
+            const localMeses = r.mesesDescontados || 1;
+
+            if (currentMonth > localMeses) {
+              const invRef = doc(db, "inventario", r.codigoMedicamento as string);
+              runTransaction(db, async (transaction) => {
+                const recDoc = await transaction.get(recRef);
+                if (!recDoc.exists()) return;
+                const currentMeses = recDoc.data().mesesDescontados || 1;
+                if (currentMonth > currentMeses) {
+                  const diff = currentMonth - currentMeses;
+                  transaction.update(recRef, { mesesDescontados: currentMonth });
+                  const invDoc = await transaction.get(invRef);
+                  if (invDoc.exists()) {
+                    transaction.update(invRef, { stock: invDoc.data().stock - (r.cantidad! * diff) });
+                  }
+                }
+              }).catch(e => console.error("Error en transacción de renovación legado:", e));
+            }
           }
         }
       });

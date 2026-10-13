@@ -4,6 +4,15 @@ export type Sector = "A" | "B" | "CECOSF";
 export type TipoReceta = "controlado" | "cronico";
 export type EstadoReceta = "pendiente" | "completado" | "rechazado";
 
+/** Un ítem de medicamento dentro de una receta multi-medicamento */
+export interface ItemReceta {
+  medicamento: string;        // nombre visible
+  codigoMedicamento: string;  // clave del inventario
+  cantidad: number;           // unidades a despachar
+  autoRenovacion: number;     // 0-6 meses, independiente por ítem
+  mesesDescontados: number;   // cuántos meses ya se han descontado
+}
+
 export type AccionAuditoria =
   | "CREACION"
   | "MODIFICACION"
@@ -57,6 +66,8 @@ export interface Receta {
   // Stock y conexión con inventario
   codigoMedicamento?: string; // Código del medicamento desde el Excel
   cantidad?: number;          // Cantidad a despachar (unidades)
+  // Multi-medicamento (nuevo — si existe tiene prioridad sobre los campos planos)
+  items?: ItemReceta[];       // Array de medicamentos por receta
 }
 
 export interface FarmaciaConfig {
