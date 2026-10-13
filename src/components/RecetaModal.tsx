@@ -50,6 +50,7 @@ export function RecetaModal({
   const [loading, setLoading] = useState(false);
   const [inventario, setInventario] = useState<import("../types").MedicamentoInventario[]>([]);
   const [isComboboxOpen, setIsComboboxOpen] = useState(false);
+  const [esSolicitudGeneral, setEsSolicitudGeneral] = useState(false);
   const dateRef = useRef<HTMLInputElement>(null);
   const comboboxRef = useRef<HTMLDivElement>(null);
 
@@ -82,6 +83,8 @@ export function RecetaModal({
 
   useEffect(() => {
     if (receta) {
+      const esGeneral = receta.medicamento === "SOLICITUD_RECETA";
+      setEsSolicitudGeneral(esGeneral);
       setForm({
         nombrePaciente: receta.nombrePaciente,
         rut: receta.rut,
@@ -97,6 +100,7 @@ export function RecetaModal({
         motivoRechazo: receta.motivoRechazo || "",
       });
     } else {
+      setEsSolicitudGeneral(false);
       setForm({ nombrePaciente: "", rut: "", medicamento: "", codigoMedicamento: "", cantidad: "", nota: "", estado: "pendiente", medicoReceta: "", medicoUid: "", fechaLimite: "", autoRenovacion: 0, motivoRechazo: "" });
     }
   }, [receta, isOpen]);
@@ -380,13 +384,21 @@ export function RecetaModal({
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-4 mt-3">
                 <div className="relative" ref={comboboxRef}>
                   <label className={labelClass}>Medicamento</label>
+                  {/* Aviso cuando el funcionario dejó solicitud genérica */}
+                  {esSolicitudGeneral && (
+                    <div className="mb-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 flex items-center gap-2">
+                      <span className="text-base">📋</span>
+                      <p className="text-xs text-amber-700 font-semibold">Solicitud sin medicamento — asigne uno a continuación</p>
+                    </div>
+                  )}
                   <input
                     required
                     type="text"
                     placeholder="Buscar en el inventario..."
-                    value={form.medicamento}
+                    value={esSolicitudGeneral ? "" : form.medicamento}
                     onChange={(e) => {
                       setForm({ ...form, medicamento: e.target.value, codigoMedicamento: "" });
+                      if (esSolicitudGeneral) setEsSolicitudGeneral(false);
                       setIsComboboxOpen(true);
                     }}
                     onFocus={() => setIsComboboxOpen(true)}
@@ -403,6 +415,7 @@ export function RecetaModal({
                             className="px-4 py-2 hover:bg-[#F0F4FF] cursor-pointer flex justify-between items-center border-b border-[#EEF3FC] last:border-0"
                             onClick={() => {
                               setForm({ ...form, medicamento: item.nombre, codigoMedicamento: item.codigo });
+                              setEsSolicitudGeneral(false);
                               setIsComboboxOpen(false);
                             }}
                           >
@@ -421,13 +434,14 @@ export function RecetaModal({
                 <div>
                   <label className={labelClass} title="Cantidad total a despachar">Cant. (Unid.)</label>
                   <input
-                    required
+                    required={!esSolicitudGeneral}
                     type="number"
                     min="1"
-                    placeholder="Ej: 30"
-                    value={form.cantidad}
+                    placeholder={esSolicitudGeneral ? "Médico definirá" : "Ej: 30"}
+                    disabled={esSolicitudGeneral}
+                    value={esSolicitudGeneral ? "" : form.cantidad}
                     onChange={(e) => setForm({ ...form, cantidad: e.target.value })}
-                    className={`${inputClass} text-center font-bold`}
+                    className={`${inputClass} text-center font-bold ${esSolicitudGeneral ? "opacity-40 cursor-not-allowed" : ""}`}
                   />
                 </div>
               </div>
@@ -489,46 +503,84 @@ export function RecetaModal({
                     onChange={(e) => setForm({ ...form, rut: formatRut(e.target.value) })} className={`${inputClass} font-mono`} />
                 </div>
               </div>
-              <div className="relative" ref={comboboxRef}>
-                <label className={labelClass}>Medicamento Solicitado</label>
-                <input
-                  required
-                  type="text"
-                  placeholder="Buscar en el inventario..."
-                  value={form.medicamento}
-                  onChange={(e) => {
-                    setForm({ ...form, medicamento: e.target.value, codigoMedicamento: "" });
-                    setIsComboboxOpen(true);
-                  }}
-                  onFocus={() => setIsComboboxOpen(true)}
-                  className={`${inputClass} text-brand-purple font-semibold placeholder-brand-purple/30 focus:border-brand-purple border-brand-purple/30`}
-                />
-                {isComboboxOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-[#DDE6F5] rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                    {inventario
-                      .filter(item => item.nombre.toLowerCase().includes(form.medicamento.toLowerCase()) || item.codigo.includes(form.medicamento))
-                      .slice(0, 50)
-                      .map((item) => (
-                        <div
-                          key={item.codigo}
-                          className="px-4 py-2 hover:bg-[#F0F4FF] cursor-pointer flex justify-between items-center border-b border-[#EEF3FC] last:border-0"
-                          onClick={() => {
-                            setForm({ ...form, medicamento: item.nombre, codigoMedicamento: item.codigo });
-                            setIsComboboxOpen(false);
-                          }}
-                        >
-                          <span className="text-sm font-semibold text-[#0F1B35]">{item.nombre}</span>
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${item.stock <= 0 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'}`}>
-                            Stock: {item.stock}
-                          </span>
-                        </div>
-                    ))}
-                    {inventario.length === 0 && (
-                      <div className="px-4 py-3 text-sm text-[#5D7299] italic">No hay inventario cargado.</div>
+              <div>
+                {/* Etiqueta + toggle solicitud genérica */}
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className={labelClass}>Medicamento Solicitado</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nuevoValor = !esSolicitudGeneral;
+                      setEsSolicitudGeneral(nuevoValor);
+                      if (nuevoValor) {
+                        setForm({ ...form, medicamento: "SOLICITUD_RECETA", codigoMedicamento: "" });
+                        setIsComboboxOpen(false);
+                      } else {
+                        setForm({ ...form, medicamento: "", codigoMedicamento: "" });
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border transition-all ${
+                      esSolicitudGeneral
+                        ? "bg-amber-50 text-amber-700 border-amber-300 shadow-sm"
+                        : "bg-[#F0F4FF] text-[#5D7299] border-[#DDE6F5] hover:border-amber-300 hover:text-amber-600"
+                    }`}
+                  >
+                    {esSolicitudGeneral ? "✓ Solicitud Receta" : "⚕ Solicitud Receta"}
+                  </button>
+                </div>
+
+                {/* Vista solicitud genérica (sin medicamento específico) */}
+                {esSolicitudGeneral ? (
+                  <div className="w-full bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                    <span className="text-2xl">📋</span>
+                    <div>
+                      <p className="text-sm font-bold text-amber-700">Solicitud de Receta</p>
+                      <p className="text-xs text-amber-600/80">El médico definirá el medicamento al autorizar</p>
+                    </div>
+                  </div>
+                ) : (
+                  /* Combobox normal del inventario */
+                  <div className="relative" ref={comboboxRef}>
+                    <input
+                      required={!esSolicitudGeneral}
+                      type="text"
+                      placeholder="Buscar en el inventario..."
+                      value={form.medicamento}
+                      onChange={(e) => {
+                        setForm({ ...form, medicamento: e.target.value, codigoMedicamento: "" });
+                        setIsComboboxOpen(true);
+                      }}
+                      onFocus={() => setIsComboboxOpen(true)}
+                      className={`${inputClass} text-brand-purple font-semibold placeholder-brand-purple/30 focus:border-brand-purple border-brand-purple/30`}
+                    />
+                    {isComboboxOpen && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-[#DDE6F5] rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                        {inventario
+                          .filter(item => item.nombre.toLowerCase().includes(form.medicamento.toLowerCase()) || item.codigo.includes(form.medicamento))
+                          .slice(0, 50)
+                          .map((item) => (
+                            <div
+                              key={item.codigo}
+                              className="px-4 py-2 hover:bg-[#F0F4FF] cursor-pointer flex justify-between items-center border-b border-[#EEF3FC] last:border-0"
+                              onClick={() => {
+                                setForm({ ...form, medicamento: item.nombre, codigoMedicamento: item.codigo });
+                                setIsComboboxOpen(false);
+                              }}
+                            >
+                              <span className="text-sm font-semibold text-[#0F1B35]">{item.nombre}</span>
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${item.stock <= 0 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'}`}>
+                                Stock: {item.stock}
+                              </span>
+                            </div>
+                        ))}
+                        {inventario.length === 0 && (
+                          <div className="px-4 py-3 text-sm text-[#5D7299] italic">No hay inventario cargado.</div>
+                        )}
+                      </div>
                     )}
+                    <p className="text-[11px] text-[#8FA3C4] mt-1">El médico definirá la cantidad exacta al autorizar la receta.</p>
                   </div>
                 )}
-                <p className="text-[11px] text-[#8FA3C4] mt-1">El médico definirá la cantidad exacta al autorizar la receta.</p>
               </div>
               <div>
                 <label className={labelClass}>Nota Adicional (Opcional)</label>

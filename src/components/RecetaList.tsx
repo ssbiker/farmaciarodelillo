@@ -373,7 +373,13 @@ export function RecetaList({
                       <span className="font-mono text-[#3D5278] text-xs whitespace-nowrap">{receta.rut}</span>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="font-semibold text-brand-indigo">{receta.medicamento}</span>
+                      {receta.medicamento === "SOLICITUD_RECETA" ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-3 py-1">
+                          📋 Pendiente médico
+                        </span>
+                      ) : (
+                        <span className="font-semibold text-brand-indigo">{receta.medicamento}</span>
+                      )}
                     </td>
                     <td className="px-5 py-4 text-[#5D7299] text-xs whitespace-nowrap">
                       {formatDate(receta.fechaSolicitud)}
