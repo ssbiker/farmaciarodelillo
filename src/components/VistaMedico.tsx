@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Receta, FarmaciaUser, FarmaciaConfig } from "../types";
-import { CheckCircle2, Clock, XCircle, AlertCircle, Stethoscope, Pill, ArrowRight } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, AlertCircle, Stethoscope, Pill, ArrowRight, Plus } from "lucide-react";
 import { RecetaModal } from "./RecetaModal";
 import { getItemsDeReceta } from "../lib/recetaHelpers";
 
@@ -136,6 +136,7 @@ export function VistaMedico({
   isFuncionario: boolean;
 }) {
   const [selectedReceta, setSelectedReceta] = useState<Receta | null>(null);
+  const [crearRecetaOpen, setCrearRecetaOpen] = useState(false);
 
   // Recetas donde este médico está asignado O que él autorizó/rechazó
   const misRecetas = todasRecetas.filter(
@@ -171,14 +172,25 @@ export function VistaMedico({
     <div className="space-y-6">
 
       {/* Header */}
-      <div className="flex items-start gap-4">
-        <div className="bg-brand-blue/10 p-3 rounded-2xl border border-brand-blue/20 flex-shrink-0">
-          <Stethoscope className="w-6 h-6 text-brand-blue" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <div className="bg-brand-blue/10 p-3 rounded-2xl border border-brand-blue/20 flex-shrink-0">
+            <Stethoscope className="w-6 h-6 text-brand-blue" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-[#0F1B35]">Mi Panel</h2>
+            <p className="text-[#5D7299] text-sm mt-0.5">Dr(a). {farmaciaUser.name} — Resumen personal de recetas</p>
+          </div>
         </div>
-        <div className="flex-1">
-          <h2 className="text-2xl font-black text-[#0F1B35]">Mi Panel</h2>
-          <p className="text-[#5D7299] text-sm mt-0.5">Dr(a). {farmaciaUser.name} — Resumen personal de recetas</p>
-        </div>
+
+        <button
+          type="button"
+          onClick={() => setCrearRecetaOpen(true)}
+          className="flex items-center justify-center gap-2 bg-brand-blue hover:bg-brand-blue-dark text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg hover:scale-[1.02] flex-shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          Nueva Receta Médica
+        </button>
       </div>
 
       {/* Alerta urgentes */}
@@ -309,10 +321,25 @@ export function VistaMedico({
           receta={selectedReceta}
           medicos={medicos}
           tipo={selectedReceta.tipo === "controlado" ? "controladas" : "cronicas"}
-          sector={selectedReceta.sector as "A" | "B"}
+          sector={(selectedReceta.sector || "A") as "A" | "B" | "CECOSF"}
           farmaciaUser={farmaciaUser}
           soloAutorizacion={true}
           puedeEditarDatos={isAdmin || isFuncionario}
+          puedeAutorizar={true}
+        />
+      )}
+
+      {crearRecetaOpen && (
+        <RecetaModal
+          isOpen={true}
+          onClose={() => setCrearRecetaOpen(false)}
+          receta={null}
+          medicos={medicos}
+          tipo="controladas"
+          sector="A"
+          farmaciaUser={farmaciaUser}
+          soloAutorizacion={true}
+          puedeEditarDatos={true}
           puedeAutorizar={true}
         />
       )}

@@ -57,6 +57,8 @@ export function RecetaModal({
   const [activeComboIdx, setActiveComboIdx] = useState<number | null>(null); // índice del combobox abierto
   const isDoctorUser = farmaciaUser.role === 'medico' || farmaciaUser.isMedico === true;
   const isDoctorMode = soloAutorizacion || isDoctorUser;
+  const [formTipo, setFormTipo] = useState<"controladas" | "cronicas">(tipo);
+  const [formSector, setFormSector] = useState<"A" | "B" | "CECOSF">(sector);
   const dateRef = useRef<HTMLInputElement>(null);
   const comboboxRef = useRef<HTMLDivElement>(null);
 
@@ -88,6 +90,8 @@ export function RecetaModal({
   }, []);
 
   useEffect(() => {
+    setFormTipo(tipo);
+    setFormSector(sector);
     if (receta) {
       const esGeneral = receta.medicamento === "SOLICITUD_RECETA";
       setEsSolicitudGeneral(esGeneral);
@@ -110,15 +114,36 @@ export function RecetaModal({
       });
     } else {
       setEsSolicitudGeneral(false);
-      setFormItems([]);
+      // Si es modo médico, inicializar con al menos 1 ítem para empezar a prescribir
+      setFormItems(isDoctorMode ? [nuevoItemVacio()] : []);
       setActiveComboIdx(null);
-      setForm({ nombrePaciente: "", rut: "", medicamento: "", codigoMedicamento: "", cantidad: "", nota: "", estado: "pendiente", medicoReceta: "", medicoUid: "", fechaLimite: "", autoRenovacion: 0, motivoRechazo: "" });
+      setForm({
+        nombrePaciente: "",
+        rut: "",
+        medicamento: "",
+        codigoMedicamento: "",
+        cantidad: "",
+        nota: "",
+        estado: isDoctorMode ? "completado" : "pendiente",
+        medicoReceta: isDoctorMode ? farmaciaUser.name : "",
+        medicoUid: isDoctorMode ? farmaciaUser.id : "",
+        fechaLimite: "",
+        autoRenovacion: 0,
+        motivoRechazo: "",
+      });
     }
-  }, [receta, isOpen]);
+  }, [receta, isOpen, tipo, sector]);
 
   if (!isOpen) return null;
 
   const collectionName = tipo === "controladas" ? "recetas_controladas" : "recetas_cronicas";
+  const targetCollection = !receta
+    ? (formTipo === "controladas" ? "recetas_controladas" : "recetas_cronicas")
+    : collectionName;
+  const targetSector = !receta ? formSector : sector;
+  const targetTipo = !receta
+    ? (formTipo === "controladas" ? "controlado" : "cronico")
+    : (tipo === "controladas" ? "controlado" : "cronico");
 
   const formatRut = (raw: string) => {
     const clean = raw.replace(/[^0-9kK]/g, "").toUpperCase();
@@ -182,7 +207,7 @@ export function RecetaModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isDoctorMode && !validarRut(form.rut)) {
+    if (!validarRut(form.rut)) {
       alert("El RUT ingresado no es válido. Por favor, corríjalo antes de guardar.");
       return;
     }
@@ -190,52 +215,53 @@ export function RecetaModal({
     try {
       const now = Timestamp.now();
 
-      if (isDoctorMode && receta) {
-        // ── Modo médico: guarda items[] + estado ──────────────────────────────
-        const snapAntes = await getDoc(doc(db, collectionName, receta.id));
-        const dataAntes = snapAntes.data() as Record<string, unknown>;
+      if (isDoctorMode) {
+        if (receta) {
+          // ── Modo médico: guarda items[] + estado en receta existente ──────────────────────────────
+          const snapAntes = await getDoc(doc(db, collectionName, receta.id));
+          const dataAntes = snapAntes.data() as Record<string, unknown>;
 
-        // items válidos (con medicamento real, no solicitudes genéricas sin asignar)
-        const itemsValidos = formItems.filter(it => it.codigoMedicamento && it.cantidad > 0);
-        // Mantener mesesDescontados de los items que ya existían
-        const itemsConMeses: ItemReceta[] = formItems.map((it, idx) => ({
-          ...it,
-          // Preservar mesesDescontados si el ítem ya existía y tiene el mismo código
-          mesesDescontados: it.mesesDescontados ?? 0,
-        }));
+          // items válidos (con medicamento real, no solicitudes genéricas sin asignar)
+          const itemsValidos = formItems.filter(it => it.codigoMedicamento && it.cantidad > 0);
+          // Mantener mesesDescontados de los items que ya existían
+          const itemsConMeses: ItemReceta[] = formItems.map((it, idx) => ({
+            ...it,
+            // Preservar mesesDescontados si el ítem ya existía y tiene el mismo código
+            mesesDescontados: it.mesesDescontados ?? 0,
+          }));
 
-        // Primer ítem para retrocompatibilidad de campos planos
-        const primerItem = itemsConMeses[0] ?? nuevoItemVacio();
+          // Primer ítem para retrocompatibilidad de campos planos
+          const primerItem = itemsConMeses[0] ?? nuevoItemVacio();
 
-        const payload = {
-          estado: form.estado,
-          // Campos planos (retrocompatibilidad + cifrado existente)
-          medicamento: primerItem.medicamento,
-          codigoMedicamento: primerItem.codigoMedicamento,
-          cantidad: primerItem.cantidad,
-          // Array de ítems (modelo nuevo)
-          items: itemsConMeses,
-          actualizadoEn: now,
-          medicoReceta: form.estado !== "pendiente"
-            ? (receta.medicoReceta || farmaciaUser.name)
-            : receta.medicoReceta,
-          medicoUid: form.estado !== "pendiente"
-            ? (receta.medicoUid || farmaciaUser.id)
-            : receta.medicoUid,
-          fechaReceta: form.estado === "completado" ? (receta.fechaReceta ?? now) : null,
-          motivoRechazo: form.estado === "rechazado" ? (form.motivoRechazo || "") : "",
-        };
-        const payloadCifrado = encryptRecetaFields(payload as any);
-        await updateDoc(doc(db, collectionName, receta.id), payloadCifrado);
-        const cambios = detectarCambios(
-          dataAntes,
-          payloadCifrado as Record<string, unknown>,
-          ["estado", "medicoReceta", "motivoRechazo", "medicamento", "cantidad", "items"]
-        );
-        await registrarAccion(collectionName, receta.id, "MODIFICACION", farmaciaUser, cambios);
+          const payload = {
+            estado: form.estado,
+            // Campos planos (retrocompatibilidad + cifrado existente)
+            medicamento: primerItem.medicamento,
+            codigoMedicamento: primerItem.codigoMedicamento,
+            cantidad: primerItem.cantidad,
+            // Array de ítems (modelo nuevo)
+            items: itemsConMeses,
+            actualizadoEn: now,
+            medicoReceta: form.estado !== "pendiente"
+              ? (receta.medicoReceta || farmaciaUser.name)
+              : receta.medicoReceta,
+            medicoUid: form.estado !== "pendiente"
+              ? (receta.medicoUid || farmaciaUser.id)
+              : receta.medicoUid,
+            fechaReceta: form.estado === "completado" ? (receta.fechaReceta ?? now) : null,
+            motivoRechazo: form.estado === "rechazado" ? (form.motivoRechazo || "") : "",
+          };
+          const payloadCifrado = encryptRecetaFields(payload as any);
+          await updateDoc(doc(db, collectionName, receta.id), payloadCifrado);
+          const cambios = detectarCambios(
+            dataAntes,
+            payloadCifrado as Record<string, unknown>,
+            ["estado", "medicoReceta", "motivoRechazo", "medicamento", "cantidad", "items"]
+          );
+          await registrarAccion(collectionName, receta.id, "MODIFICACION", farmaciaUser, cambios);
 
-        // ── Lógica de stock por ítem ──────────────────────────────────────────
-        import("firebase/firestore").then(({ increment, updateDoc: uDoc, doc: fDoc }) => {
+          // ── Lógica de stock por ítem ──────────────────────────────────────────
+          const { increment, updateDoc: uDoc, doc: fDoc } = await import("firebase/firestore");
           const oldItems: ItemReceta[] = Array.isArray(dataAntes.items)
             ? (dataAntes.items as ItemReceta[])
             : getItemsDeReceta(receta);
@@ -251,7 +277,7 @@ export function RecetaModal({
             });
             // Marcar mesesDescontados = 0 en todos los ítems
             const itemsReset = itemsConMeses.map(it => ({ ...it, mesesDescontados: 0, autoRenovacion: 0 }));
-            updateDoc(doc(db, collectionName, receta.id), { items: itemsReset }).catch(console.error);
+            await updateDoc(doc(db, collectionName, receta.id), { items: itemsReset });
 
           } else {
             // Para cada ítem nuevo/modificado, calcular delta de stock
@@ -295,9 +321,65 @@ export function RecetaModal({
             }
 
             // Guardar items actualizados con mesesDescontados correctos
-            updateDoc(doc(db, collectionName, receta.id), { items: itemsActualizados }).catch(console.error);
+            await updateDoc(doc(db, collectionName, receta.id), { items: itemsActualizados });
           }
-        });
+        } else {
+          // ── Modo médico: CREAR NUEVA RECETA CON MULTI-MEDICAMENTO ──────────────────
+          const itemsValidos = formItems.filter(it => it.codigoMedicamento && it.cantidad > 0);
+          if (itemsValidos.length === 0) {
+            alert("Por favor agregue al menos un medicamento válido del inventario con su cantidad.");
+            setLoading(false);
+            return;
+          }
+
+          const itemsConMeses: ItemReceta[] = formItems.map((it) => ({
+            ...it,
+            mesesDescontados: (form.estado === "completado" && it.codigoMedicamento && it.cantidad > 0) ? 1 : 0,
+          }));
+
+          const primerItem = itemsConMeses[0] ?? nuevoItemVacio();
+
+          const payload = {
+            nombrePaciente: form.nombrePaciente,
+            rut: form.rut,
+            medicamento: primerItem.medicamento,
+            codigoMedicamento: primerItem.codigoMedicamento,
+            cantidad: primerItem.cantidad,
+            items: itemsConMeses,
+            nota: form.nota,
+            estado: form.estado,
+            medicoReceta: farmaciaUser.name,
+            medicoUid: farmaciaUser.id,
+            fechaLimite: dateStrToTs(form.fechaLimite),
+            autoRenovacion: primerItem.autoRenovacion ?? 0,
+            motivoRechazo: "",
+            sector: targetSector,
+            tipo: targetTipo,
+            fechaSolicitud: now,
+            fechaReceta: form.estado === "completado" ? now : null,
+            creadoPor: farmaciaUser.id,
+            creadoPorMedico: true,
+            creadoEn: now,
+            eliminada: false,
+            mesesDescontados: form.estado === "completado" ? 1 : 0,
+          };
+
+          const payloadCifrado = encryptRecetaFields(payload as any);
+          const docRef = await addDoc(collection(db, targetCollection), payloadCifrado);
+          await registrarAccion(targetCollection, docRef.id, "CREACION", farmaciaUser);
+
+          // Descontar stock en inventario para cada medicamento prescrito si la receta es autorizada
+          if (form.estado === "completado") {
+            const { increment, updateDoc: uDoc, doc: fDoc } = await import("firebase/firestore");
+            for (const it of itemsConMeses) {
+              if (it.codigoMedicamento && it.cantidad > 0) {
+                uDoc(fDoc(db, "inventario", it.codigoMedicamento), {
+                  stock: increment(-it.cantidad)
+                }).catch(console.error);
+              }
+            }
+          }
+        }
       } else {
         const payload: Partial<Receta> = {
           nombrePaciente: form.nombrePaciente,
@@ -407,12 +489,26 @@ export function RecetaModal({
         <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#DDE6F5] bg-[#F8FAFF] rounded-t-3xl">
           <div>
             <h2 className="text-xl font-black text-[#0F1B35]">
-              {isDoctorMode && receta ? "Autorizar / Rechazar Receta" : receta ? "Editar Solicitud" : "Nueva Solicitud"}
+              {isDoctorMode && receta
+                ? "Autorizar / Rechazar Receta"
+                : isDoctorMode && !receta
+                ? "Nueva Receta Médica"
+                : receta
+                ? "Editar Solicitud"
+                : "Nueva Solicitud"}
             </h2>
             <p className="text-xs text-[#5D7299] mt-0.5">
-              {tipo === "controladas" ? "💊 Controlada" : "📋 Crónica"} — Sector {sector}
+              {!receta ? (
+                <span>
+                  {formTipo === "controladas" ? "💊 Controlada" : "🩺 Crónica"} — Sector {formSector}
+                </span>
+              ) : (
+                <span>
+                  {tipo === "controladas" ? "💊 Controlada" : "🩺 Crónica"} — Sector {sector}
+                </span>
+              )}
               {isDoctorMode && (
-                <span className="ml-2 text-brand-blue">🩺 Vista de médico</span>
+                <span className="ml-2 text-brand-blue font-semibold">🩺 Dr(a). {farmaciaUser.name}</span>
               )}
             </p>
           </div>
@@ -426,7 +522,7 @@ export function RecetaModal({
           <form id="receta-form" onSubmit={handleSubmit} className="p-6 space-y-6">
 
           {/* ── Datos del paciente ── */}
-          {isDoctorMode && receta ? (
+          {isDoctorMode ? (
             // Médico: datos del paciente + lista editable de ítems
             <div className="space-y-4">
               {/* Datos del paciente */}
@@ -434,43 +530,88 @@ export function RecetaModal({
                 <div className="flex items-center gap-2 mb-1">
                   <Lock className="w-3.5 h-3.5 text-[#8FA3C4]" />
                   <p className="text-xs font-bold text-[#5D7299] uppercase tracking-widest">
-                    Datos del paciente {puedeEditarDatos ? "(editable)" : "(solo lectura)"}
+                    Datos del paciente {!receta || puedeEditarDatos ? "(editable)" : "(solo lectura)"}
                   </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className={labelClass}>Paciente</label>
-                    {puedeEditarDatos ? (
+                    {!receta || puedeEditarDatos ? (
                       <input
                         required
                         type="text"
+                        placeholder="Juan Pérez González"
                         value={form.nombrePaciente}
                         onChange={(e) => setForm({ ...form, nombrePaciente: e.target.value })}
                         className={inputClass}
                       />
                     ) : (
-                      <div className={inputDisabledClass}>{receta.nombrePaciente}</div>
+                      <div className={inputDisabledClass}>{receta?.nombrePaciente}</div>
                     )}
                   </div>
                   <div>
                     <label className={labelClass}>RUT</label>
-                    {puedeEditarDatos ? (
+                    {!receta || puedeEditarDatos ? (
                       <input
                         required
                         type="text"
+                        placeholder="12.345.678-9"
                         value={form.rut}
+                        maxLength={12}
                         onChange={(e) => setForm({ ...form, rut: formatRut(e.target.value) })}
                         className={`${inputClass} font-mono`}
                       />
                     ) : (
-                      <div className={`${inputDisabledClass} font-mono`}>{receta.rut}</div>
+                      <div className={`${inputDisabledClass} font-mono`}>{receta?.rut}</div>
                     )}
                   </div>
                 </div>
-                {receta.nota && (
+
+                {!receta && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className={labelClass}>Tipo de Receta</label>
+                      <select
+                        value={formTipo}
+                        onChange={(e) => setFormTipo(e.target.value as "controladas" | "cronicas")}
+                        className={inputClass}
+                      >
+                        <option value="controladas">💊 Receta Controlada</option>
+                        <option value="cronicas">🩺 Receta Crónica</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Sector</label>
+                      <select
+                        value={formSector}
+                        onChange={(e) => setFormSector(e.target.value as "A" | "B" | "CECOSF")}
+                        className={inputClass}
+                      >
+                        <option value="A">Sector A</option>
+                        <option value="B">Sector B</option>
+                        <option value="CECOSF">CECOSF</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {receta?.nota && (
                   <div>
-                    <label className={labelClass}>Nota</label>
+                    <label className={labelClass}>Nota de la Solicitud</label>
                     <div className={`${inputDisabledClass} whitespace-pre-wrap`}>{receta.nota}</div>
+                  </div>
+                )}
+
+                {!receta && (
+                  <div>
+                    <label className={labelClass}>Indicaciones / Observaciones (opcional)</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Posología o indicaciones para el paciente..."
+                      value={form.nota}
+                      onChange={(e) => setForm({ ...form, nota: e.target.value })}
+                      className={`${inputClass} resize-none`}
+                    />
                   </div>
                 )}
               </div>
@@ -832,14 +973,18 @@ export function RecetaModal({
                 <label className={labelClass}>Estado</label>
                 {isDoctorMode ? (
                   <div className="flex gap-2">
-                    {(["pendiente", "completado", "rechazado"] as const).map((est) => {
+                    {(!receta ? (["completado", "pendiente"] as const) : (["pendiente", "completado", "rechazado"] as const)).map((est) => {
                       const icons = { pendiente: null, completado: CheckCircle2, rechazado: XCircle };
                       const activeColors = {
                         pendiente: "border-amber-300 bg-amber-50 text-amber-700 shadow-sm",
                         completado: "border-green-400 bg-green-50 text-green-700 shadow-sm",
                         rechazado: "border-red-300 bg-red-50 text-red-600 shadow-sm",
                       };
-                      const labels = { pendiente: "Pendiente", completado: "Autorizar", rechazado: "Rechazar" };
+                      const labels = {
+                        pendiente: !receta ? "Borrador (Pendiente)" : "Pendiente",
+                        completado: !receta ? "Emitir (Autorizada)" : "Autorizar",
+                        rechazado: "Rechazar"
+                      };
                       const Icon = icons[est];
                       return (
                         <button
@@ -903,8 +1048,8 @@ export function RecetaModal({
             </div>
           </div>
 
-          {/* Auto-renovación / Duración — Visible si está completado o rechazado (para deshabilitarlo), si se crea nueva, o si ya tiene duración. */}
-          {(form.estado === "completado" || form.estado === "rechazado" || (!receta && puedeEditarDatos) || (!receta && (farmaciaUser.role === 'medico' || farmaciaUser.isMedico)) || (form.autoRenovacion && form.autoRenovacion > 0)) && (
+          {/* Auto-renovación / Duración — Solo para funcionario (el médico la define por ítem de medicamento) */}
+          {!isDoctorMode && (form.estado === "completado" || form.estado === "rechazado" || (!receta && puedeEditarDatos) || (form.autoRenovacion && form.autoRenovacion > 0)) && (
             <div className={`${form.estado === "completado" ? "bg-green-50 border-green-200" : form.estado === "rechazado" ? "bg-slate-50 border-slate-200 opacity-60" : "bg-blue-50 border-brand-blue/20"} border rounded-xl p-4 space-y-2 transition-all`}>
               <p className={`text-xs font-bold ${form.estado === "completado" ? "text-green-700" : form.estado === "rechazado" ? "text-slate-500" : "text-brand-blue"} uppercase tracking-widest`}>
                 {form.estado === "completado" || form.estado === "rechazado" ? "Auto-Renovación" : "Duración de la Receta"}
@@ -915,7 +1060,7 @@ export function RecetaModal({
               <select
                 value={form.estado === "rechazado" ? 0 : (form.autoRenovacion ?? 0)}
                 onChange={(e) => setForm({ ...form, autoRenovacion: Number(e.target.value) })}
-                disabled={form.estado === "rechazado" || (!puedeEditarDatos && !soloAutorizacion && !(!receta && (farmaciaUser.role === 'medico' || farmaciaUser.isMedico)))}
+                disabled={form.estado === "rechazado" || (!puedeEditarDatos && !soloAutorizacion)}
                 className={`w-full bg-white border ${form.estado === "completado" ? "border-green-200 text-green-800 focus:border-green-400" : form.estado === "rechazado" ? "border-slate-200 text-slate-500 cursor-not-allowed" : "border-brand-blue/20 text-brand-blue focus:border-brand-blue"} rounded-xl px-4 py-2.5 text-sm font-semibold outline-none transition-all disabled:opacity-50`}
               >
                 <option value={0}>Sin renovación automática</option>
@@ -961,7 +1106,7 @@ export function RecetaModal({
                 : "bg-brand-purple hover:bg-brand-purple-dark shadow-purple"
             }`}>
             <Save className="w-4 h-4" />
-            {loading ? "Guardando..." : isDoctorMode ? "Confirmar Decisión" : "Guardar Registro"}
+            {loading ? "Guardando..." : isDoctorMode && !receta ? "Emitir Receta Médica" : isDoctorMode ? "Confirmar Decisión" : "Guardar Registro"}
           </button>
         </div>
 
