@@ -526,9 +526,9 @@ export function RecetaList({
           tipo={tipo as "controladas" | "cronicas"}
           sector={sector as "A" | "B" | "CECOSF"}
           farmaciaUser={farmaciaUser}
-          soloAutorizacion={isMedico && !isAdmin}
+          soloAutorizacion={Boolean(editing && (isMedico || isAdmin))}
           puedeEditarDatos={puedeEditarDatos}
-          puedeAutorizar={isAdmin}
+          puedeAutorizar={isAdmin || isMedico}
         />
       )}
       {ticketReceta && (

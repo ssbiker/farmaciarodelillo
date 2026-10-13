@@ -311,9 +311,9 @@ export function VistaMedico({
           tipo={selectedReceta.tipo === "controlado" ? "controladas" : "cronicas"}
           sector={selectedReceta.sector as "A" | "B"}
           farmaciaUser={farmaciaUser}
-          soloAutorizacion={!isAdmin && !isFuncionario && isMedico}
+          soloAutorizacion={true}
           puedeEditarDatos={isAdmin || isFuncionario}
-          puedeAutorizar={isAdmin || isMedico}
+          puedeAutorizar={true}
         />
       )}
     </div>

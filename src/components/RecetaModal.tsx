@@ -55,6 +55,8 @@ export function RecetaModal({
   // Multi-medicamento (solo en modo médico/soloAutorizacion)
   const [formItems, setFormItems] = useState<ItemReceta[]>([]);
   const [activeComboIdx, setActiveComboIdx] = useState<number | null>(null); // índice del combobox abierto
+  const isDoctorUser = farmaciaUser.role === 'medico' || farmaciaUser.isMedico === true;
+  const isDoctorMode = soloAutorizacion || isDoctorUser;
   const dateRef = useRef<HTMLInputElement>(null);
   const comboboxRef = useRef<HTMLDivElement>(null);
 
@@ -170,7 +172,7 @@ export function RecetaModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!soloAutorizacion && !validarRut(form.rut)) {
+    if (!isDoctorMode && !validarRut(form.rut)) {
       alert("El RUT ingresado no es válido. Por favor, corríjalo antes de guardar.");
       return;
     }
@@ -178,7 +180,7 @@ export function RecetaModal({
     try {
       const now = Timestamp.now();
 
-      if (soloAutorizacion && receta) {
+      if (isDoctorMode && receta) {
         // ── Modo médico: guarda items[] + estado ──────────────────────────────
         const snapAntes = await getDoc(doc(db, collectionName, receta.id));
         const dataAntes = snapAntes.data() as Record<string, unknown>;
@@ -395,11 +397,11 @@ export function RecetaModal({
         <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#DDE6F5] bg-[#F8FAFF] rounded-t-3xl">
           <div>
             <h2 className="text-xl font-black text-[#0F1B35]">
-              {soloAutorizacion ? "Autorizar / Rechazar Receta" : receta ? "Editar Solicitud" : "Nueva Solicitud"}
+              {isDoctorMode && receta ? "Autorizar / Rechazar Receta" : receta ? "Editar Solicitud" : "Nueva Solicitud"}
             </h2>
             <p className="text-xs text-[#5D7299] mt-0.5">
               {tipo === "controladas" ? "💊 Controlada" : "📋 Crónica"} — Sector {sector}
-              {soloAutorizacion && (
+              {isDoctorMode && (
                 <span className="ml-2 text-brand-blue">🩺 Vista de médico</span>
               )}
             </p>
@@ -414,23 +416,45 @@ export function RecetaModal({
           <form id="receta-form" onSubmit={handleSubmit} className="p-6 space-y-6">
 
           {/* ── Datos del paciente ── */}
-          {soloAutorizacion && receta ? (
-            // Médico: datos del paciente en lectura + lista editable de ítems
+          {isDoctorMode && receta ? (
+            // Médico: datos del paciente + lista editable de ítems
             <div className="space-y-4">
-              {/* Datos del paciente — solo lectura */}
+              {/* Datos del paciente */}
               <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-4 space-y-3">
                 <div className="flex items-center gap-2 mb-1">
                   <Lock className="w-3.5 h-3.5 text-[#8FA3C4]" />
-                  <p className="text-xs font-bold text-[#5D7299] uppercase tracking-widest">Datos del paciente (solo lectura)</p>
+                  <p className="text-xs font-bold text-[#5D7299] uppercase tracking-widest">
+                    Datos del paciente {puedeEditarDatos ? "(editable)" : "(solo lectura)"}
+                  </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className={labelClass}>Paciente</label>
-                    <div className={inputDisabledClass}>{receta.nombrePaciente}</div>
+                    {puedeEditarDatos ? (
+                      <input
+                        required
+                        type="text"
+                        value={form.nombrePaciente}
+                        onChange={(e) => setForm({ ...form, nombrePaciente: e.target.value })}
+                        className={inputClass}
+                      />
+                    ) : (
+                      <div className={inputDisabledClass}>{receta.nombrePaciente}</div>
+                    )}
                   </div>
                   <div>
                     <label className={labelClass}>RUT</label>
-                    <div className={`${inputDisabledClass} font-mono`}>{receta.rut}</div>
+                    {puedeEditarDatos ? (
+                      <input
+                        required
+                        type="text"
+                        value={form.rut}
+                        onChange={(e) => setForm({ ...form, rut: formatRut(e.target.value) })}
+                        className={`${inputClass} font-mono`}
+                      />
+                    ) : (
+                      <div className={`${inputDisabledClass} font-mono`}>{receta.rut}</div>
+                    )}
                   </div>
                 </div>
                 {receta.nota && (
@@ -758,12 +782,12 @@ export function RecetaModal({
           {/* ── Estado y médico ── */}
           <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-5 space-y-5">
             <p className="text-xs font-bold text-brand-purple uppercase tracking-widest">
-              {soloAutorizacion ? "🩺 Decisión Médica" : "Estado de la Solicitud"}
+              {isDoctorMode ? "🩺 Decisión Médica" : "Estado de la Solicitud"}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>Estado</label>
-                {soloAutorizacion ? (
+                {isDoctorMode ? (
                   <div className="flex gap-2">
                     {(["pendiente", "completado", "rechazado"] as const).map((est) => {
                       const icons = { pendiente: null, completado: CheckCircle2, rechazado: XCircle };
@@ -889,12 +913,12 @@ export function RecetaModal({
           </button>
           <button type="submit" form="receta-form" disabled={loading}
             className={`flex items-center gap-2 text-white px-8 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm ${
-              soloAutorizacion
+              isDoctorMode
                 ? "bg-brand-blue hover:bg-brand-blue-dark shadow-blue"
                 : "bg-brand-purple hover:bg-brand-purple-dark shadow-purple"
             }`}>
             <Save className="w-4 h-4" />
-            {loading ? "Guardando..." : soloAutorizacion ? "Confirmar Decisión" : "Guardar Registro"}
+            {loading ? "Guardando..." : isDoctorMode ? "Confirmar Decisión" : "Guardar Registro"}
           </button>
         </div>
 
