@@ -156,18 +156,28 @@ export function RecetaModal({
   };
 
   // Asistente de Cálculo Matemático
-  const [showCalc, setShowCalc] = useState(false);
+  const [calcOpenIdx, setCalcOpenIdx] = useState<number | null>(null);
   const [calcDosis, setCalcDosis] = useState("1");
   const [calcHoras, setCalcHoras] = useState("8");
   const [calcDias, setCalcDias] = useState("30");
 
-  const runCalculadora = (d: string, h: string, days: string) => {
+  const runCalculadora = (d: string, h: string, days: string, targetIdx: number = 0) => {
     const dosis = parseFloat(d) || 0;
     const horas = parseFloat(h) || 24;
     const dias = parseFloat(days) || 0;
     const tomas = 24 / (horas > 0 ? horas : 24);
     const total = Math.ceil(tomas * dosis * dias);
+
+    // 1. Actualizar form.cantidad (por compatibilidad)
     setForm(f => ({ ...f, cantidad: total > 0 ? total.toString() : "" }));
+
+    // 2. Actualizar el ítem correspondiente en formItems (modo médico)
+    setFormItems(prev => {
+      if (prev.length === 0) return prev;
+      return prev.map((it, i) =>
+        i === targetIdx ? { ...it, cantidad: total } : it
+      );
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -592,42 +602,75 @@ export function RecetaModal({
                       </div>
                     </div>
 
-                    {/* Asistente matemático — solo para el primer ítem por simplicidad */}
-                    {idx === 0 && (
-                      <div>
-                        <button
-                          type="button"
-                          onClick={() => setShowCalc(!showCalc)}
-                          className="text-[11px] text-brand-blue font-bold flex items-center gap-1 hover:underline outline-none"
-                        >
-                          {showCalc ? "Ocultar asistente de cálculo" : "✦ Mostrar asistente de cálculo"}
-                        </button>
-                        {showCalc && (
-                          <div className="mt-2 bg-brand-blue/5 border border-brand-blue/15 rounded-xl p-3 flex gap-3 items-end">
-                            <div>
-                              <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Dosis (u.)</label>
-                              <input type="number" min="0" step="0.5" value={calcDosis}
-                                onChange={(e) => { setCalcDosis(e.target.value); runCalculadora(e.target.value, calcHoras, calcDias); }}
-                                className="w-14 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center focus:border-brand-blue outline-none" />
-                            </div>
-                            <div className="pb-1.5 text-[#5D7299] text-xs font-bold">cada</div>
-                            <div>
-                              <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Horas</label>
-                              <input type="number" min="1" value={calcHoras}
-                                onChange={(e) => { setCalcHoras(e.target.value); runCalculadora(calcDosis, e.target.value, calcDias); }}
-                                className="w-14 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center focus:border-brand-blue outline-none" />
-                            </div>
-                            <div className="pb-1.5 text-[#5D7299] text-xs font-bold">por</div>
-                            <div>
-                              <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Días</label>
-                              <input type="number" min="1" value={calcDias}
-                                onChange={(e) => { setCalcDias(e.target.value); runCalculadora(calcDosis, calcHoras, e.target.value); }}
-                                className="w-14 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center focus:border-brand-blue outline-none" />
-                            </div>
+                    {/* Asistente matemático por ítem */}
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (calcOpenIdx === idx) {
+                            setCalcOpenIdx(null);
+                          } else {
+                            setCalcOpenIdx(idx);
+                            runCalculadora(calcDosis, calcHoras, calcDias, idx);
+                          }
+                        }}
+                        className="text-[11px] text-brand-blue font-bold flex items-center gap-1 hover:underline outline-none"
+                      >
+                        {calcOpenIdx === idx ? "Ocultar asistente de cálculo" : "✦ Asistente de cálculo matemático"}
+                      </button>
+                      {calcOpenIdx === idx && (
+                        <div className="mt-2 bg-brand-blue/5 border border-brand-blue/15 rounded-xl p-3 flex flex-wrap gap-3 items-end">
+                          <div>
+                            <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Dosis (u.)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.5"
+                              value={calcDosis}
+                              onChange={(e) => {
+                                setCalcDosis(e.target.value);
+                                runCalculadora(e.target.value, calcHoras, calcDias, idx);
+                              }}
+                              className="w-16 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center font-bold focus:border-brand-blue outline-none"
+                            />
                           </div>
-                        )}
-                      </div>
-                    )}
+                          <div className="pb-1.5 text-[#5D7299] text-xs font-bold">cada</div>
+                          <div>
+                            <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Horas</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={calcHoras}
+                              onChange={(e) => {
+                                setCalcHoras(e.target.value);
+                                runCalculadora(calcDosis, e.target.value, calcDias, idx);
+                              }}
+                              className="w-16 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center font-bold focus:border-brand-blue outline-none"
+                            />
+                          </div>
+                          <div className="pb-1.5 text-[#5D7299] text-xs font-bold">por</div>
+                          <div>
+                            <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Días</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={calcDias}
+                              onChange={(e) => {
+                                setCalcDias(e.target.value);
+                                runCalculadora(calcDosis, calcHoras, e.target.value, idx);
+                              }}
+                              className="w-16 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center font-bold focus:border-brand-blue outline-none"
+                            />
+                          </div>
+                          <div className="pb-1.5 ml-auto text-right">
+                            <span className="text-[10px] font-bold text-brand-blue/70 uppercase block">Total calculado</span>
+                            <span className="text-sm font-black text-brand-blue bg-white border border-brand-blue/20 rounded-lg px-2.5 py-1 inline-block shadow-sm">
+                              {Math.ceil((24 / (parseFloat(calcHoras) || 24)) * (parseFloat(calcDosis) || 0) * (parseFloat(calcDias) || 0))} unid.
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
 
