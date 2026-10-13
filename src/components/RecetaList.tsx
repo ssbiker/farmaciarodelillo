@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Receta, FarmaciaConfig, FarmaciaUser } from "../types";
 import {
   Clock, CheckCircle2, XCircle, Trash2, Edit, Printer,
-  Plus, Search, AlertCircle, ChevronDown, History,
+  Plus, Search, AlertCircle, ChevronDown, ChevronRight, History,
 } from "lucide-react";
 import { doc, updateDoc, Timestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -10,7 +10,7 @@ import { registrarAccion } from "../lib/auditoria";
 import { RecetaModal } from "./RecetaModal";
 import { TicketModal } from "./TicketModal";
 import { AuditoriaDrawer } from "./AuditoriaDrawer";
-import { getItemsDeReceta } from "../lib/recetaHelpers";
+import { getItemsDeReceta, getEstadoItemRenovacion } from "../lib/recetaHelpers";
 
 function daysSince(ts: any): number {
   const now = new Date();
@@ -158,6 +158,7 @@ export function RecetaList({
   isFuncionario,
   farmaciaUser,
   activeTab,
+  todasRecetas,
 }: {
   recetas: Receta[];
   config: FarmaciaConfig;
@@ -167,6 +168,7 @@ export function RecetaList({
   isFuncionario: boolean;
   farmaciaUser: FarmaciaUser;
   activeTab: string;
+  todasRecetas?: Receta[];
 }) {
   const [search, setSearch] = useState("");
   const [filterEstado, setFilterEstado] = useState("all");
@@ -175,6 +177,12 @@ export function RecetaList({
   const [ticketReceta, setTicketReceta] = useState<Receta | null>(null);
   const [papeleraReceta, setPapeleraReceta] = useState<Receta | null>(null);
   const [auditoriaReceta, setAuditoriaReceta] = useState<Receta | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const toggleRow = (id: string) => setExpandedRows(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
   const tipo = activeTab.startsWith("controladas") ? "controladas" : "cronicas";
   const sector = activeTab.includes("CECOSF") ? "CECOSF" : activeTab.split("_")[1];
@@ -334,42 +342,6 @@ export function RecetaList({
                       {isCritical && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-red-500" />}
                       {isWarning && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-yellow-500" />}
                       <EstadoBadge estado={receta.estado} />
-                      {/* Badge auto-renovación */}
-                      {(() => {
-                        if (!receta.autoRenovacion || receta.autoRenovacion <= 0) return null;
-                        
-                        const start = receta.fechaSolicitud.toDate();
-                        const today = new Date();
-                        let elapsedMonths = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
-                        if (today.getDate() < start.getDate()) elapsedMonths--;
-                        
-                        const currentMonth = Math.max(1, elapsedMonths + 1);
-                        
-                        if (currentMonth > receta.autoRenovacion) {
-                          return (
-                            <span className="block mt-1.5 inline-flex items-center gap-1 text-[11px] bg-red-50 text-red-600 border border-red-200 rounded-full px-2 py-0.5 font-bold shadow-sm leading-tight" title="Las renovaciones autorizadas ya se agotaron">
-                              ⚠️ Venció (eran {receta.autoRenovacion}m)
-                            </span>
-                          );
-                        }
-                        if (receta.estado === "rechazado") {
-                          return null;
-                        }
-                        
-                        if (receta.estado === "pendiente") {
-                          return (
-                            <span className="block mt-1.5 inline-flex items-center gap-1 text-[11px] bg-blue-50 text-brand-blue border border-brand-blue/20 rounded-full px-2 py-0.5 font-bold shadow-sm leading-tight">
-                              🔄 Renovable por {receta.autoRenovacion}m
-                            </span>
-                          );
-                        }
-
-                        return (
-                          <span className="block mt-1.5 inline-flex items-center gap-1 text-[11px] bg-green-50 text-green-700 border border-green-200 rounded-full px-2 py-0.5 font-bold shadow-sm leading-tight">
-                            🔄 Renovada {currentMonth} de {receta.autoRenovacion}
-                          </span>
-                        );
-                      })()}
                     </td>
                     <td className="px-5 py-4">
                       <span className="font-semibold text-[#0F1B35]">{receta.nombrePaciente}</span>
@@ -381,14 +353,12 @@ export function RecetaList({
                       {(() => {
                         const items = getItemsDeReceta(receta);
                         const isMulti = items.length > 1;
-                        const firstItem = items[0] || { medicamento: receta.medicamento, cantidad: receta.cantidad };
-                        const extraCount = items.length - 1;
-                        const itemsTooltip = items
-                          .map((it, idx) => `${idx + 1}. ${it.medicamento === "SOLICITUD_RECETA" ? "Solicitud s/med" : it.medicamento}${it.cantidad ? ` ×${it.cantidad}` : ""}`)
-                          .join("\n");
+                        const firstItem = items[0] || { medicamento: receta.medicamento, cantidad: receta.cantidad, autoRenovacion: 0, mesesDescontados: 0 };
+                        const isExpanded = expandedRows.has(receta.id);
 
                         return (
                           <div className="flex flex-col gap-1 items-start">
+                            {/* Primera línea: nombre del primer medicamento */}
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {firstItem.medicamento === "SOLICITUD_RECETA" ? (
                                 <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5">
@@ -404,15 +374,61 @@ export function RecetaList({
                                   ×{firstItem.cantidad}
                                 </span>
                               ) : null}
+                              {/* Badge de estado del PRIMER ítem */}
+                              {receta.estado === "completado" && firstItem.medicamento !== "SOLICITUD_RECETA" && (() => {
+                                const est = getEstadoItemRenovacion(firstItem as any, receta.fechaSolicitud);
+                                return (
+                                  <span className={`text-[10px] font-bold ${est.bg} ${est.text} border ${est.border} rounded-full px-1.5 py-0.5`}>
+                                    {est.label}
+                                  </span>
+                                );
+                              })()}
                             </div>
 
+                            {/* Botón expandir si hay más medicamentos */}
                             {isMulti && (
-                              <span
-                                title={itemsTooltip}
-                                className="inline-flex items-center gap-1 text-[11px] font-bold bg-brand-blue/10 text-brand-blue border border-brand-blue/20 rounded-full px-2 py-0.5 shadow-sm cursor-help hover:bg-brand-blue/20 transition-colors"
+                              <button
+                                type="button"
+                                onClick={() => toggleRow(receta.id)}
+                                className="inline-flex items-center gap-1 text-[11px] font-bold bg-brand-blue/10 text-brand-blue border border-brand-blue/20 rounded-full px-2 py-0.5 shadow-sm hover:bg-brand-blue/20 transition-colors"
                               >
-                                💊 +{extraCount} más
-                              </span>
+                                {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                                💊 {isExpanded ? "Ocultar" : `+${items.length - 1} medicamento${items.length > 2 ? 's' : ''} más`}
+                              </button>
+                            )}
+
+                            {/* Panel expandido: lista completa de medicamentos */}
+                            {isMulti && isExpanded && (
+                              <div className="mt-2 w-full space-y-1.5 bg-[#F8FAFF] border border-[#DDE6F5] rounded-xl p-3 shadow-sm">
+                                <p className="text-[10px] font-bold text-[#5D7299] uppercase tracking-widest mb-2">Todos los medicamentos</p>
+                                {items.map((it, idx) => {
+                                  const est = receta.estado === "completado" && it.medicamento !== "SOLICITUD_RECETA"
+                                    ? getEstadoItemRenovacion(it, receta.fechaSolicitud)
+                                    : null;
+                                  return (
+                                    <div key={idx} className="flex items-center gap-2 bg-white rounded-lg border border-[#DDE6F5] px-3 py-2">
+                                      <span className="text-[11px] font-bold text-[#5D7299] min-w-[16px]">{idx + 1}.</span>
+                                      <div className="flex-1 min-w-0">
+                                        <span className="text-sm font-semibold text-brand-indigo block leading-tight">
+                                          {it.medicamento === "SOLICITUD_RECETA" ? "📋 Pendiente médico" : it.medicamento}
+                                        </span>
+                                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                          {it.cantidad > 0 && (
+                                            <span className="text-[10px] font-bold text-[#5D7299] bg-[#F0F4FF] px-1.5 py-0.5 rounded border border-[#DDE6F5]">
+                                              ×{it.cantidad} unidades
+                                            </span>
+                                          )}
+                                          {est && (
+                                            <span className={`text-[10px] font-bold ${est.bg} ${est.text} border ${est.border} rounded-full px-1.5 py-0.5`}>
+                                              {est.label}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             )}
                           </div>
                         );
@@ -529,6 +545,7 @@ export function RecetaList({
           soloAutorizacion={Boolean(editing && (isMedico || isAdmin))}
           puedeEditarDatos={puedeEditarDatos}
           puedeAutorizar={isAdmin || isMedico}
+          todasRecetas={todasRecetas ?? recetas}
         />
       )}
       {ticketReceta && (

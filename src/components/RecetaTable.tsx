@@ -188,6 +188,7 @@ export function RecetaTable({
           tipo={tipo as "controladas" | "cronicas"}
           sector={sector as "A" | "B"}
           farmaciaUser={farmaciaUser}
+          todasRecetas={recetas}
         />
       )}
 

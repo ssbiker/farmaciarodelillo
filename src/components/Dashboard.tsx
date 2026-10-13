@@ -383,6 +383,7 @@ export function Dashboard({
           isFuncionario={isFuncionario}
           farmaciaUser={farmaciaUser}
           activeTab={activeTab}
+          todasRecetas={todasRecetas}
         />
       )}
 

@@ -60,3 +60,36 @@ export function nuevoItemVacio(): ItemReceta {
     mesesDescontados: 0,
   };
 }
+
+/**
+ * Calcula el estado visual de renovación para un ítem de receta.
+ * Devuelve texto, color de bg, border y text para un badge.
+ */
+export function getEstadoItemRenovacion(
+  item: ItemReceta,
+  fechaSolicitud: any  // Timestamp de Firebase
+): { label: string; bg: string; border: string; text: string } {
+  if (!fechaSolicitud || typeof fechaSolicitud.toDate !== "function") {
+    return { label: "⚡ Entrega única", bg: "bg-[#EFF3FB]", border: "border-[#DDE6F5]", text: "text-[#3D5278]" };
+  }
+  const start = fechaSolicitud.toDate();
+  const today = new Date();
+  let elapsedMonths = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
+  if (today.getDate() < start.getDate()) elapsedMonths--;
+  elapsedMonths = Math.max(0, elapsedMonths);
+
+  if (!item.autoRenovacion || item.autoRenovacion <= 0) {
+    // Sin renovación: es entrega única
+    if (elapsedMonths >= 1) {
+      return { label: "🏁 Despacho único completado", bg: "bg-slate-100", border: "border-slate-200", text: "text-slate-500" };
+    }
+    return { label: "⚡ Entrega única", bg: "bg-[#EFF3FB]", border: "border-[#DDE6F5]", text: "text-[#3D5278]" };
+  }
+
+  const currentMonth = Math.max(1, elapsedMonths + 1);
+  if (currentMonth > item.autoRenovacion) {
+    return { label: `🏁 Completado (${item.autoRenovacion} meses)`, bg: "bg-slate-100", border: "border-slate-200", text: "text-slate-500" };
+  }
+  return { label: `🔄 Mes ${currentMonth} de ${item.autoRenovacion}`, bg: "bg-green-50", border: "border-green-200", text: "text-green-700" };
+}
+

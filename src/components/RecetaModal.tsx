@@ -18,6 +18,7 @@ export function RecetaModal({
   soloAutorizacion = false,
   puedeEditarDatos = true,
   puedeAutorizar = true,
+  todasRecetas,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -32,6 +33,7 @@ export function RecetaModal({
   puedeEditarDatos?: boolean;
   /** Si false: el estado queda fijo en "pendiente" — para funcionarios que solo ingresan recetas */
   puedeAutorizar?: boolean;
+  todasRecetas?: Receta[]; // Para detectar duplicados/recetas activas por RUT
 }) {
   const [form, setForm] = useState({
     nombrePaciente: "",
@@ -59,6 +61,67 @@ export function RecetaModal({
   const [formTipo, setFormTipo] = useState<"controladas" | "cronicas">(tipo);
   const [formSector, setFormSector] = useState<"A" | "B" | "CECOSF">(sector);
   const comboboxRef = useRef<HTMLDivElement>(null);
+
+  // Buscar recetas activas del mismo RUT (en tiempo real basado en la prop)
+  const rutNormalizado = form.rut.replace(/[^0-9kK]/gi, "").toUpperCase();
+  const recetasActivasDelPaciente = (todasRecetas || []).filter(r => {
+    if (receta && r.id === receta.id) return false; // excluir la receta actual
+    const rutR = r.rut?.replace(/[^0-9kK]/gi, "").toUpperCase();
+    return rutR === rutNormalizado && rutNormalizado.length >= 7 && !r.eliminada;
+  });
+  const tieneRecetasActivas = recetasActivasDelPaciente.length > 0;
+
+  const bannerRecetasActivas = tieneRecetasActivas && rutNormalizado.length >= 7 && (
+    <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 space-y-3">
+      <div className="flex items-start gap-2">
+        <span className="text-lg flex-shrink-0">⚠️</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-bold text-amber-800 uppercase tracking-widest">
+            {isDoctorMode ? "Paciente con prescripciones activas" : "Atención: Paciente con Recetas Registradas"}
+          </p>
+          <p className="text-xs text-amber-700 mt-0.5">
+            {isDoctorMode
+              ? "Este paciente ya tiene medicamentos prescritos. Puede abrir cada receta para agregar un nuevo medicamento sin crear un expediente duplicado."
+              : "Este paciente ya cuenta con recetas en el sistema. Verifique con el médico tratante antes de crear una nueva solicitud."
+            }
+          </p>
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        {recetasActivasDelPaciente.slice(0, 3).map(r => {
+          const items = getItemsDeReceta(r);
+          return (
+            <div key={r.id} className="bg-white border border-amber-200 rounded-xl px-3 py-2">
+              <div className="flex justify-between items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-bold text-amber-800">
+                    Receta {r.tipo === "controlado" ? "Controlada" : "Crónica"} — Sector {r.sector}
+                  </p>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {items.slice(0, 3).map((it, i) => (
+                      <span key={i} className="text-[10px] bg-amber-100 text-amber-700 rounded px-1.5 py-0.5 font-semibold">
+                        {it.medicamento === "SOLICITUD_RECETA" ? "Sin med. asignado" : it.medicamento}
+                        {it.cantidad > 0 ? ` ×${it.cantidad}` : ""}
+                      </span>
+                    ))}
+                    {items.length > 3 && <span className="text-[10px] text-amber-600">+{items.length - 3} más</span>}
+                  </div>
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                  r.estado === "completado" ? "bg-green-100 text-green-700" :
+                  r.estado === "rechazado" ? "bg-slate-100 text-slate-500" :
+                  "bg-yellow-100 text-yellow-700"
+                }`}>{r.estado}</span>
+              </div>
+            </div>
+          );
+        })}
+        {recetasActivasDelPaciente.length > 3 && (
+          <p className="text-[11px] text-amber-600 text-center font-semibold">+{recetasActivasDelPaciente.length - 3} recetas más</p>
+        )}
+      </div>
+    </div>
+  );
 
   const tsToDateStr = (ts: any): string => {
     if (!ts) return "";
@@ -610,6 +673,8 @@ export function RecetaModal({
                 )}
               </div>
 
+              {bannerRecetasActivas}
+
               {/* Lista de medicamentos — editable por el médico */}
               <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
@@ -834,6 +899,9 @@ export function RecetaModal({
                     onChange={(e) => setForm({ ...form, rut: formatRut(e.target.value) })} className={`${inputClass} font-mono`} />
                 </div>
               </div>
+
+              {bannerRecetasActivas}
+
               <div>
                 {/* Etiqueta + toggle solicitud genérica */}
                 <div className="flex items-center justify-between mb-1.5">

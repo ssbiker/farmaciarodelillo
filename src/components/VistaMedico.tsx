@@ -326,6 +326,7 @@ export function VistaMedico({
           soloAutorizacion={true}
           puedeEditarDatos={isAdmin || isFuncionario}
           puedeAutorizar={true}
+          todasRecetas={todasRecetas}
         />
       )}
 
@@ -341,6 +342,7 @@ export function VistaMedico({
           soloAutorizacion={true}
           puedeEditarDatos={true}
           puedeAutorizar={true}
+          todasRecetas={todasRecetas}
         />
       )}
     </div>
