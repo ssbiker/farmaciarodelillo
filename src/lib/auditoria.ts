@@ -84,22 +84,26 @@ export async function obtenerAuditoria(
     console.warn(`[auditoria] No se encontró auditoría en ${collectionName}/${recetaId}:`, err);
   }
 
-  // Fallback: Probar en la otra colección (recetas_controladas <-> recetas_cronicas)
-  try {
-    const otraColeccion =
-      collectionName === "recetas_controladas" || collectionName === "controladas"
-        ? "recetas_cronicas"
-        : "recetas_controladas";
-    const qOtra = query(
-      collection(db, otraColeccion, recetaId, "auditoria"),
-      orderBy("fecha", "asc")
-    );
-    const snapOtra = await getDocs(qOtra);
-    return snapOtra.docs.map((d) => ({ id: d.id, ...d.data() } as AuditoriaEntry));
-  } catch (err) {
-    console.error(`[auditoria] Error en fallback de auditoría:`, err);
-    return [];
+  // Fallback: Probar en las otras colecciones (recetas_controladas, recetas_cronicas, recetas_maternales)
+  const ALL_COLS = ["recetas_controladas", "recetas_cronicas", "recetas_maternales"];
+  const otrasColecciones = ALL_COLS.filter((c) => c !== collectionName && c !== (collectionName === "controladas" ? "recetas_controladas" : collectionName === "maternales" ? "recetas_maternales" : "recetas_cronicas"));
+
+  for (const otraColeccion of otrasColecciones) {
+    try {
+      const qOtra = query(
+        collection(db, otraColeccion, recetaId, "auditoria"),
+        orderBy("fecha", "asc")
+      );
+      const snapOtra = await getDocs(qOtra);
+      if (!snapOtra.empty) {
+        return snapOtra.docs.map((d) => ({ id: d.id, ...d.data() } as AuditoriaEntry));
+      }
+    } catch (err) {
+      console.warn(`[auditoria] Error en fallback de auditoría para ${otraColeccion}:`, err);
+    }
   }
+
+  return [];
 }
 
 interface ItemComparable {

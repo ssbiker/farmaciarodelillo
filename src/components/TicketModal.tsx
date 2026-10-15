@@ -47,11 +47,13 @@ export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () =
             <div className="text-center border-b border-dashed border-[#DDE6F5] pb-4">
               <p className="text-[11px] font-bold text-[#5D7299] uppercase tracking-widest">CESFAM Rodelillo</p>
               <h3 className="text-xl font-black text-[#0F1B35] mt-0.5">
-                Receta {receta.tipo === "controlado" ? "Controlada" : "Crónica"}
+                Receta {receta.tipo === "controlado" ? "Controlada" : receta.tipo === "maternal" ? "Maternal" : "Crónica"}
               </h3>
               <div className={`inline-flex items-center gap-2 mt-2 px-3 py-0.5 rounded-full text-xs font-semibold border ${
                 receta.tipo === "controlado" 
                   ? "bg-red-50 text-red-600 border-red-200" 
+                  : receta.tipo === "maternal"
+                  ? "bg-purple-50 text-purple-700 border-purple-200"
                   : "bg-brand-blue/10 text-brand-blue border-brand-blue/20"
               }`}>
                 Sector {receta.sector}

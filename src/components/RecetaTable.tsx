@@ -60,7 +60,11 @@ export function RecetaTable({
     if (!isAdmin && farmaciaUser.email !== "ssanchez@cmvalparaiso.cl") return;
     if (!window.confirm(`¿Estás seguro de que deseas eliminar permanentemente la receta de ${receta.nombrePaciente}?`)) return;
     
-    const collectionName = activeTab.includes("controladas") ? "recetas_controladas" : "recetas_cronicas";
+    const collectionName = activeTab.includes("controladas")
+      ? "recetas_controladas"
+      : activeTab.startsWith("maternales")
+      ? "recetas_maternales"
+      : "recetas_cronicas";
     await deleteDoc(doc(db, collectionName, receta.id));
   };
 
@@ -79,7 +83,11 @@ export function RecetaTable({
     return matchesSearch && matchesEstado;
   });
 
-  const tipo = activeTab.startsWith("controladas") ? "controladas" : "cronicas";
+  const tipo = activeTab.startsWith("controladas")
+    ? "controladas"
+    : activeTab.startsWith("maternales")
+    ? "maternales"
+    : "cronicas";
   const sector = activeTab.includes("CECOSF") ? "CECOSF" : activeTab.split("_")[1];
 
   return (
@@ -295,7 +303,7 @@ export function RecetaTable({
           onClose={() => setIsModalOpen(false)}
           receta={editingReceta}
           medicos={medicos}
-          tipo={tipo as "controladas" | "cronicas"}
+          tipo={tipo as "controladas" | "cronicas" | "maternales"}
           sector={sector as "A" | "B" | "CECOSF"}
           farmaciaUser={farmaciaUser}
           todasRecetas={recetas}
@@ -312,7 +320,7 @@ export function RecetaTable({
       {auditoriaReceta && (
         <AuditoriaDrawer
           recetaId={auditoriaReceta.id}
-          collectionName={auditoriaReceta.tipo === "controlado" ? "recetas_controladas" : "recetas_cronicas"}
+          collectionName={auditoriaReceta.tipo === "controlado" ? "recetas_controladas" : auditoriaReceta.tipo === "maternal" ? "recetas_maternales" : "recetas_cronicas"}
           paciente={auditoriaReceta.nombrePaciente}
           onClose={() => setAuditoriaReceta(null)}
         />

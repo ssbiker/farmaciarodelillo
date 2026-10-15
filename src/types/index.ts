@@ -1,7 +1,7 @@
 import { Timestamp } from "firebase/firestore";
 
 export type Sector = "A" | "B" | "CECOSF";
-export type TipoReceta = "controlado" | "cronico";
+export type TipoReceta = "controlado" | "cronico" | "maternal";
 export type EstadoReceta = "pendiente" | "completado" | "rechazado";
 
 /** Un ítem de medicamento dentro de una receta multi-medicamento */

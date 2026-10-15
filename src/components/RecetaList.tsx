@@ -184,9 +184,13 @@ export function RecetaList({
     return next;
   });
 
-  const tipo = activeTab.startsWith("controladas") ? "controladas" : "cronicas";
+  const tipo = activeTab.startsWith("controladas") ? "controladas"
+             : activeTab.startsWith("maternales") ? "maternales"
+             : "cronicas";
   const sector = activeTab.includes("CECOSF") ? "CECOSF" : activeTab.split("_")[1];
-  const collectionName = tipo === "controladas" ? "recetas_controladas" : "recetas_cronicas";
+  const collectionName = tipo === "controladas" ? "recetas_controladas"
+                       : tipo === "maternales" ? "recetas_maternales"
+                       : "recetas_cronicas";
 
   // ── Permisos granulares ──────────────────────────────────────────────────────
   // Puede crear recetas: admin/quimico, funcionario (NO médico puro)
@@ -539,7 +543,7 @@ export function RecetaList({
           onClose={() => setModalOpen(false)}
           receta={editing}
           medicos={medicos}
-          tipo={tipo as "controladas" | "cronicas"}
+          tipo={tipo as "controladas" | "cronicas" | "maternales"}
           sector={sector as "A" | "B" | "CECOSF"}
           farmaciaUser={farmaciaUser}
           soloAutorizacion={Boolean(editing && (isMedico || isAdmin))}

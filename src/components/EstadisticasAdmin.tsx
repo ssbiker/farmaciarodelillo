@@ -3,7 +3,7 @@ import type { Receta, FarmaciaUser, FarmaciaConfig } from "../types";
 import { getItemsDeReceta } from "../lib/recetaHelpers";
 import {
   CheckCircle2, Clock, XCircle, AlertCircle,
-  Stethoscope, Users, Pill, TrendingUp, Activity
+  Stethoscope, Users, Pill, TrendingUp, Activity, Baby
 } from "lucide-react";
 
 function daysSince(ts: any): number {
@@ -55,8 +55,13 @@ export function EstadisticasAdmin({
   const porTipo = useMemo(() => [
     { label: "Controladas A", tipo: "controlado", sector: "A", color: "text-brand-purple", icon: Pill },
     { label: "Controladas B", tipo: "controlado", sector: "B", color: "text-brand-purple", icon: Pill },
+    { label: "Controladas CECOSF", tipo: "controlado", sector: "CECOSF", color: "text-brand-purple", icon: Pill },
     { label: "Crónicas A", tipo: "cronico", sector: "A", color: "text-brand-blue", icon: Stethoscope },
     { label: "Crónicas B", tipo: "cronico", sector: "B", color: "text-brand-blue", icon: Stethoscope },
+    { label: "Crónicas CECOSF", tipo: "cronico", sector: "CECOSF", color: "text-brand-blue", icon: Stethoscope },
+    { label: "Maternal A", tipo: "maternal", sector: "A", color: "text-purple-600", icon: Baby },
+    { label: "Maternal B", tipo: "maternal", sector: "B", color: "text-purple-600", icon: Baby },
+    { label: "Maternal CECOSF", tipo: "maternal", sector: "CECOSF", color: "text-purple-600", icon: Baby },
   ].map(({ label, tipo, sector, color, icon }) => {
     const rs = activas.filter((r) => r.tipo === tipo && r.sector === sector);
     return {
@@ -260,7 +265,7 @@ export function EstadisticasAdmin({
                     <p className="text-[11px] text-brand-purple font-medium truncate">{r.medicamento}</p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <span className="text-[11px] text-[#5D7299]">
-                        {r.tipo === "controlado" ? "💊" : "📋"} {r.sector}
+                        {r.tipo === "controlado" ? "💊" : r.tipo === "maternal" ? "🤰" : "📋"} {r.sector}
                       </span>
                       {r.medicoReceta
                         ? <span className="text-[11px] text-brand-blue">Dr(a). {r.medicoReceta}</span>

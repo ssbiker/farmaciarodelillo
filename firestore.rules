@@ -219,6 +219,35 @@ service cloud.firestore {
       }
     }
 
+    // Recetas Maternal (misma lógica que crónicas/controladas)
+    match /recetas_maternales/{recetaId} {
+      allow read: if hasFarmaciaPrivileges();
+
+      allow create: if isAdmin() || isFuncionario() || isMedico();
+
+      allow update: if
+        isAdmin()
+        || (isFuncionario() && !(
+              'estado' in request.resource.data &&
+              request.resource.data.estado != resource.data.estado &&
+              request.resource.data.estado in ['completado', 'rechazado']
+           ))
+        || (isMedico() && (
+              !('medicoUid' in resource.data) ||
+              resource.data.medicoUid == ''   ||
+              resource.data.medicoUid == null ||
+              resource.data.medicoUid == request.auth.uid ||
+              resource.data.creadoPor == request.auth.uid
+           ));
+
+      allow delete: if isAdmin();
+
+      match /auditoria/{logId} {
+        allow read, create: if hasFarmaciaPrivileges();
+        allow update, delete: if false; // 🔒 INMUTABLE
+      }
+    }
+
     // Papelera de auditoría (solo admins)
     match /papelera_auditoria/{logId} {
       allow read, create: if isAdmin();

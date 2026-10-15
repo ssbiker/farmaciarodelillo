@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Receta, FarmaciaUser, FarmaciaConfig } from "../types";
-import { CheckCircle2, Clock, XCircle, AlertCircle, Stethoscope, Pill, ArrowRight, Plus, History } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, AlertCircle, Stethoscope, Pill, ArrowRight, Plus, History, Baby } from "lucide-react";
 import { RecetaModal } from "./RecetaModal";
 import { AuditoriaDrawer } from "./AuditoriaDrawer";
 import { getItemsDeReceta } from "../lib/recetaHelpers";
@@ -39,6 +39,8 @@ function UrgenciaBadge({ receta, config }: { receta: Receta; config: FarmaciaCon
 function RecetaCard({ receta, config, onAction, onAuditoria }: { receta: Receta; config: FarmaciaConfig; onAction?: () => void; onAuditoria?: () => void }) {
   const tipoBadge = receta.tipo === "controlado"
     ? <span className="flex items-center gap-0.5 text-[11px] text-brand-purple bg-brand-purple/10 px-1.5 py-0.5 rounded-full"><Pill className="w-2.5 h-2.5" /> Controlada</span>
+    : receta.tipo === "maternal"
+    ? <span className="flex items-center gap-0.5 text-[11px] text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded-full"><Baby className="w-2.5 h-2.5" /> Maternal</span>
     : <span className="flex items-center gap-0.5 text-[11px] text-brand-blue bg-brand-blue/10 px-1.5 py-0.5 rounded-full"><Stethoscope className="w-2.5 h-2.5" /> Crónica</span>;
 
   return (
@@ -334,7 +336,7 @@ export function VistaMedico({
           onClose={() => setSelectedReceta(null)}
           receta={selectedReceta}
           medicos={medicos}
-          tipo={selectedReceta.tipo === "controlado" ? "controladas" : "cronicas"}
+          tipo={selectedReceta.tipo === "controlado" ? "controladas" : selectedReceta.tipo === "maternal" ? "maternales" : "cronicas"}
           sector={(selectedReceta.sector || "A") as "A" | "B" | "CECOSF"}
           farmaciaUser={farmaciaUser}
           soloAutorizacion={true}
@@ -363,7 +365,7 @@ export function VistaMedico({
       {auditoriaReceta && (
         <AuditoriaDrawer
           recetaId={auditoriaReceta.id}
-          collectionName={auditoriaReceta.tipo === "controlado" ? "recetas_controladas" : "recetas_cronicas"}
+          collectionName={auditoriaReceta.tipo === "controlado" ? "recetas_controladas" : auditoriaReceta.tipo === "maternal" ? "recetas_maternales" : "recetas_cronicas"}
           paciente={auditoriaReceta.nombrePaciente}
           onClose={() => setAuditoriaReceta(null)}
         />

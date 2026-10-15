@@ -3,7 +3,7 @@ import { collection, onSnapshot, query, orderBy, doc, setDoc, getDocs } from "fi
 import { db } from "../lib/firebase";
 import { decryptRecetaFields } from "../lib/crypto";
 import type { Receta, FarmaciaUser, FarmaciaConfig, ItemReceta } from "../types";
-import { Pill, Stethoscope, AlertCircle, Trash2, TrendingUp, LayoutDashboard, Package } from "lucide-react";
+import { Pill, Stethoscope, Baby, AlertCircle, Trash2, TrendingUp, LayoutDashboard, Package } from "lucide-react";
 import { RecetaList } from "./RecetaList";
 import { PapeleraModal } from "./PapeleraModal";
 import { VistaMedico } from "./VistaMedico";
@@ -12,7 +12,7 @@ import { InventarioAdmin } from "./InventarioAdmin";
 
 const DEFAULT_CONFIG: FarmaciaConfig = { diasAlertaRoja: 5, diasAlertaAmarilla: 3 };
 
-type TabState = "controladas_A" | "controladas_B" | "cronicas_A" | "cronicas_B" | "controladas_CECOSF" | "cronicas_CECOSF" | "mi_panel" | "estadisticas" | "inventario";
+type TabState = "controladas_A" | "controladas_B" | "cronicas_A" | "cronicas_B" | "controladas_CECOSF" | "cronicas_CECOSF" | "maternales_A" | "maternales_B" | "maternales_CECOSF" | "mi_panel" | "estadisticas" | "inventario";
 
 export function Dashboard({
   farmaciaUser,
@@ -27,6 +27,7 @@ export function Dashboard({
 }) {
   const [recetasControladas, setRecetasControladas] = useState<Receta[]>([]);
   const [recetasCronicas, setRecetasCronicas] = useState<Receta[]>([]);
+  const [recetasMaternales, setRecetasMaternales] = useState<Receta[]>([]);
   const [config, setConfig] = useState<FarmaciaConfig>(DEFAULT_CONFIG);
   const [medicos, setMedicos] = useState<FarmaciaUser[]>([]);
   const [activeTab, setActiveTab] = useState<TabState>(
@@ -62,10 +63,16 @@ export function Dashboard({
       () => { setRecetasCronicas([]); setLoading(false); }
     );
 
-    return () => { unsubConfig(); unsubCtrl(); unsubCron(); };
+    const qMaternal = query(collection(db, "recetas_maternales"), orderBy("fechaSolicitud", "desc"));
+    const unsubMaternal = onSnapshot(qMaternal,
+      (s) => setRecetasMaternales(s.docs.map((d) => decryptRecetaFields({ id: d.id, ...d.data(), tipo: "maternal" } as Receta))),
+      () => setRecetasMaternales([])
+    );
+
+    return () => { unsubConfig(); unsubCtrl(); unsubCron(); unsubMaternal(); };
   }, []);
 
-  const todasRecetas = [...recetasControladas, ...recetasCronicas];
+  const todasRecetas = [...recetasControladas, ...recetasCronicas, ...recetasMaternales];
 
   useEffect(() => {
     if (loading || todasRecetas.length === 0) return;
@@ -82,7 +89,7 @@ export function Dashboard({
           let elapsedMonths = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
           if (now.getDate() < start.getDate()) elapsedMonths--;
 
-          const colName = r.tipo === "controlado" ? "recetas_controladas" : "recetas_cronicas";
+          const colName = r.tipo === "controlado" ? "recetas_controladas" : r.tipo === "maternal" ? "recetas_maternales" : "recetas_cronicas";
           const recRef = doc(db, colName, r.id);
 
           // Caso 1: Receta con items[] (Multi-medicamento)
@@ -176,6 +183,9 @@ export function Dashboard({
     if (activeTab === "controladas_CECOSF") return recetasControladas.filter((r) => r.sector === "CECOSF");
     if (activeTab === "cronicas_A") return recetasCronicas.filter((r) => r.sector === "A");
     if (activeTab === "cronicas_CECOSF") return recetasCronicas.filter((r) => r.sector === "CECOSF");
+    if (activeTab === "maternales_A") return recetasMaternales.filter((r) => r.sector === "A");
+    if (activeTab === "maternales_B") return recetasMaternales.filter((r) => r.sector === "B");
+    if (activeTab === "maternales_CECOSF") return recetasMaternales.filter((r) => r.sector === "CECOSF");
     return recetasCronicas.filter((r) => r.sector === "B");
   };
 
@@ -204,7 +214,10 @@ export function Dashboard({
   const crB = criticalCount(recetasCronicas.filter((r) => r.sector === "B"));
   const cCECOSF = criticalCount(recetasControladas.filter((r) => r.sector === "CECOSF"));
   const crCECOSF = criticalCount(recetasCronicas.filter((r) => r.sector === "CECOSF"));
-  const totalCritical = cA + cB + crA + crB + cCECOSF + crCECOSF;
+  const mA = criticalCount(recetasMaternales.filter((r) => r.sector === "A"));
+  const mB = criticalCount(recetasMaternales.filter((r) => r.sector === "B"));
+  const mCECOSF = criticalCount(recetasMaternales.filter((r) => r.sector === "CECOSF"));
+  const totalCritical = cA + cB + crA + crB + cCECOSF + crCECOSF + mA + mB + mCECOSF;
 
   // Urgentes en el panel personal del médico
   const misPendientesUrgentes = isMedico ? todasRecetas.filter((r) => {
@@ -231,7 +244,8 @@ export function Dashboard({
 
   const totalPapelera =
     recetasControladas.filter((r) => r.eliminada).length +
-    recetasCronicas.filter((r) => r.eliminada).length;
+    recetasCronicas.filter((r) => r.eliminada).length +
+    recetasMaternales.filter((r) => r.eliminada).length;
 
   if (loading) {
     return (
@@ -248,7 +262,7 @@ export function Dashboard({
       onClick={() => setActiveTab(id)}
       className={`relative flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
         activeTab === id
-          ? "tab-active-blue"
+          ? (id.startsWith("maternales") ? "tab-active-purple" : "tab-active-blue")
           : "text-[#5D7299] hover:bg-[#EBF4FF] hover:text-[#1A55CC]"
       }`}
     >
@@ -284,7 +298,7 @@ export function Dashboard({
     </button>
   );
 
-  const isRecetaTab = ["controladas_A", "controladas_B", "cronicas_A", "cronicas_B", "controladas_CECOSF", "cronicas_CECOSF"].includes(activeTab);
+  const isRecetaTab = ["controladas_A", "controladas_B", "cronicas_A", "cronicas_B", "controladas_CECOSF", "cronicas_CECOSF", "maternales_A", "maternales_B", "maternales_CECOSF"].includes(activeTab);
 
   return (
     <div className="space-y-5">
@@ -305,23 +319,43 @@ export function Dashboard({
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 w-full">
-        {/* Tabs de recetas — contenedor único con scroll horizontal */}
-        <div className="flex gap-1 overflow-x-auto bg-white border border-[#DDE6F5] shadow-sm p-1 rounded-2xl lg:rounded-full w-full lg:w-auto scrollbar-hide">
-          <RecetaTab label="Ctrl A" id="controladas_A" icon={Pill} count={cA} />
-          <RecetaTab label="Ctrl B" id="controladas_B" icon={Pill} count={cB} />
-          <RecetaTab label="Ctrl CECOSF" id="controladas_CECOSF" icon={Pill} count={cCECOSF} />
-          
-          <div className="w-px bg-[#DDE6F5] mx-1 my-1 hidden sm:block" />
-          
-          <RecetaTab label="Crón A" id="cronicas_A" icon={Stethoscope} count={crA} />
-          <RecetaTab label="Crón B" id="cronicas_B" icon={Stethoscope} count={crB} />
-          <RecetaTab label="Crón CECOSF" id="cronicas_CECOSF" icon={Stethoscope} count={crCECOSF} />
+      {/* Tabs — 3 grupos con labels de categoría */}
+      <div className="w-full space-y-2">
+        {/* Fila superior: grupos de tabs de recetas */}
+        <div className="flex flex-col sm:flex-row gap-2 w-full">
+          {/* Grupo Controladas */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-black text-[#7B90B5] uppercase tracking-widest px-1">Controladas</span>
+            <div className="flex gap-1 bg-white border border-[#DDE6F5] shadow-sm p-1 rounded-2xl">
+              <RecetaTab label="Sector A" id="controladas_A" icon={Pill} count={cA} />
+              <RecetaTab label="Sector B" id="controladas_B" icon={Pill} count={cB} />
+              <RecetaTab label="CECOSF" id="controladas_CECOSF" icon={Pill} count={cCECOSF} />
+            </div>
+          </div>
+
+          {/* Grupo Crónicas */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-black text-[#7B90B5] uppercase tracking-widest px-1">Crónicas</span>
+            <div className="flex gap-1 bg-white border border-[#DDE6F5] shadow-sm p-1 rounded-2xl">
+              <RecetaTab label="Sector A" id="cronicas_A" icon={Stethoscope} count={crA} />
+              <RecetaTab label="Sector B" id="cronicas_B" icon={Stethoscope} count={crB} />
+              <RecetaTab label="CECOSF" id="cronicas_CECOSF" icon={Stethoscope} count={crCECOSF} />
+            </div>
+          </div>
+
+          {/* Grupo Maternal */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-black text-brand-purple uppercase tracking-widest px-1">Maternal</span>
+            <div className="flex gap-1 bg-white border border-brand-purple/20 shadow-sm p-1 rounded-2xl">
+              <RecetaTab label="Sector A" id="maternales_A" icon={Baby} count={mA} />
+              <RecetaTab label="Sector B" id="maternales_B" icon={Baby} count={mB} />
+              <RecetaTab label="CECOSF" id="maternales_CECOSF" icon={Baby} count={mCECOSF} />
+            </div>
+          </div>
         </div>
 
-        {/* Tabs especiales */}
-        <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
+        {/* Fila inferior: tabs especiales */}
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Panel personal del médico */}
           {isMedico && (
             <SpecialTab

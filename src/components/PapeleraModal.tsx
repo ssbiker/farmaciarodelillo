@@ -17,7 +17,7 @@ function formatFecha(ts: any): string {
   });
 }
 
-const COLLECTIONS = ["recetas_controladas", "recetas_cronicas"] as const;
+const COLLECTIONS = ["recetas_controladas", "recetas_cronicas", "recetas_maternales"] as const;
 
 export function PapeleraModal({
   farmaciaUser,
@@ -135,7 +135,7 @@ export function PapeleraModal({
                       <span className="font-bold text-[#0F1B35]">{receta.nombrePaciente}</span>
                       <span className="text-[11px] bg-[#EFF3FB] px-1.5 py-0.5 rounded-full text-[#3D5278] font-mono">{receta.rut}</span>
                       <span className="text-[11px] bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full text-red-600">
-                        {coleccion === "recetas_controladas" ? "💊 Controlada" : "📋 Crónica"} — Sec. {receta.sector}
+                        {coleccion === "recetas_controladas" ? "💊 Controlada" : coleccion === "recetas_maternales" ? "🤰 Maternal" : "📋 Crónica"} — Sec. {receta.sector}
                       </span>
                     </div>
                     <p className="text-sm text-brand-purple font-semibold mt-0.5">{receta.medicamento}</p>
