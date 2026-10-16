@@ -87,6 +87,8 @@ export interface FarmaciaUser {
   isMedico?: boolean;
   /** Flag independiente: permite a cualquier rol (ej: admin) crear e ingresar recetas */
   isFuncionario?: boolean;
+  /** Flag de Super Administrador (permiso total de edición correctiva de recetas y stock) */
+  isSuperAdmin?: boolean;
 }
 
 export interface MedicamentoInventario {

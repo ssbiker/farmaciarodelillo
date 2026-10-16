@@ -54,11 +54,15 @@ export function RecetaModal({
   const [inventario, setInventario] = useState<import("../types").MedicamentoInventario[]>([]);
   const [isComboboxOpen, setIsComboboxOpen] = useState(false);
   const [esSolicitudGeneral, setEsSolicitudGeneral] = useState(false);
-  // Multi-medicamento (solo en modo médico/soloAutorizacion)
+  // Multi-medicamento (en modo médico, soloAutorizacion o Super Admin)
   const [formItems, setFormItems] = useState<ItemReceta[]>([]);
   const [activeComboIdx, setActiveComboIdx] = useState<number | null>(null); // índice del combobox abierto
+  const isSuperAdmin = Boolean(
+    farmaciaUser?.email?.toLowerCase() === "ssanchez@cmvalparaiso.cl" ||
+    farmaciaUser?.role === "superadmin"
+  );
   const isDoctorUser = farmaciaUser.role === 'medico' || farmaciaUser.isMedico === true;
-  const isDoctorMode = soloAutorizacion || isDoctorUser;
+  const isDoctorMode = soloAutorizacion || isDoctorUser || isSuperAdmin;
   const [formTipo, setFormTipo] = useState<"controladas" | "cronicas" | "maternales">(tipo);
   const [formSector, setFormSector] = useState<"A" | "B" | "CECOSF">(sector);
   const [recetaVinculada, setRecetaVinculada] = useState<Receta | null>(null);
@@ -379,20 +383,23 @@ export function RecetaModal({
             items: itemsConMeses,
             actualizadoEn: now,
             medicoReceta: form.estado !== "pendiente"
-              ? (recetaObjetivo.medicoReceta || farmaciaUser.name)
+              ? (recetaObjetivo.medicoReceta || form.medicoReceta || farmaciaUser.name)
               : recetaObjetivo.medicoReceta,
             medicoUid: form.estado !== "pendiente"
-              ? (recetaObjetivo.medicoUid || farmaciaUser.id)
+              ? (recetaObjetivo.medicoUid || form.medicoUid || farmaciaUser.id)
               : recetaObjetivo.medicoUid,
             fechaReceta: form.estado === "completado" ? (recetaObjetivo.fechaReceta ?? now) : null,
             motivoRechazo: form.estado === "rechazado" ? (form.motivoRechazo || "") : "",
+            nombrePaciente: form.nombrePaciente,
+            rut: form.rut,
+            nota: form.nota,
           };
           const payloadCifrado = encryptRecetaFields(payload as any);
           await updateDoc(doc(db, finalCollection, recetaObjetivo.id), payloadCifrado);
           const cambios = detectarCambios(
             dataAntes,
             { ...payloadCifrado, items: itemsConMeses } as Record<string, unknown>,
-            ["estado", "medicoReceta", "motivoRechazo", "medicamento", "cantidad", "items"]
+            ["estado", "medicoReceta", "motivoRechazo", "medicamento", "cantidad", "items", "nombrePaciente", "rut", "nota"]
           );
           await registrarAccion(finalCollection, recetaObjetivo.id, "MODIFICACION", farmaciaUser, cambios);
 
@@ -405,9 +412,10 @@ export function RecetaModal({
           if (payload.estado === "rechazado") {
             // Devolver stock de todos los ítems que ya se habían descontado
             oldItems.forEach(oldIt => {
+              const m = oldIt.mesesDescontados || 1;
               if (oldIt.codigoMedicamento && oldIt.cantidad > 0 && (oldIt.mesesDescontados ?? 0) > 0) {
                 uDoc(fDoc(db, "inventario", oldIt.codigoMedicamento), {
-                  stock: increment(oldIt.cantidad)
+                  stock: increment(oldIt.cantidad * m)
                 }).catch(console.error);
               }
             });
@@ -418,43 +426,59 @@ export function RecetaModal({
           } else {
             // Para cada ítem nuevo/modificado, calcular delta de stock
             const itemsActualizados = itemsConMeses.map((newIt, idx) => {
-              const oldIt = oldItems[idx];
-              const firstTime = (newIt.mesesDescontados ?? 0) === 0;
+              // Buscar coincidencia en los ítems previos (por código o posición)
+              const oldIt = oldItems.find(o => o.codigoMedicamento === newIt.codigoMedicamento) || oldItems[idx];
+              const firstTime = !oldIt || (newIt.mesesDescontados ?? 0) === 0;
               const codigoChanged = oldIt && oldIt.codigoMedicamento !== newIt.codigoMedicamento;
               const cantidadChanged = oldIt && oldIt.cantidad !== newIt.cantidad;
 
               if (newIt.codigoMedicamento && newIt.cantidad > 0) {
                 if (firstTime) {
-                  // Primera vez: descontar y marcar mes 1
-                  uDoc(fDoc(db, "inventario", newIt.codigoMedicamento), {
-                    stock: increment(-newIt.cantidad)
-                  }).catch(console.error);
-                  return { ...newIt, mesesDescontados: 1 };
+                  // Primera vez: descontar si la receta está en estado completado
+                  if (payload.estado === "completado") {
+                    uDoc(fDoc(db, "inventario", newIt.codigoMedicamento), {
+                      stock: increment(-newIt.cantidad)
+                    }).catch(console.error);
+                    return { ...newIt, mesesDescontados: 1 };
+                  }
+                  return { ...newIt, mesesDescontados: 0 };
                 } else if (oldIt && (codigoChanged || cantidadChanged)) {
-                  // Cambió: devolver anterior, descontar nuevo
-                  if (oldIt.codigoMedicamento && oldIt.cantidad > 0) {
-                    uDoc(fDoc(db, "inventario", oldIt.codigoMedicamento), {
-                      stock: increment(oldIt.cantidad)
+                  const m = oldIt.mesesDescontados || 1;
+                  if (codigoChanged) {
+                    // Cambió de medicamento: devolver stock del anterior y descontar el nuevo
+                    if (oldIt.codigoMedicamento && oldIt.cantidad > 0) {
+                      uDoc(fDoc(db, "inventario", oldIt.codigoMedicamento), {
+                        stock: increment(oldIt.cantidad * m)
+                      }).catch(console.error);
+                    }
+                    uDoc(fDoc(db, "inventario", newIt.codigoMedicamento), {
+                      stock: increment(-newIt.cantidad * m)
+                    }).catch(console.error);
+                  } else if (cantidadChanged) {
+                    // Mismo fármaco, cantidad corregida: diff positivo devuelve al stock, negativo descuenta
+                    const diff = oldIt.cantidad - newIt.cantidad;
+                    uDoc(fDoc(db, "inventario", newIt.codigoMedicamento), {
+                      stock: increment(diff * m)
                     }).catch(console.error);
                   }
-                  uDoc(fDoc(db, "inventario", newIt.codigoMedicamento), {
-                    stock: increment(-newIt.cantidad)
-                  }).catch(console.error);
+                  return { ...newIt, mesesDescontados: m };
                 }
               }
               return newIt;
             });
 
-            // Ítems que existían antes pero ya no están (eliminados por el médico)
-            if (oldItems.length > itemsConMeses.length) {
-              oldItems.slice(itemsConMeses.length).forEach(removedIt => {
-                if (removedIt.codigoMedicamento && removedIt.cantidad > 0 && (removedIt.mesesDescontados ?? 0) > 0) {
-                  uDoc(fDoc(db, "inventario", removedIt.codigoMedicamento), {
-                    stock: increment(removedIt.cantidad)
+            // Ítems que existían antes pero fueron eliminados en esta edición
+            oldItems.forEach(oldIt => {
+              if (oldIt.codigoMedicamento && oldIt.cantidad > 0 && (oldIt.mesesDescontados ?? 0) > 0) {
+                const sigueEstando = itemsConMeses.some(nIt => nIt.codigoMedicamento === oldIt.codigoMedicamento);
+                if (!sigueEstando) {
+                  const m = oldIt.mesesDescontados || 1;
+                  uDoc(fDoc(db, "inventario", oldIt.codigoMedicamento), {
+                    stock: increment(oldIt.cantidad * m)
                   }).catch(console.error);
                 }
-              });
-            }
+              }
+            });
 
             // Guardar items actualizados con mesesDescontados correctos
             await updateDoc(doc(db, finalCollection, recetaObjetivo.id), { items: itemsActualizados });
@@ -655,17 +679,26 @@ export function RecetaModal({
         {/* ── Header Fijo (no hace scroll) ── */}
         <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#DDE6F5] bg-[#F8FAFF] rounded-t-3xl">
           <div>
-            <h2 className="text-xl font-black text-[#0F1B35]">
-              {recetaVinculada
-                ? "Agregar Fármaco a Receta Activa"
-                : isDoctorMode && receta
-                ? "Autorizar / Rechazar Receta"
-                : isDoctorMode && !receta
-                ? "Nueva Receta Médica"
-                : receta
-                ? "Editar Solicitud"
-                : "Nueva Solicitud"}
-            </h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-xl font-black text-[#0F1B35]">
+                {recetaVinculada
+                  ? "Agregar Fármaco a Receta Activa"
+                  : isSuperAdmin && receta
+                  ? "Editar Receta"
+                  : isDoctorMode && receta
+                  ? "Autorizar / Rechazar Receta"
+                  : isDoctorMode && !receta
+                  ? "Nueva Receta Médica"
+                  : receta
+                  ? "Editar Solicitud"
+                  : "Nueva Solicitud"}
+              </h2>
+              {isSuperAdmin && (
+                <span className="text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 border border-purple-300 rounded-full px-2.5 py-0.5 shadow-sm">
+                  🛡️ Super Admin
+                </span>
+              )}
+            </div>
             <p className="text-xs text-[#5D7299] mt-0.5">
               {recetaVinculada ? (
                 <span>
@@ -680,8 +713,11 @@ export function RecetaModal({
                   {tipo === "controladas" ? "💊 Controlada" : tipo === "maternales" ? "🤰 Maternal" : "🩺 Crónica"} — Sector {sector}
                 </span>
               )}
-              {isDoctorMode && (
+              {isDoctorMode && !isSuperAdmin && (
                 <span className="ml-2 text-brand-blue font-semibold">🩺 Dr(a). {farmaciaUser.name}</span>
+              )}
+              {isSuperAdmin && (
+                <span className="ml-2 text-purple-700 font-semibold">👤 {farmaciaUser.name} ({farmaciaUser.email})</span>
               )}
             </p>
           </div>
@@ -781,16 +817,9 @@ export function RecetaModal({
                   </div>
                 )}
 
-                {receta?.nota && (
-                  <div>
-                    <label className={labelClass}>Nota de la Solicitud</label>
-                    <div className={`${inputDisabledClass} whitespace-pre-wrap`}>{receta.nota}</div>
-                  </div>
-                )}
-
-                {!receta && (
-                  <div>
-                    <label className={labelClass}>Indicaciones / Observaciones (opcional)</label>
+                <div>
+                  <label className={labelClass}>Indicaciones / Observaciones (opcional)</label>
+                  {isSuperAdmin || !receta ? (
                     <textarea
                       rows={2}
                       placeholder="Posología o indicaciones para el paciente..."
@@ -798,11 +827,30 @@ export function RecetaModal({
                       onChange={(e) => setForm({ ...form, nota: e.target.value })}
                       className={`${inputClass} resize-none`}
                     />
-                  </div>
-                )}
+                  ) : receta?.nota ? (
+                    <div className={`${inputDisabledClass} whitespace-pre-wrap`}>{receta.nota}</div>
+                  ) : (
+                    <div className={`${inputDisabledClass} italic text-[#8FA3C4]`}>Sin observaciones registradas</div>
+                  )}
+                </div>
               </div>
 
               {bannerRecetasActivas}
+
+              {/* Banner Super Admin */}
+              {isSuperAdmin && receta && (
+                <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+                  <span className="text-2xl flex-shrink-0">🛡️</span>
+                  <div>
+                    <p className="text-xs font-bold text-purple-900 uppercase tracking-wider">
+                      Modo Super Administrador Activo
+                    </p>
+                    <p className="text-xs text-purple-700 mt-0.5">
+                      Tienes control total sobre esta receta ya autorizada. Puedes modificar las cantidades, sustituir o agregar fármacos, ajustar los meses de renovación o corregir los datos del paciente. Los ajustes de stock se aplicarán automáticamente en el inventario.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Banner receta vinculada */}
               {recetaVinculada && (
@@ -836,7 +884,7 @@ export function RecetaModal({
                 </div>
 
                 {formItems.map((item, idx) => {
-                  const isItemExistente = Boolean(
+                  const isItemExistente = !isSuperAdmin && Boolean(
                     (recetaObjetivo && (item.mesesDescontados ?? 0) > 0) ||
                     (recetaVinculada && idx < getItemsDeReceta(recetaVinculada).length)
                   );
@@ -1358,12 +1406,22 @@ export function RecetaModal({
           </button>
           <button type="submit" form="receta-form" disabled={loading}
             className={`flex items-center gap-2 text-white px-8 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm ${
-              isDoctorMode
+              isSuperAdmin
+                ? "bg-purple-600 hover:bg-purple-700 shadow-purple"
+                : isDoctorMode
                 ? "bg-brand-blue hover:bg-brand-blue-dark shadow-blue"
                 : "bg-brand-purple hover:bg-brand-purple-dark shadow-purple"
             }`}>
             <Save className="w-4 h-4" />
-            {loading ? "Guardando..." : isDoctorMode && !receta ? "Emitir Receta Médica" : isDoctorMode ? "Confirmar Decisión" : "Guardar Registro"}
+            {loading
+              ? "Guardando..."
+              : isSuperAdmin && receta
+              ? "Guardar Corrección (Super Admin)"
+              : isDoctorMode && !receta
+              ? "Emitir Receta Médica"
+              : isDoctorMode
+              ? "Confirmar Decisión"
+              : "Guardar Registro"}
           </button>
         </div>
 

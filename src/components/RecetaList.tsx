@@ -193,6 +193,8 @@ export function RecetaList({
                        : "recetas_cronicas";
 
   // ── Permisos granulares ──────────────────────────────────────────────────────
+  // Super Admin: ssanchez@cmvalparaiso.cl puede editar cualquier receta (incluso completada) para corregir cantidades/medicamentos
+  const isSuperAdmin = Boolean(farmaciaUser?.email?.toLowerCase() === "ssanchez@cmvalparaiso.cl" || farmaciaUser?.role === "superadmin");
   // Puede crear recetas: admin/quimico, funcionario (NO médico puro)
   const puedeCrear = isAdmin || isFuncionario || isMedico;
   // Puede editar datos del paciente/medicamento: admin/quimico, funcionario
@@ -494,16 +496,20 @@ export function RecetaList({
                             <Printer className="w-4 h-4" />
                           </button>
                         )}
-                        {/* Editar datos (funcionario/admin) o Autorizar (médico con permiso) */}
-                        {(puedeEditarDatos || puedeCambiarEstado(receta)) && (
+                        {/* Editar datos (funcionario/admin) o Autorizar (médico con permiso) o Super Admin */}
+                        {(puedeEditarDatos || puedeCambiarEstado(receta) || isSuperAdmin) && (
                           <button onClick={() => openEdit(receta)}
                             className={`p-1.5 rounded-lg transition-colors ${
-                              puedeCambiarEstado(receta) && !puedeEditarDatos
+                              isSuperAdmin
+                                ? "text-purple-600 hover:text-purple-800 hover:bg-purple-100/70"
+                                : puedeCambiarEstado(receta) && !puedeEditarDatos
                                 ? "text-brand-blue hover:text-brand-blue-dark hover:bg-brand-blue/10"
                                 : "text-[#5D7299] hover:text-brand-blue hover:bg-brand-blue/10"
                             }`}
                             title={
-                              puedeCambiarEstado(receta) && !puedeEditarDatos
+                              isSuperAdmin
+                                ? "🛡️ Super Admin: Editar receta y corregir cantidades/medicamentos"
+                                : puedeCambiarEstado(receta) && !puedeEditarDatos
                                 ? "Autorizar / Rechazar"
                                 : "Editar"
                             }>
@@ -546,9 +552,9 @@ export function RecetaList({
           tipo={tipo as "controladas" | "cronicas" | "maternales"}
           sector={sector as "A" | "B" | "CECOSF"}
           farmaciaUser={farmaciaUser}
-          soloAutorizacion={Boolean(editing && (isMedico || isAdmin))}
-          puedeEditarDatos={puedeEditarDatos}
-          puedeAutorizar={isAdmin || isMedico}
+          soloAutorizacion={Boolean(editing && (isMedico || isAdmin) && !isSuperAdmin)}
+          puedeEditarDatos={puedeEditarDatos || isSuperAdmin}
+          puedeAutorizar={isAdmin || isMedico || isSuperAdmin}
           todasRecetas={todasRecetas ?? recetas}
         />
       )}
