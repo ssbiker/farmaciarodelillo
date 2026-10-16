@@ -5,8 +5,9 @@ import { collection, addDoc, updateDoc, doc, Timestamp, getDoc } from "firebase/
 import { registrarAccion, detectarCambios } from "../lib/auditoria";
 import { AuditoriaDrawer } from "./AuditoriaDrawer";
 import { encryptRecetaFields } from "../lib/crypto";
+import { sincronizarRecetaPublica } from "../lib/recetaPublica";
 import type { Receta, FarmaciaUser, ItemReceta } from "../types";
-import { getItemsDeReceta, nuevoItemVacio } from "../lib/recetaHelpers";
+import { getItemsDeReceta, nuevoItemVacio, isRecetaVigente } from "../lib/recetaHelpers";
 
 export function RecetaModal({
   isOpen,
@@ -107,12 +108,14 @@ export function RecetaModal({
     setFormItems([nuevoItemVacio()]);
   };
 
-  // Buscar recetas activas del mismo RUT (en tiempo real basado en la prop)
+  // Buscar recetas VIGENTES del mismo RUT (excluye completadas cuyo ciclo ya terminó)
   const rutNormalizado = form.rut.replace(/[^0-9kK]/gi, "").toUpperCase();
   const recetasActivasDelPaciente = (todasRecetas || []).filter(r => {
     if (receta && r.id === receta.id) return false; // excluir la receta actual
     const rutR = r.rut?.replace(/[^0-9kK]/gi, "").toUpperCase();
-    return rutR === rutNormalizado && rutNormalizado.length >= 7 && !r.eliminada;
+    if (rutR !== rutNormalizado || rutNormalizado.length < 7 || r.eliminada) return false;
+    // Solo mostrar aviso si la receta aún tiene vigencia activa
+    return isRecetaVigente(r);
   });
   const tieneRecetasActivas = recetasActivasDelPaciente.length > 0;
 
@@ -122,12 +125,12 @@ export function RecetaModal({
         <span className="text-lg flex-shrink-0">⚠️</span>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-amber-800 uppercase tracking-widest">
-            {isDoctorMode ? "Paciente con prescripciones activas" : "Atención: Paciente con Recetas Registradas"}
+            {isDoctorMode ? "Paciente con prescripciones vigentes" : "Aviso: Paciente con Recetas Vigentes"}
           </p>
           <p className="text-xs text-amber-700 mt-0.5">
             {isDoctorMode
-              ? "Este paciente ya tiene medicamentos prescritos. Puede presionar 'Agregar medicamento a esta receta' para incorporar nuevos fármacos sin duplicar recetas."
-              : "Este paciente ya cuenta con recetas en el sistema. Verifique con el médico tratante antes de crear una nueva solicitud."
+              ? "Este paciente tiene recetas activas en el sistema. Puede agregar el medicamento a una receta existente o crear una nueva receta de todas formas."
+              : "Este paciente ya cuenta con recetas vigentes. Se recomienda verificar con el médico tratante antes de crear una nueva solicitud, aunque puede continuar si es necesario."
             }
           </p>
         </div>
@@ -399,6 +402,18 @@ export function RecetaModal({
           };
           const payloadCifrado = encryptRecetaFields(payload as any);
           await updateDoc(doc(db, finalCollection, recetaObjetivo.id), payloadCifrado);
+          // 🔄 Sincronizar portal público de pacientes (datos no sensibles)
+          sincronizarRecetaPublica(
+            recetaObjetivo.id,
+            form.rut,
+            payload.estado,
+            recetaObjetivo.tipo,
+            recetaObjetivo.sector,
+            recetaObjetivo.fechaSolicitud,
+            formItems[0]?.autoRenovacion ?? 0,
+            formItems[0]?.mesesDescontados ?? 0,
+            false
+          ).catch(console.error);
           const cambios = detectarCambios(
             dataAntes,
             { ...payloadCifrado, items: itemsConMeses } as Record<string, unknown>,
@@ -541,6 +556,18 @@ export function RecetaModal({
             },
           ];
           await registrarAccion(targetCollection, docRef.id, "CREACION", farmaciaUser, cambiosCreacion);
+          // 🔄 Sincronizar portal público de pacientes (datos no sensibles)
+          sincronizarRecetaPublica(
+            docRef.id,
+            form.rut,
+            "completado",
+            targetTipo as import("../types").TipoReceta,
+            targetSector,
+            now,
+            itemsConMeses[0]?.autoRenovacion ?? 0,
+            1,
+            false
+          ).catch(console.error);
 
           // Descontar stock en inventario para cada medicamento prescrito
           const { increment, updateDoc: uDoc, doc: fDoc } = await import("firebase/firestore");
@@ -588,6 +615,18 @@ export function RecetaModal({
           const dataAntes = snapAntes.data() || {};
           const payloadCifrado = encryptRecetaFields(payload);
           await updateDoc(doc(db, finalCollection, recetaObjetivo.id), payloadCifrado);
+          // 🔄 Sincronizar portal público de pacientes (datos no sensibles)
+          sincronizarRecetaPublica(
+            recetaObjetivo.id,
+            form.rut,
+            payload.estado ?? recetaObjetivo.estado,
+            recetaObjetivo.tipo,
+            recetaObjetivo.sector,
+            recetaObjetivo.fechaSolicitud,
+            payload.autoRenovacion ?? recetaObjetivo.autoRenovacion ?? 0,
+            recetaObjetivo.mesesDescontados ?? 0,
+            false
+          ).catch(console.error);
           const cambios = detectarCambios(
             dataAntes,
             payloadCifrado as Record<string, unknown>,
@@ -657,6 +696,18 @@ export function RecetaModal({
             },
           ];
           await registrarAccion(collectionName, docRef.id, "CREACION", farmaciaUser, cambiosCreacion);
+          // 🔄 Sincronizar portal público de pacientes (datos no sensibles)
+          sincronizarRecetaPublica(
+            docRef.id,
+            form.rut,
+            "pendiente",
+            (tipo === "controladas" ? "controlado" : tipo === "maternales" ? "maternal" : tipo === "respiratorias" ? "respiratorio" : "cronico") as import("../types").TipoReceta,
+            sector,
+            now,
+            form.autoRenovacion ?? 0,
+            0,
+            false
+          ).catch(console.error);
           // ⚠️ NO se descuenta stock aquí — el funcionario no puede recetar.
           //    El descuento ocurre cuando el médico autoriza y selecciona medicamento + cantidad.
         }

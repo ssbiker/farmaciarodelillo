@@ -7,6 +7,9 @@
       "hosting": {
         "recetas": [
           "recetas-farmacia"
+        ],
+        "consulta-paciente": [
+          "consulta-recetas-rod"
         ]
       }
     }

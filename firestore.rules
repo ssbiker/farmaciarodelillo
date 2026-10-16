@@ -283,5 +283,19 @@ service cloud.firestore {
       allow update, delete: if false; // 🔒 INMUTABLE
     }
 
+    // ==========================================
+    // 7. PORTAL PÚBLICO DE PACIENTES EXTERNOS
+    // ==========================================
+
+    // Colección espejo con datos NO sensibles para consulta pública.
+    // Solo contiene: rutHash (SHA-256+salt), estado, tipo, sector, fechas, renovación.
+    // El RUT real, nombre, médico, medicamento y stock NUNCA están aquí.
+    match /recetas_publicas/{recetaId} {
+      // Cualquiera puede leer — no hay datos sensibles en esta colección.
+      allow read: if true;
+      // Solo personal autenticado del sistema interno puede escribir.
+      allow write: if hasFarmaciaPrivileges();
+    }
+
   }
 }

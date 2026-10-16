@@ -10,7 +10,7 @@ import { registrarAccion } from "../lib/auditoria";
 import { RecetaModal } from "./RecetaModal";
 import { TicketModal } from "./TicketModal";
 import { AuditoriaDrawer } from "./AuditoriaDrawer";
-import { getItemsDeReceta, getEstadoItemRenovacion } from "../lib/recetaHelpers";
+import { getItemsDeReceta, getEstadoItemRenovacion, isRecetaVigente } from "../lib/recetaHelpers";
 
 function daysSince(ts: any): number {
   const now = new Date();
@@ -34,7 +34,13 @@ function formatDate(ts: any): string {
   return ts.toDate().toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function EstadoBadge({ estado }: { estado: string }) {
+function EstadoBadge({ estado, sinVigencia }: { estado: string; sinVigencia?: boolean }) {
+  if (estado === "completado" && sinVigencia)
+    return (
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200">
+        <XCircle className="w-3.5 h-3.5" /> Sin vigencia
+      </span>
+    );
   if (estado === "completado")
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200">
@@ -342,17 +348,28 @@ export function RecetaList({
               {filtered.map((receta) => {
                 const isCritical = isVencida(receta);
                 const isWarning = !isCritical && isWarningZone(receta);
+                // Receta completada cuyo ciclo ya terminó (entrega única > 30d o renovación agotada)
+                const sinVigencia = receta.estado === "completado" && !isRecetaVigente(receta);
 
                 return (
                   <tr key={receta.id}
-                    className={`group transition-colors ${isCritical ? "bg-red-500/5 hover:bg-red-500/10" : isWarning ? "bg-yellow-500/5 hover:bg-yellow-500/10" : "hover:bg-[#F5F8FF]"}`}>
+                    className={`group transition-colors ${
+                      sinVigencia
+                        ? "bg-slate-50 opacity-70 hover:opacity-100 hover:bg-slate-100/60"
+                        : isCritical
+                        ? "bg-red-500/5 hover:bg-red-500/10"
+                        : isWarning
+                        ? "bg-yellow-500/5 hover:bg-yellow-500/10"
+                        : "hover:bg-[#F5F8FF]"
+                    }`}>
                     <td className="px-5 py-4 relative">
                       {isCritical && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-red-500" />}
                       {isWarning && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-yellow-500" />}
-                      <EstadoBadge estado={receta.estado} />
+                      {sinVigencia && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-slate-300" />}
+                      <EstadoBadge estado={receta.estado} sinVigencia={sinVigencia} />
                     </td>
                     <td className="px-5 py-4">
-                      <span className="font-semibold text-[#0F1B35]">{receta.nombrePaciente}</span>
+                      <span className={`font-semibold ${sinVigencia ? "text-slate-400" : "text-[#0F1B35]"}`}>{receta.nombrePaciente}</span>
                     </td>
                     <td className="px-5 py-4">
                       <span className="font-mono text-[#3D5278] text-xs whitespace-nowrap">{receta.rut}</span>

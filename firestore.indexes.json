@@ -1,0 +1,14 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "recetas_publicas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "rutHash", "order": "ASCENDING" },
+        { "fieldPath": "eliminada", "order": "ASCENDING" },
+        { "fieldPath": "fechaSolicitud", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

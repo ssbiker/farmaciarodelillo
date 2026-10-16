@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/recetacard.tsx","./src/components/rutinput.tsx","./src/lib/firebase.ts","./src/lib/recetaspublicas.ts","./src/lib/rututils.ts"],"version":"6.0.3"}

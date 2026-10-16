@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Service Account Firebase (NUNCA subir a Git)
+scripts/serviceAccount.json

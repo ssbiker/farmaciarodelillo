@@ -93,3 +93,53 @@ export function getEstadoItemRenovacion(
   return { label: `🔄 Mes ${currentMonth} de ${item.autoRenovacion}`, bg: "bg-green-50", border: "border-green-200", text: "text-green-700" };
 }
 
+
+/**
+ * Determina si una receta COMPLETADA sigue vigente (activa) o ya expiro.
+ *
+ * Reglas:
+ * - Receta pendiente/rechazada - siempre "vigente" a efectos de advertencia de RUT
+ * - Receta eliminada - nunca vigente
+ * - Receta completada sin renovacion (autoRenovacion=0 en todos sus items):
+ *     vigente si pasaron < 30 dias desde la fecha de solicitud / autorizacion
+ * - Receta completada con renovacion (al menos un item tiene autoRenovacion>0):
+ *     vigente si currentMonth <= maxAutoRenovacion en cualquier item
+ *
+ * Permite que el banner de "paciente con recetas activas" solo cuente
+ * las recetas que aun tienen ciclo de vida en curso.
+ */
+export function isRecetaVigente(receta: Receta): boolean {
+  if (receta.eliminada) return false;
+
+  // Recetas pendientes o rechazadas siempre cuentan como vigentes para el aviso
+  if (receta.estado !== "completado") return true;
+
+  const fecha = receta.fechaReceta ?? receta.fechaSolicitud;
+  if (!fecha || typeof fecha.toDate !== "function") {
+    // Sin fecha fiable: asumimos vigente para no perder datos
+    return true;
+  }
+
+  const start = fecha.toDate();
+  const today = new Date();
+  let elapsedMonths =
+    (today.getFullYear() - start.getFullYear()) * 12 +
+    (today.getMonth() - start.getMonth());
+  if (today.getDate() < start.getDate()) elapsedMonths--;
+  elapsedMonths = Math.max(0, elapsedMonths);
+
+  const items = getItemsDeReceta(receta);
+  const maxRenovacion = Math.max(...items.map((it) => it.autoRenovacion ?? 0));
+
+  if (maxRenovacion <= 0) {
+    // Entrega unica: vigente solo durante los primeros 30 dias
+    const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const daysDiff = Math.round((todayDay.getTime() - startDay.getTime()) / 86400000);
+    return daysDiff < 30;
+  }
+
+  // Con renovacion: vigente si aun no terminaron todos los meses
+  const currentMonth = Math.max(1, elapsedMonths + 1);
+  return currentMonth <= maxRenovacion;
+}
