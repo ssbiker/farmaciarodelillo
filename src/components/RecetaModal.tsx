@@ -25,7 +25,7 @@ export function RecetaModal({
   onClose: () => void;
   receta: Receta | null;
   medicos: FarmaciaUser[];
-  tipo: "controladas" | "cronicas" | "maternales";
+  tipo: "controladas" | "cronicas" | "maternales" | "respiratorias";
   sector: "A" | "B" | "CECOSF";
   farmaciaUser: FarmaciaUser;
   /** Si true: el usuario solo puede cambiar el estado (médico sin permisos de edición de datos) */
@@ -63,7 +63,7 @@ export function RecetaModal({
   );
   const isDoctorUser = farmaciaUser.role === 'medico' || farmaciaUser.isMedico === true;
   const isDoctorMode = soloAutorizacion || isDoctorUser || isSuperAdmin;
-  const [formTipo, setFormTipo] = useState<"controladas" | "cronicas" | "maternales">(tipo);
+  const [formTipo, setFormTipo] = useState<"controladas" | "cronicas" | "maternales" | "respiratorias">(tipo);
   const [formSector, setFormSector] = useState<"A" | "B" | "CECOSF">(sector);
   const [recetaVinculada, setRecetaVinculada] = useState<Receta | null>(null);
   const [auditoriaOpen, setAuditoriaOpen] = useState(false);
@@ -74,8 +74,10 @@ export function RecetaModal({
     if (t === "controlado" || t === "controladas") return "recetas_controladas";
     if (t === "cronico" || t === "cronicas") return "recetas_cronicas";
     if (t === "maternal" || t === "maternales") return "recetas_maternales";
+    if (t === "respiratorio" || t === "respiratorias") return "recetas_respiratorias";
     if (fallbackTipo === "controladas" || fallbackTipo === "controlado") return "recetas_controladas";
     if (fallbackTipo === "maternales" || fallbackTipo === "maternal") return "recetas_maternales";
+    if (fallbackTipo === "respiratorias" || fallbackTipo === "respiratorio") return "recetas_respiratorias";
     return "recetas_cronicas";
   };
 
@@ -83,7 +85,7 @@ export function RecetaModal({
 
   const vincularReceta = (r: Receta) => {
     setRecetaVinculada(r);
-    setFormTipo(r.tipo === "controlado" ? "controladas" : r.tipo === "maternal" ? "maternales" : "cronicas");
+    setFormTipo(r.tipo === "controlado" ? "controladas" : r.tipo === "maternal" ? "maternales" : r.tipo === "respiratorio" ? "respiratorias" : "cronicas");
     setFormSector(r.sector);
     setForm(prev => ({
       ...prev,
@@ -141,7 +143,7 @@ export function RecetaModal({
               <div className="flex justify-between items-start gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] font-bold text-amber-800">
-                    Receta {r.tipo === "controlado" ? "Controlada" : r.tipo === "maternal" ? "Maternal" : "Crónica"} — Sector {r.sector}
+                    Receta {r.tipo === "controlado" ? "Controlada" : r.tipo === "maternal" ? "Maternal" : r.tipo === "respiratorio" ? "Respiratorio" : "Crónica"} — Sector {r.sector}
                   </p>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {items.slice(0, 3).map((it, i) => (
@@ -265,14 +267,15 @@ export function RecetaModal({
 
   const collectionName = tipo === "controladas" ? "recetas_controladas"
                        : tipo === "maternales" ? "recetas_maternales"
+                       : tipo === "respiratorias" ? "recetas_respiratorias"
                        : "recetas_cronicas";
   const targetCollection = !recetaObjetivo
-    ? (formTipo === "controladas" ? "recetas_controladas" : formTipo === "maternales" ? "recetas_maternales" : "recetas_cronicas")
+    ? (formTipo === "controladas" ? "recetas_controladas" : formTipo === "maternales" ? "recetas_maternales" : formTipo === "respiratorias" ? "recetas_respiratorias" : "recetas_cronicas")
     : getCollectionForReceta(recetaObjetivo);
   const targetSector = !recetaObjetivo ? formSector : recetaObjetivo.sector;
   const targetTipo = !recetaObjetivo
-    ? (formTipo === "controladas" ? "controlado" : formTipo === "maternales" ? "maternal" : "cronico")
-    : (recetaObjetivo.tipo === "controlado" ? "controlado" : recetaObjetivo.tipo === "maternal" ? "maternal" : "cronico");
+    ? (formTipo === "controladas" ? "controlado" : formTipo === "maternales" ? "maternal" : formTipo === "respiratorias" ? "respiratorio" : "cronico")
+    : (recetaObjetivo.tipo === "controlado" ? "controlado" : recetaObjetivo.tipo === "maternal" ? "maternal" : recetaObjetivo.tipo === "respiratorio" ? "respiratorio" : "cronico");
 
   const formatRut = (raw: string) => {
     const clean = raw.replace(/[^0-9kK]/g, "").toUpperCase();
@@ -351,7 +354,7 @@ export function RecetaModal({
           let finalCollection = targetDocCollection;
           let snapAntes = await getDoc(doc(db, targetDocCollection, recetaObjetivo.id));
           if (!snapAntes.exists()) {
-            const allCols = ["recetas_controladas", "recetas_cronicas", "recetas_maternales"].filter(c => c !== targetDocCollection);
+            const allCols = ["recetas_controladas", "recetas_cronicas", "recetas_maternales", "recetas_respiratorias"].filter(c => c !== targetDocCollection);
             for (const col of allCols) {
               const snapAlt = await getDoc(doc(db, col, recetaObjetivo.id));
               if (snapAlt.exists()) {
@@ -572,7 +575,7 @@ export function RecetaModal({
           let finalCollection = targetDocCollection;
           let snapAntes = await getDoc(doc(db, targetDocCollection, recetaObjetivo.id));
           if (!snapAntes.exists()) {
-            const allCols = ["recetas_controladas", "recetas_cronicas", "recetas_maternales"].filter(c => c !== targetDocCollection);
+            const allCols = ["recetas_controladas", "recetas_cronicas", "recetas_maternales", "recetas_respiratorias"].filter(c => c !== targetDocCollection);
             for (const col of allCols) {
               const snapAlt = await getDoc(doc(db, col, recetaObjetivo.id));
               if (snapAlt.exists()) {
@@ -637,7 +640,7 @@ export function RecetaModal({
           const docRef = await addDoc(collection(db, collectionName), {
             ...payloadCifrado,
             sector,
-            tipo: tipo === "controladas" ? "controlado" : tipo === "maternales" ? "maternal" : "cronico",
+            tipo: tipo === "controladas" ? "controlado" : tipo === "maternales" ? "maternal" : tipo === "respiratorias" ? "respiratorio" : "cronico",
             fechaSolicitud: now,
             creadoPor: farmaciaUser.id,
             creadoEn: now,
@@ -702,15 +705,15 @@ export function RecetaModal({
             <p className="text-xs text-[#5D7299] mt-0.5">
               {recetaVinculada ? (
                 <span>
-                  {recetaVinculada.tipo === "controlado" ? "💊 Controlada" : recetaVinculada.tipo === "maternal" ? "🤰 Maternal" : "🩺 Crónica"} — Sector {recetaVinculada.sector} (Prescripción activa)
+                  {recetaVinculada.tipo === "controlado" ? "💊 Controlada" : recetaVinculada.tipo === "maternal" ? "🤰 Maternal" : recetaVinculada.tipo === "respiratorio" ? "🫁 Respiratorio" : "🩺 Crónica"} — Sector {recetaVinculada.sector} (Prescripción activa)
                 </span>
               ) : !receta ? (
                 <span>
-                  {formTipo === "controladas" ? "💊 Controlada" : formTipo === "maternales" ? "🤰 Maternal" : "🩺 Crónica"} — Sector {formSector}
+                  {formTipo === "controladas" ? "💊 Controlada" : formTipo === "maternales" ? "🤰 Maternal" : formTipo === "respiratorias" ? "🫁 Respiratorio" : "🩺 Crónica"} — Sector {formSector}
                 </span>
               ) : (
                 <span>
-                  {tipo === "controladas" ? "💊 Controlada" : tipo === "maternales" ? "🤰 Maternal" : "🩺 Crónica"} — Sector {sector}
+                  {tipo === "controladas" ? "💊 Controlada" : tipo === "maternales" ? "🤰 Maternal" : tipo === "respiratorias" ? "🫁 Respiratorio" : "🩺 Crónica"} — Sector {sector}
                 </span>
               )}
               {isDoctorMode && !isSuperAdmin && (
@@ -794,12 +797,13 @@ export function RecetaModal({
                       <label className={labelClass}>Tipo de Receta</label>
                       <select
                         value={formTipo}
-                        onChange={(e) => setFormTipo(e.target.value as "controladas" | "cronicas" | "maternales")}
+                        onChange={(e) => setFormTipo(e.target.value as "controladas" | "cronicas" | "maternales" | "respiratorias")}
                         className={inputClass}
                       >
                         <option value="controladas">💊 Receta Controlada</option>
                         <option value="cronicas">🩺 Receta Crónica</option>
                         <option value="maternales">🤰 Receta Maternal</option>
+                        <option value="respiratorias">🫁 Receta Respiratorio</option>
                       </select>
                     </div>
                     <div>
@@ -859,7 +863,7 @@ export function RecetaModal({
                     <span className="text-2xl flex-shrink-0">📎</span>
                     <div>
                       <p className="text-xs font-bold text-brand-blue-dark uppercase tracking-wider">
-                        Agregando fármaco a Receta activa ({recetaVinculada.tipo === "controlado" ? "Controlada" : recetaVinculada.tipo === "maternal" ? "Maternal" : "Crónica"} · Sector {recetaVinculada.sector})
+                        Agregando fármaco a Receta activa ({recetaVinculada.tipo === "controlado" ? "Controlada" : recetaVinculada.tipo === "maternal" ? "Maternal" : recetaVinculada.tipo === "respiratorio" ? "Respiratorio" : "Crónica"} · Sector {recetaVinculada.sector})
                       </p>
                       <p className="text-xs text-[#3D5278] mt-0.5">
                         Los medicamentos previos se conservan intactos. Solo se descontará del inventario el nuevo fármaco prescrito.

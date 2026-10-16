@@ -186,10 +186,12 @@ export function RecetaList({
 
   const tipo = activeTab.startsWith("controladas") ? "controladas"
              : activeTab.startsWith("maternales") ? "maternales"
+             : activeTab.startsWith("respiratorias") ? "respiratorias"
              : "cronicas";
   const sector = activeTab.includes("CECOSF") ? "CECOSF" : activeTab.split("_")[1];
   const collectionName = tipo === "controladas" ? "recetas_controladas"
                        : tipo === "maternales" ? "recetas_maternales"
+                       : tipo === "respiratorias" ? "recetas_respiratorias"
                        : "recetas_cronicas";
 
   // ── Permisos granulares ──────────────────────────────────────────────────────
@@ -549,7 +551,7 @@ export function RecetaList({
           onClose={() => setModalOpen(false)}
           receta={editing}
           medicos={medicos}
-          tipo={tipo as "controladas" | "cronicas" | "maternales"}
+          tipo={tipo as "controladas" | "cronicas" | "maternales" | "respiratorias"}
           sector={sector as "A" | "B" | "CECOSF"}
           farmaciaUser={farmaciaUser}
           soloAutorizacion={Boolean(editing && (isMedico || isAdmin) && !isSuperAdmin)}

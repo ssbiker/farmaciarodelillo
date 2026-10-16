@@ -85,8 +85,8 @@ export async function obtenerAuditoria(
   }
 
   // Fallback: Probar en las otras colecciones (recetas_controladas, recetas_cronicas, recetas_maternales)
-  const ALL_COLS = ["recetas_controladas", "recetas_cronicas", "recetas_maternales"];
-  const otrasColecciones = ALL_COLS.filter((c) => c !== collectionName && c !== (collectionName === "controladas" ? "recetas_controladas" : collectionName === "maternales" ? "recetas_maternales" : "recetas_cronicas"));
+  const ALL_COLS = ["recetas_controladas", "recetas_cronicas", "recetas_maternales", "recetas_respiratorias"];
+  const otrasColecciones = ALL_COLS.filter((c) => c !== collectionName && c !== (collectionName === "controladas" ? "recetas_controladas" : collectionName === "maternales" ? "recetas_maternales" : collectionName === "respiratorias" ? "recetas_respiratorias" : "recetas_cronicas"));
 
   for (const otraColeccion of otrasColecciones) {
     try {

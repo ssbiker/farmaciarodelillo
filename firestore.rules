@@ -36,10 +36,12 @@ service cloud.firestore {
 
     // Miembro del equipo de Gestión
     function isGestionMember() {
-      return isAuthenticated() && (
-        getUserData().role == 'admin' ||
-        getUserData().inGestionTeam == true
-      );
+      let data = getUserData();
+      return isSuperAdmin() || (isAuthenticated() && (
+        data.role == 'admin' ||
+        data.inGestionTeam == true ||
+        data.hasGestionAccess == true
+      ));
     }
 
     // ==========================================
@@ -109,19 +111,17 @@ service cloud.firestore {
 
     match /gestion_projects/{projectId} {
       allow read: if isGestionMember();
-      allow create, delete: if hasRole('admin');
-      allow update: if hasRole('admin');
+      allow create, update, delete: if isAdmin();
     }
 
     match /gestion_boards/{boardId} {
       allow read: if isGestionMember();
-      allow create, delete: if hasRole('admin');
-      allow update: if hasRole('admin');
+      allow create, update, delete: if isAdmin();
     }
 
     match /gestion_tasks/{taskId} {
       allow read: if isGestionMember();
-      allow create, delete: if hasRole('admin');
+      allow create, delete: if isAdmin();
       allow update: if isGestionMember();
     }
 
@@ -221,6 +221,35 @@ service cloud.firestore {
 
     // Recetas Maternal (misma lógica que crónicas/controladas)
     match /recetas_maternales/{recetaId} {
+      allow read: if hasFarmaciaPrivileges();
+
+      allow create: if isAdmin() || isFuncionario() || isMedico();
+
+      allow update: if
+        isAdmin()
+        || (isFuncionario() && !(
+              'estado' in request.resource.data &&
+              request.resource.data.estado != resource.data.estado &&
+              request.resource.data.estado in ['completado', 'rechazado']
+           ))
+        || (isMedico() && (
+              !('medicoUid' in resource.data) ||
+              resource.data.medicoUid == ''   ||
+              resource.data.medicoUid == null ||
+              resource.data.medicoUid == request.auth.uid ||
+              resource.data.creadoPor == request.auth.uid
+           ));
+
+      allow delete: if isAdmin();
+
+      match /auditoria/{logId} {
+        allow read, create: if hasFarmaciaPrivileges();
+        allow update, delete: if false; // 🔒 INMUTABLE
+      }
+    }
+
+    // Recetas Respiratorias (misma lógica que crónicas/controladas/maternales)
+    match /recetas_respiratorias/{recetaId} {
       allow read: if hasFarmaciaPrivileges();
 
       allow create: if isAdmin() || isFuncionario() || isMedico();

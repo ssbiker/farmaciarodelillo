@@ -64,6 +64,8 @@ export function RecetaTable({
       ? "recetas_controladas"
       : activeTab.startsWith("maternales")
       ? "recetas_maternales"
+      : activeTab.startsWith("respiratorias")
+      ? "recetas_respiratorias"
       : "recetas_cronicas";
     await deleteDoc(doc(db, collectionName, receta.id));
   };
@@ -87,6 +89,8 @@ export function RecetaTable({
     ? "controladas"
     : activeTab.startsWith("maternales")
     ? "maternales"
+    : activeTab.startsWith("respiratorias")
+    ? "respiratorias"
     : "cronicas";
   const sector = activeTab.includes("CECOSF") ? "CECOSF" : activeTab.split("_")[1];
 
@@ -303,7 +307,7 @@ export function RecetaTable({
           onClose={() => setIsModalOpen(false)}
           receta={editingReceta}
           medicos={medicos}
-          tipo={tipo as "controladas" | "cronicas" | "maternales"}
+          tipo={tipo as "controladas" | "cronicas" | "maternales" | "respiratorias"}
           sector={sector as "A" | "B" | "CECOSF"}
           farmaciaUser={farmaciaUser}
           todasRecetas={recetas}
@@ -320,7 +324,7 @@ export function RecetaTable({
       {auditoriaReceta && (
         <AuditoriaDrawer
           recetaId={auditoriaReceta.id}
-          collectionName={auditoriaReceta.tipo === "controlado" ? "recetas_controladas" : auditoriaReceta.tipo === "maternal" ? "recetas_maternales" : "recetas_cronicas"}
+          collectionName={auditoriaReceta.tipo === "controlado" ? "recetas_controladas" : auditoriaReceta.tipo === "maternal" ? "recetas_maternales" : auditoriaReceta.tipo === "respiratorio" ? "recetas_respiratorias" : "recetas_cronicas"}
           paciente={auditoriaReceta.nombrePaciente}
           onClose={() => setAuditoriaReceta(null)}
         />

@@ -3,7 +3,7 @@ import { collection, onSnapshot, query, orderBy, doc, setDoc, getDocs } from "fi
 import { db } from "../lib/firebase";
 import { decryptRecetaFields } from "../lib/crypto";
 import type { Receta, FarmaciaUser, FarmaciaConfig, ItemReceta } from "../types";
-import { Pill, Stethoscope, Baby, AlertCircle, Trash2, TrendingUp, LayoutDashboard, Package } from "lucide-react";
+import { Pill, Stethoscope, Baby, Wind, AlertCircle, Trash2, TrendingUp, LayoutDashboard, Package } from "lucide-react";
 import { RecetaList } from "./RecetaList";
 import { PapeleraModal } from "./PapeleraModal";
 import { VistaMedico } from "./VistaMedico";
@@ -12,7 +12,7 @@ import { InventarioAdmin } from "./InventarioAdmin";
 
 const DEFAULT_CONFIG: FarmaciaConfig = { diasAlertaRoja: 5, diasAlertaAmarilla: 3 };
 
-type TabState = "controladas_A" | "controladas_B" | "cronicas_A" | "cronicas_B" | "controladas_CECOSF" | "cronicas_CECOSF" | "maternales_A" | "maternales_B" | "maternales_CECOSF" | "mi_panel" | "estadisticas" | "inventario";
+type TabState = "controladas_A" | "controladas_B" | "cronicas_A" | "cronicas_B" | "controladas_CECOSF" | "cronicas_CECOSF" | "maternales_A" | "maternales_B" | "maternales_CECOSF" | "respiratorias_A" | "respiratorias_B" | "respiratorias_CECOSF" | "mi_panel" | "estadisticas" | "inventario";
 
 export function Dashboard({
   farmaciaUser,
@@ -28,6 +28,7 @@ export function Dashboard({
   const [recetasControladas, setRecetasControladas] = useState<Receta[]>([]);
   const [recetasCronicas, setRecetasCronicas] = useState<Receta[]>([]);
   const [recetasMaternales, setRecetasMaternales] = useState<Receta[]>([]);
+  const [recetasRespiratorias, setRecetasRespiratorias] = useState<Receta[]>([]);
   const [config, setConfig] = useState<FarmaciaConfig>(DEFAULT_CONFIG);
   const [medicos, setMedicos] = useState<FarmaciaUser[]>([]);
   const [activeTab, setActiveTab] = useState<TabState>(
@@ -69,10 +70,16 @@ export function Dashboard({
       () => setRecetasMaternales([])
     );
 
-    return () => { unsubConfig(); unsubCtrl(); unsubCron(); unsubMaternal(); };
+    const qResp = query(collection(db, "recetas_respiratorias"), orderBy("fechaSolicitud", "desc"));
+    const unsubResp = onSnapshot(qResp,
+      (s) => setRecetasRespiratorias(s.docs.map((d) => decryptRecetaFields({ id: d.id, ...d.data(), tipo: "respiratorio" } as Receta))),
+      () => setRecetasRespiratorias([])
+    );
+
+    return () => { unsubConfig(); unsubCtrl(); unsubCron(); unsubMaternal(); unsubResp(); };
   }, []);
 
-  const todasRecetas = [...recetasControladas, ...recetasCronicas, ...recetasMaternales];
+  const todasRecetas = [...recetasControladas, ...recetasCronicas, ...recetasMaternales, ...recetasRespiratorias];
 
   useEffect(() => {
     if (loading || todasRecetas.length === 0) return;
@@ -89,7 +96,10 @@ export function Dashboard({
           let elapsedMonths = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
           if (now.getDate() < start.getDate()) elapsedMonths--;
 
-          const colName = r.tipo === "controlado" ? "recetas_controladas" : r.tipo === "maternal" ? "recetas_maternales" : "recetas_cronicas";
+          const colName = r.tipo === "controlado" ? "recetas_controladas"
+                       : r.tipo === "maternal" ? "recetas_maternales"
+                       : r.tipo === "respiratorio" ? "recetas_respiratorias"
+                       : "recetas_cronicas";
           const recRef = doc(db, colName, r.id);
 
           // Caso 1: Receta con items[] (Multi-medicamento)
@@ -186,6 +196,9 @@ export function Dashboard({
     if (activeTab === "maternales_A") return recetasMaternales.filter((r) => r.sector === "A");
     if (activeTab === "maternales_B") return recetasMaternales.filter((r) => r.sector === "B");
     if (activeTab === "maternales_CECOSF") return recetasMaternales.filter((r) => r.sector === "CECOSF");
+    if (activeTab === "respiratorias_A") return recetasRespiratorias.filter((r) => r.sector === "A");
+    if (activeTab === "respiratorias_B") return recetasRespiratorias.filter((r) => r.sector === "B");
+    if (activeTab === "respiratorias_CECOSF") return recetasRespiratorias.filter((r) => r.sector === "CECOSF");
     return recetasCronicas.filter((r) => r.sector === "B");
   };
 
@@ -217,7 +230,10 @@ export function Dashboard({
   const mA = criticalCount(recetasMaternales.filter((r) => r.sector === "A"));
   const mB = criticalCount(recetasMaternales.filter((r) => r.sector === "B"));
   const mCECOSF = criticalCount(recetasMaternales.filter((r) => r.sector === "CECOSF"));
-  const totalCritical = cA + cB + crA + crB + cCECOSF + crCECOSF + mA + mB + mCECOSF;
+  const rA = criticalCount(recetasRespiratorias.filter((r) => r.sector === "A"));
+  const rB = criticalCount(recetasRespiratorias.filter((r) => r.sector === "B"));
+  const rCECOSF = criticalCount(recetasRespiratorias.filter((r) => r.sector === "CECOSF"));
+  const totalCritical = cA + cB + crA + crB + cCECOSF + crCECOSF + mA + mB + mCECOSF + rA + rB + rCECOSF;
 
   // Urgentes en el panel personal del médico
   const misPendientesUrgentes = isMedico ? todasRecetas.filter((r) => {
@@ -245,7 +261,8 @@ export function Dashboard({
   const totalPapelera =
     recetasControladas.filter((r) => r.eliminada).length +
     recetasCronicas.filter((r) => r.eliminada).length +
-    recetasMaternales.filter((r) => r.eliminada).length;
+    recetasMaternales.filter((r) => r.eliminada).length +
+    recetasRespiratorias.filter((r) => r.eliminada).length;
 
   if (loading) {
     return (
@@ -262,7 +279,11 @@ export function Dashboard({
       onClick={() => setActiveTab(id)}
       className={`relative flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
         activeTab === id
-          ? (id.startsWith("maternales") ? "tab-active-purple" : "tab-active-blue")
+          ? (id.startsWith("maternales")
+              ? "tab-active-purple"
+              : id.startsWith("respiratorias")
+              ? "bg-teal-100 text-teal-700 border border-teal-300 shadow-sm"
+              : "tab-active-blue")
           : "text-[#5D7299] hover:bg-[#EBF4FF] hover:text-[#1A55CC]"
       }`}
     >
@@ -298,7 +319,7 @@ export function Dashboard({
     </button>
   );
 
-  const isRecetaTab = ["controladas_A", "controladas_B", "cronicas_A", "cronicas_B", "controladas_CECOSF", "cronicas_CECOSF", "maternales_A", "maternales_B", "maternales_CECOSF"].includes(activeTab);
+  const isRecetaTab = ["controladas_A", "controladas_B", "cronicas_A", "cronicas_B", "controladas_CECOSF", "cronicas_CECOSF", "maternales_A", "maternales_B", "maternales_CECOSF", "respiratorias_A", "respiratorias_B", "respiratorias_CECOSF"].includes(activeTab);
 
   return (
     <div className="space-y-5">
@@ -319,42 +340,64 @@ export function Dashboard({
         </div>
       )}
 
-      {/* Tabs — 3 grupos con labels de categoría */}
-      <div className="w-full space-y-2">
-        {/* Fila superior: grupos de tabs de recetas */}
-        <div className="flex flex-col sm:flex-row gap-2 w-full">
+      {/* Tabs — 4 grupos de recetas + acciones especiales */}
+      <div className="w-full space-y-3">
+        {/* Grid 2x2 de grupos de recetas en pantallas medianas, 1 columna en mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
           {/* Grupo Controladas */}
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-black text-[#7B90B5] uppercase tracking-widest px-1">Controladas</span>
+            <span className="text-[10px] font-black text-[#7B90B5] uppercase tracking-widest px-1 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-brand-blue inline-block" />
+              Controladas
+            </span>
             <div className="flex gap-1 bg-white border border-[#DDE6F5] shadow-sm p-1 rounded-2xl">
-              <RecetaTab label="Sector A" id="controladas_A" icon={Pill} count={cA} />
-              <RecetaTab label="Sector B" id="controladas_B" icon={Pill} count={cB} />
+              <RecetaTab label="A" id="controladas_A" icon={Pill} count={cA} />
+              <RecetaTab label="B" id="controladas_B" icon={Pill} count={cB} />
               <RecetaTab label="CECOSF" id="controladas_CECOSF" icon={Pill} count={cCECOSF} />
             </div>
           </div>
 
           {/* Grupo Crónicas */}
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-black text-[#7B90B5] uppercase tracking-widest px-1">Crónicas</span>
+            <span className="text-[10px] font-black text-[#7B90B5] uppercase tracking-widest px-1 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-brand-blue inline-block" />
+              Crónicas
+            </span>
             <div className="flex gap-1 bg-white border border-[#DDE6F5] shadow-sm p-1 rounded-2xl">
-              <RecetaTab label="Sector A" id="cronicas_A" icon={Stethoscope} count={crA} />
-              <RecetaTab label="Sector B" id="cronicas_B" icon={Stethoscope} count={crB} />
+              <RecetaTab label="A" id="cronicas_A" icon={Stethoscope} count={crA} />
+              <RecetaTab label="B" id="cronicas_B" icon={Stethoscope} count={crB} />
               <RecetaTab label="CECOSF" id="cronicas_CECOSF" icon={Stethoscope} count={crCECOSF} />
             </div>
           </div>
 
           {/* Grupo Maternal */}
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-black text-brand-purple uppercase tracking-widest px-1">Maternal</span>
+            <span className="text-[10px] font-black text-brand-purple uppercase tracking-widest px-1 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-brand-purple inline-block" />
+              Maternal
+            </span>
             <div className="flex gap-1 bg-white border border-brand-purple/20 shadow-sm p-1 rounded-2xl">
-              <RecetaTab label="Sector A" id="maternales_A" icon={Baby} count={mA} />
-              <RecetaTab label="Sector B" id="maternales_B" icon={Baby} count={mB} />
+              <RecetaTab label="A" id="maternales_A" icon={Baby} count={mA} />
+              <RecetaTab label="B" id="maternales_B" icon={Baby} count={mB} />
               <RecetaTab label="CECOSF" id="maternales_CECOSF" icon={Baby} count={mCECOSF} />
+            </div>
+          </div>
+
+          {/* Grupo Respiratorio */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest px-1 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-teal-500 inline-block" />
+              Respiratorio
+            </span>
+            <div className="flex gap-1 bg-white border border-teal-200 shadow-sm p-1 rounded-2xl">
+              <RecetaTab label="A" id="respiratorias_A" icon={Wind} count={rA} />
+              <RecetaTab label="B" id="respiratorias_B" icon={Wind} count={rB} />
+              <RecetaTab label="CECOSF" id="respiratorias_CECOSF" icon={Wind} count={rCECOSF} />
             </div>
           </div>
         </div>
 
-        {/* Fila inferior: tabs especiales */}
+        {/* Tabs especiales */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Panel personal del médico */}
           {isMedico && (
