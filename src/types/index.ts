@@ -83,6 +83,7 @@ export interface FarmaciaUser {
   /** Roles: 'admin' | 'quimico' | 'medico' | 'funcionario' | 'tens' | 'tecnico' */
   role?: string;
   inFarmaciaTeam?: boolean;
+  hasFarmaciaAccess?: boolean;
   /** Flag independiente: permite a cualquier rol (ej: admin) autorizar/rechazar recetas */
   isMedico?: boolean;
   /** Flag independiente: permite a cualquier rol (ej: admin) crear e ingresar recetas */

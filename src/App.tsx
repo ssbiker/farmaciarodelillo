@@ -23,10 +23,12 @@ export default function App() {
           const userDoc = await getDoc(doc(db, "users", currentUser.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data() as FarmaciaUser;
-            const role = userData.role?.toLowerCase() || "";
+            const role = (userData.role || "").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             const isAdmin = role === "admin" || role === "quimico" || currentUser.email === "ssanchez@cmvalparaiso.cl";
-            // Médicos y funcionarios tienen acceso directo por su rol, sin necesitar inFarmaciaTeam
-            const hasAccess = isAdmin || userData.inFarmaciaTeam === true || role === "medico" || role === "funcionario";
+            const isMedico = role === "medico" || userData.isMedico === true;
+            const isFuncionario = role === "funcionario" || userData.isFuncionario === true;
+            // Médicos, funcionarios, admins y usuarios con acceso concedido tienen acceso directo
+            const hasAccess = isAdmin || userData.inFarmaciaTeam === true || userData.hasFarmaciaAccess === true || isMedico || isFuncionario;
 
             if (hasAccess) {
               setUser(currentUser);
@@ -84,7 +86,7 @@ export default function App() {
     return <LoginScreen onLogin={handleLogin} externalError={authError} />;
   }
 
-  const role = farmaciaUser.role?.toLowerCase() || "";
+  const role = (farmaciaUser.role || "").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const isAdmin = role === "admin" || role === "quimico" || user.email === "ssanchez@cmvalparaiso.cl";
   // Considera tanto el role string como el flag booleano independiente
   // Así un admin con isMedico: true puede autorizar sin perder su acceso admin
