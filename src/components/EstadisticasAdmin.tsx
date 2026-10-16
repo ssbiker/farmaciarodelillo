@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import type { Receta, FarmaciaUser, FarmaciaConfig } from "../types";
-import { getItemsDeReceta } from "../lib/recetaHelpers";
+import { getItemsDeReceta, isRecetaVigente } from "../lib/recetaHelpers";
 import {
   CheckCircle2, Clock, XCircle, AlertCircle,
-  Stethoscope, Users, Pill, TrendingUp, Activity, Baby, Wind
+  Stethoscope, Users, Pill, TrendingUp, Activity, Baby, Wind,
+  RefreshCw, Archive, Zap
 } from "lucide-react";
 
 function daysSince(ts: any): number {
@@ -50,6 +51,57 @@ export function EstadisticasAdmin({
   const vencidasGlobal = activas.filter((r) => isVencida(r, config)).length;
   const sinAsignarGlobal = activas.filter((r) => r.estado === "pendiente" && (!r.medicoUid || r.medicoUid === "")).length;
   const pctResolucion = totalGlobal > 0 ? Math.round((completadasGlobal / totalGlobal) * 100) : 0;
+
+  // ── Estadísticas de ciclos de renovación ────────────────────────────────────
+  const recetasCompletadas = activas.filter((r) => r.estado === "completado");
+
+  // Expiradas: completadas que ya no tienen vigencia
+  const expiradas = recetasCompletadas.filter((r) => !isRecetaVigente(r));
+
+  // Vigentes con renovación: completadas vigentes que tienen autoRenovacion > 0 en algún ítem
+  const conRenovacionVigente = recetasCompletadas.filter((r) => {
+    if (!isRecetaVigente(r)) return false;
+    const items = getItemsDeReceta(r);
+    return items.some((it) => (it.autoRenovacion ?? 0) > 0);
+  });
+
+  // Vigentes sin renovación (entrega única < 30 días)
+  const entregaUnicaVigente = recetasCompletadas.filter((r) => {
+    if (!isRecetaVigente(r)) return false;
+    const items = getItemsDeReceta(r);
+    return items.every((it) => (it.autoRenovacion ?? 0) === 0);
+  });
+
+  // Para renovación activa: calcular progreso por receta
+  const renovacionDetalle = useMemo(() => {
+    return conRenovacionVigente.map((r) => {
+      const items = getItemsDeReceta(r);
+      const maxRenovacion = Math.max(...items.map((it) => it.autoRenovacion ?? 0));
+      const fecha = r.fechaReceta ?? r.fechaSolicitud;
+      let elapsedMonths = 0;
+      if (fecha && typeof fecha.toDate === "function") {
+        const start = fecha.toDate();
+        const today = new Date();
+        elapsedMonths = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
+        if (today.getDate() < start.getDate()) elapsedMonths--;
+        elapsedMonths = Math.max(0, elapsedMonths);
+      }
+      const mesActual = Math.max(1, elapsedMonths + 1);
+      return { r, mesActual, maxRenovacion, pct: Math.round((mesActual / maxRenovacion) * 100) };
+    }).sort((a, b) => b.pct - a.pct); // más avanzados primero
+  }, [conRenovacionVigente]);
+
+  // Expiradas por tipo (para el desglose)
+  const expiradasPorTipo = useMemo(() => [
+    { label: "Controladas", tipo: "controlado", color: "text-brand-purple", bg: "bg-brand-purple/10", border: "border-brand-purple/20" },
+    { label: "Crónicas", tipo: "cronico", color: "text-brand-blue", bg: "bg-brand-blue/10", border: "border-brand-blue/20" },
+    { label: "Maternal", tipo: "maternal", color: "text-purple-600", bg: "bg-purple-100", border: "border-purple-200" },
+    { label: "Respiratorio", tipo: "respiratorio", color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200" },
+  ].map(({ label, tipo, color, bg, border }) => ({
+    label, color, bg, border,
+    count: expiradas.filter((r) => r.tipo === tipo).length,
+  })).filter((t) => t.count > 0), [expiradas]);
+
 
   // ── Por tipo/sector ─────────────────────────────────────────────────────────
   const porTipo = useMemo(() => [
@@ -356,6 +408,113 @@ export function EstadisticasAdmin({
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Ciclos de Renovación ─────────────────────────────────────────────── */}
+      <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-5 space-y-5">
+        <div className="flex items-center gap-2">
+          <RefreshCw className="w-4 h-4 text-brand-blue" />
+          <p className="text-xs font-bold text-[#5D7299] uppercase tracking-wide">Estado de Ciclos de Renovación</p>
+        </div>
+
+        {/* 3 KPIs de ciclo */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Expiradas */}
+          <div className={`rounded-2xl border px-4 py-4 ${expiradas.length > 0 ? "bg-slate-100 border-slate-300" : "bg-[#F8FAFF] border-[#DDE6F5]"}`}>
+            <div className="flex items-center gap-1.5 mb-2">
+              <Archive className={`w-3.5 h-3.5 ${expiradas.length > 0 ? "text-slate-500" : "text-[#8FA3C4]"}`} />
+              <p className="text-[11px] text-[#5D7299] uppercase tracking-wide font-semibold leading-tight">Sin Vigencia</p>
+            </div>
+            <p className={`text-3xl font-black ${expiradas.length > 0 ? "text-slate-600" : "text-[#8FA3C4]"}`}>{expiradas.length}</p>
+            <p className="text-[11px] text-[#8FA3C4] mt-1">ciclos completados o entrega única expirada</p>
+            {/* Desglose por tipo */}
+            {expiradasPorTipo.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {expiradasPorTipo.map((t) => (
+                  <span key={t.label} className={`text-[10px] font-bold ${t.bg} ${t.color} border ${t.border} rounded-full px-2 py-0.5`}>
+                    {t.label}: {t.count}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* En renovación activa */}
+          <div className={`rounded-2xl border px-4 py-4 ${conRenovacionVigente.length > 0 ? "bg-green-50 border-green-200" : "bg-[#F8FAFF] border-[#DDE6F5]"}`}>
+            <div className="flex items-center gap-1.5 mb-2">
+              <RefreshCw className={`w-3.5 h-3.5 ${conRenovacionVigente.length > 0 ? "text-green-600" : "text-[#8FA3C4]"}`} />
+              <p className="text-[11px] text-[#5D7299] uppercase tracking-wide font-semibold leading-tight">En Renovación Activa</p>
+            </div>
+            <p className={`text-3xl font-black ${conRenovacionVigente.length > 0 ? "text-green-700" : "text-[#8FA3C4]"}`}>{conRenovacionVigente.length}</p>
+            <p className="text-[11px] text-[#8FA3C4] mt-1">recetas completando ciclo mes a mes</p>
+          </div>
+
+          {/* Entrega única vigente */}
+          <div className={`rounded-2xl border px-4 py-4 ${entregaUnicaVigente.length > 0 ? "bg-blue-50 border-blue-200" : "bg-[#F8FAFF] border-[#DDE6F5]"}`}>
+            <div className="flex items-center gap-1.5 mb-2">
+              <Zap className={`w-3.5 h-3.5 ${entregaUnicaVigente.length > 0 ? "text-brand-blue" : "text-[#8FA3C4]"}`} />
+              <p className="text-[11px] text-[#5D7299] uppercase tracking-wide font-semibold leading-tight">Entrega Única Vigente</p>
+            </div>
+            <p className={`text-3xl font-black ${entregaUnicaVigente.length > 0 ? "text-brand-blue" : "text-[#8FA3C4]"}`}>{entregaUnicaVigente.length}</p>
+            <p className="text-[11px] text-[#8FA3C4] mt-1">sin renovación, despachadas hace menos de 30 días</p>
+          </div>
+        </div>
+
+        {/* Detalle: recetas en renovación activa con barra de progreso */}
+        {renovacionDetalle.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[11px] font-bold text-[#5D7299] uppercase tracking-widest">Progreso por receta en renovación</p>
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+              {renovacionDetalle.map(({ r, mesActual, maxRenovacion, pct }) => (
+                <div key={r.id} className="bg-white border border-[#DDE6F5] rounded-xl px-4 py-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-[#0F1B35] truncate">{r.nombrePaciente}</p>
+                      <p className="text-[11px] text-[#5D7299]">
+                        {r.tipo === "controlado" ? "💊" : r.tipo === "maternal" ? "🤰" : r.tipo === "respiratorio" ? "🫁" : "📋"}
+                        {" "}{r.medicoReceta ? `Dr(a). ${r.medicoReceta}` : "Sin médico"}
+                        {" · "}Sector {r.sector}
+                      </p>
+                    </div>
+                    <span className={`text-[11px] font-black px-2.5 py-1 rounded-full flex-shrink-0 ${
+                      pct >= 80 ? "bg-orange-50 text-orange-600 border border-orange-200"
+                      : pct >= 50 ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                      : "bg-green-50 text-green-700 border border-green-200"
+                    }`}>
+                      Mes {mesActual}/{maxRenovacion}
+                    </span>
+                  </div>
+                  {/* Barra de progreso del ciclo */}
+                  <div className="space-y-0.5">
+                    <div className="h-2 bg-[#EEF3FC] rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          pct >= 80 ? "bg-orange-400"
+                          : pct >= 50 ? "bg-yellow-400"
+                          : "bg-green-400"
+                        }`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-[#8FA3C4]">
+                      <span>Inicio</span>
+                      <span className="font-semibold">{pct}% del ciclo</span>
+                      <span>{maxRenovacion} meses total</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Vacío: sin datos de renovación */}
+        {recetasCompletadas.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-8 gap-2">
+            <RefreshCw className="w-8 h-8 text-[#DDE6F5]" />
+            <p className="text-sm text-[#8FA3C4]">Aún no hay recetas completadas para analizar ciclos.</p>
           </div>
         )}
       </div>
