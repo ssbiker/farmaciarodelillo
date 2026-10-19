@@ -1036,11 +1036,26 @@ export function RecetaModal({
               )}
 
               {/* Lista de medicamentos — editable por el médico */}
-              <div className="bg-[#F8FAFF] border border-[#DDE6F5] rounded-2xl p-4 space-y-3">
+              <div className={`border rounded-2xl p-4 space-y-3 transition-all ${
+                form.estado === "rechazado"
+                  ? "bg-gray-50 border-gray-200 opacity-70"
+                  : "bg-[#F8FAFF] border-[#DDE6F5]"
+              }`}>
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-brand-blue uppercase tracking-widest">💊 Medicamentos de la Receta</p>
+                  <p className="text-xs font-bold text-brand-blue uppercase tracking-widest">
+                    💊 Medicamentos de la Receta {form.estado === "rechazado" && <span className="text-red-500 font-semibold normal-case">(Opcional al rechazar)</span>}
+                  </p>
                   <span className="text-[11px] text-[#8FA3C4]">{formItems.length} ítem{formItems.length !== 1 ? "s" : ""}</span>
                 </div>
+
+                {form.estado === "rechazado" && (
+                  <div className="bg-red-50/80 border border-red-200 rounded-xl p-3 flex items-start gap-2.5 text-xs text-red-800 animate-fade-in">
+                    <span className="text-base flex-shrink-0">ℹ️</span>
+                    <p>
+                      <b>Modo Rechazo activo:</b> No es necesario seleccionar medicamentos ni ingresar cantidades o posología. La solicitud se cerrará registrando únicamente el motivo indicado abajo.
+                    </p>
+                  </div>
+                )}
 
                 {formItems.map((item, idx) => {
                   const isItemExistente = !isSuperAdmin && Boolean(
@@ -1113,9 +1128,9 @@ export function RecetaModal({
                           <div className="relative">
                             <label className={labelClass}>Medicamento</label>
                             <input
-                              required={item.medicamento !== "SOLICITUD_RECETA"}
+                              required={form.estado !== "rechazado" && item.medicamento !== "SOLICITUD_RECETA"}
                               type="text"
-                              placeholder="Buscar en el inventario..."
+                              placeholder={form.estado === "rechazado" ? "No requerido al rechazar..." : "Buscar en el inventario..."}
                               value={item.medicamento === "SOLICITUD_RECETA" ? "" : item.medicamento}
                               onChange={(e) => {
                                 setFormItems(prev => prev.map((it, i) =>
@@ -1164,10 +1179,10 @@ export function RecetaModal({
                             <div>
                               <label className={labelClass} title="Cantidad total a despachar">Cant. (Unid.)</label>
                               <input
-                                required
+                                required={form.estado !== "rechazado"}
                                 type="number"
-                                min="1"
-                                placeholder="Ej: 30"
+                                min={form.estado === "rechazado" ? undefined : "1"}
+                                placeholder={form.estado === "rechazado" ? "Opcional" : "Ej: 30"}
                                 value={item.cantidad > 0 ? item.cantidad : ""}
                                 onChange={(e) => setFormItems(prev => prev.map((it, i) =>
                                   i === idx ? { ...it, cantidad: Number(e.target.value) } : it
@@ -1338,9 +1353,9 @@ export function RecetaModal({
                   /* Combobox normal del inventario */
                   <div className="relative" ref={comboboxRef}>
                     <input
-                      required={!esSolicitudGeneral}
+                      required={form.estado !== "rechazado" && !esSolicitudGeneral}
                       type="text"
-                      placeholder="Buscar en el inventario..."
+                      placeholder={form.estado === "rechazado" ? "No requerido al rechazar..." : "Buscar en el inventario..."}
                       value={form.medicamento}
                       onChange={(e) => {
                         setForm({ ...form, medicamento: e.target.value, codigoMedicamento: "" });
@@ -1385,7 +1400,6 @@ export function RecetaModal({
               </div>
 
               {/* ── Fecha límite ── */}
-              {/* ── Fecha límite ── */}
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-3">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-amber-600" />
@@ -1401,7 +1415,7 @@ export function RecetaModal({
                   Fecha máxima en que esta receta debe ser atendida. Controla cuándo saltan las alertas amarilla y roja.
                 </p>
                 <input
-                  required
+                  required={form.estado !== "rechazado"}
                   type="date"
                   value={form.fechaLimite}
                   min={new Date().toISOString().split("T")[0]}
@@ -1540,16 +1554,49 @@ export function RecetaModal({
 
           {/* Motivo de rechazo — solo cuando se rechaza */}
           {form.estado === "rechazado" && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-2">
-              <p className="text-xs font-bold text-red-700 uppercase tracking-widest">Motivo del Rechazo *</p>
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 sm:p-5 space-y-3 animate-fade-in shadow-sm">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-red-700 uppercase tracking-widest flex items-center gap-1.5">
+                  <XCircle className="w-4 h-4 text-red-600" /> Motivo del Rechazo *
+                </p>
+                <span className="text-[11px] text-red-600 font-semibold bg-red-100/80 px-2 py-0.5 rounded-full">
+                  Requerido
+                </span>
+              </div>
+              <p className="text-xs text-red-700/80">
+                Seleccione un motivo rápido o redacte la justificación clínica. Esta nota quedará en el historial del paciente:
+              </p>
+              {/* Chips rápidos de motivos frecuentes */}
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  "No pertinente / Tratamiento no corresponde",
+                  "Requiere control médico presencial",
+                  "Receta ya emitida / Duplicada en AVIS",
+                  "Faltan exámenes de control recientes",
+                  "Paciente derivado a especialista o extra-sistema",
+                ].map((motivoRapido) => (
+                  <button
+                    key={motivoRapido}
+                    type="button"
+                    onClick={() => setForm({ ...form, motivoRechazo: motivoRapido })}
+                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all text-left ${
+                      form.motivoRechazo === motivoRapido
+                        ? "bg-red-600 text-white border-red-700 shadow-sm"
+                        : "bg-white text-red-700 border-red-200 hover:bg-red-100/60 hover:border-red-300"
+                    }`}
+                  >
+                    ✦ {motivoRapido}
+                  </button>
+                ))}
+              </div>
               <textarea
                 required
                 disabled={!puedeEditarDatos && !soloAutorizacion}
                 rows={3}
-                placeholder="Indique el motivo por el que se rechaza esta receta..."
+                placeholder="Escriba o ajuste el motivo del rechazo clínico..."
                 value={form.motivoRechazo ?? ""}
                 onChange={(e) => setForm({ ...form, motivoRechazo: e.target.value })}
-                className="w-full bg-white border border-red-200 rounded-xl px-4 py-3 text-sm text-red-800 placeholder-red-300 outline-none focus:border-red-400 resize-none transition-all disabled:opacity-50"
+                className="w-full bg-white border border-red-200 rounded-xl px-4 py-3 text-sm text-red-800 placeholder-red-300 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 resize-none transition-all disabled:opacity-50"
               />
             </div>
           )}
