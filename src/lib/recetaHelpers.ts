@@ -178,3 +178,26 @@ export function validarRut(rut: string | undefined | null): boolean {
   return dv === finalDv;
 }
 
+
+/**
+ * Indica si una receta completada tiene autorización parcial (al menos un fármaco rechazado).
+ */
+export function esAutorizacionParcial(receta: Receta): boolean {
+  if (receta.estado !== "completado") return false;
+  const items = getItemsDeReceta(receta);
+  return items.length > 1 && items.some(it => it.estadoItem === "rechazado");
+}
+
+/**
+ * Cuenta cuántos fármacos están autorizados/activos en la receta.
+ */
+export function contarItemsAutorizados(receta: Receta): number {
+  return getItemsDeReceta(receta).filter(it => it.estadoItem !== "rechazado").length;
+}
+
+/**
+ * Cuenta cuántos fármacos fueron rechazados individualmente.
+ */
+export function contarItemsRechazados(receta: Receta): number {
+  return getItemsDeReceta(receta).filter(it => it.estadoItem === "rechazado").length;
+}

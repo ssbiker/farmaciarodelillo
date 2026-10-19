@@ -11,6 +11,8 @@ export interface ItemReceta {
   cantidad: number;           // unidades a despachar
   autoRenovacion: number;     // 0-6 meses, independiente por ítem
   mesesDescontados: number;   // cuántos meses ya se han descontado
+  estadoItem?: "autorizado" | "rechazado"; // Estado individual: undefined/"autorizado" = activo, "rechazado" = no se despacha
+  motivoRechazoItem?: string; // Motivo clínico en caso de rechazo individual
 }
 
 export type AccionAuditoria =

@@ -1,6 +1,6 @@
 import { X, Printer } from "lucide-react";
 import type { Receta } from "../types";
-import { getItemsDeReceta, formatRut } from "../lib/recetaHelpers";
+import { getItemsDeReceta, formatRut, esAutorizacionParcial } from "../lib/recetaHelpers";
 
 export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () => void }) {
   const formatDate = (ts: any) => {
@@ -81,18 +81,39 @@ export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () =
             <div className="bg-brand-purple/10 border border-brand-purple/30 rounded-2xl p-4 space-y-3">
               <h4 className="text-[10px] font-bold text-brand-purple/80 uppercase tracking-widest">Medicamentos</h4>
               <div className="space-y-2">
-                {getItemsDeReceta(receta).map((it, idx) => (
-                  <div key={idx} className="flex justify-between items-center bg-white/80 p-2.5 rounded-xl border border-brand-purple/20">
-                    <span className="font-bold text-sm text-[#0F1B35]">
-                      {it.medicamento === "SOLICITUD_RECETA" ? "Solicitud sin med. asignado" : it.medicamento}
-                    </span>
-                    {it.cantidad > 0 && (
-                      <span className="font-extrabold text-xs text-brand-blue bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200">
-                        Cant: {it.cantidad}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                {getItemsDeReceta(receta).map((it, idx) => {
+                  const isRechazado = it.estadoItem === "rechazado";
+                  return (
+                    <div 
+                      key={idx} 
+                      className={`flex justify-between items-center p-2.5 rounded-xl border ${
+                        isRechazado 
+                          ? "bg-red-50/70 border-red-200" 
+                          : "bg-white/80 border-brand-purple/20"
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0 pr-2">
+                        <span className={`font-bold text-sm block ${isRechazado ? "text-red-700 line-through" : "text-[#0F1B35]"}`}>
+                          {it.medicamento === "SOLICITUD_RECETA" ? "Solicitud sin med. asignado" : it.medicamento}
+                        </span>
+                        {isRechazado && (
+                          <span className="text-[11px] font-semibold text-red-600 block mt-0.5">
+                            ❌ NO DESPACHAR — Rechazado: {it.motivoRechazoItem || "No pertinente"}
+                          </span>
+                        )}
+                      </div>
+                      {isRechazado ? (
+                        <span className="font-extrabold text-[10px] text-red-700 bg-red-100 px-2 py-0.5 rounded-lg border border-red-300 flex-shrink-0">
+                          Rechazado
+                        </span>
+                      ) : it.cantidad > 0 ? (
+                        <span className="font-extrabold text-xs text-brand-blue bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200 flex-shrink-0">
+                          Cant: {it.cantidad}
+                        </span>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <div>
@@ -114,7 +135,9 @@ export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () =
               </div>
               <div className="bg-[#F8FAFF] rounded-xl p-3 border border-[#DDE6F5]">
                 <p className="text-[11px] text-[#5D7299] mb-0.5">Estado Final</p>
-                <p className="font-semibold text-xs text-green-700 capitalize">{receta.estado}</p>
+                <p className={`font-semibold text-xs capitalize ${esAutorizacionParcial(receta) ? "text-amber-700 font-bold" : "text-green-700"}`}>
+                  {esAutorizacionParcial(receta) ? "Autorizada (Parcial)" : receta.estado}
+                </p>
               </div>
             </div>
 

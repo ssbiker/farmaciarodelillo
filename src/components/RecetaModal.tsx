@@ -423,11 +423,11 @@ export function RecetaModal({
 
       if (isDoctorMode) {
         if (recetaObjetivo) {
-          // Si el médico autoriza la receta, verificar que tenga al menos un fármaco válido y cantidad > 0
+          // Si el médico autoriza la receta, verificar que tenga al menos un fármaco válido y cantidad > 0 (que no esté rechazado individualmente)
           if (form.estado === "completado") {
-            const itemsValidos = formItems.filter(it => it.medicamento && it.medicamento !== "SOLICITUD_RECETA" && (it.cantidad ?? 0) > 0);
+            const itemsValidos = formItems.filter(it => it.estadoItem !== "rechazado" && it.medicamento && it.medicamento !== "SOLICITUD_RECETA" && (it.cantidad ?? 0) > 0);
             if (itemsValidos.length === 0) {
-              alert("Para autorizar la receta, seleccione el medicamento del inventario y defina una cantidad mayor a 0.");
+              alert("Para autorizar la receta, al menos un medicamento debe estar autorizado con su cantidad mayor a 0. Si desea rechazar toda la receta, seleccione la opción 'Rechazar' en la decisión médica.");
               setLoading(false);
               return;
             }
@@ -457,8 +457,8 @@ export function RecetaModal({
             mesesDescontados: it.mesesDescontados ?? 0,
           }));
 
-          // Primer ítem para retrocompatibilidad de campos planos
-          const primerItem = itemsConMeses[0] ?? nuevoItemVacio();
+          // Primer ítem para retrocompatibilidad de campos planos (preferir uno autorizado)
+          const primerItem = itemsConMeses.find(it => it.estadoItem !== "rechazado") ?? itemsConMeses[0] ?? nuevoItemVacio();
 
           const payload = {
             estado: form.estado,
@@ -531,6 +531,17 @@ export function RecetaModal({
               const codigoChanged = oldIt && oldIt.codigoMedicamento !== newIt.codigoMedicamento;
               const cantidadChanged = oldIt && oldIt.cantidad !== newIt.cantidad;
 
+              // Si el ítem está rechazado individualmente, devolver stock previo si aplica y no descontar
+              if (newIt.estadoItem === "rechazado") {
+                if (oldIt && (oldIt.mesesDescontados ?? 0) > 0 && oldIt.codigoMedicamento && oldIt.cantidad > 0) {
+                  const m = oldIt.mesesDescontados || 1;
+                  uDoc(fDoc(db, "inventario", oldIt.codigoMedicamento), {
+                    stock: increment(oldIt.cantidad * m)
+                  }).catch(console.error);
+                }
+                return { ...newIt, mesesDescontados: 0, autoRenovacion: 0 };
+              }
+
               if (newIt.codigoMedicamento && newIt.cantidad > 0) {
                 if (firstTime) {
                   // Primera vez: descontar si la receta está en estado completado
@@ -584,19 +595,19 @@ export function RecetaModal({
           }
         } else {
           // ── Modo médico: CREAR NUEVA RECETA CON MULTI-MEDICAMENTO ──────────────────
-          const itemsValidos = formItems.filter(it => it.codigoMedicamento && it.cantidad > 0);
+          const itemsValidos = formItems.filter(it => it.estadoItem !== "rechazado" && it.codigoMedicamento && it.cantidad > 0);
           if (itemsValidos.length === 0) {
-            alert("Por favor agregue al menos un medicamento válido del inventario con su cantidad.");
+            alert("Por favor agregue al menos un medicamento válido del inventario con su cantidad que no esté rechazado.");
             setLoading(false);
             return;
           }
 
           const itemsConMeses: ItemReceta[] = formItems.map((it) => ({
             ...it,
-            mesesDescontados: (form.estado === "completado" && it.codigoMedicamento && it.cantidad > 0) ? 1 : 0,
+            mesesDescontados: (form.estado === "completado" && it.estadoItem !== "rechazado" && it.codigoMedicamento && it.cantidad > 0) ? 1 : 0,
           }));
 
-          const primerItem = itemsConMeses[0] ?? nuevoItemVacio();
+          const primerItem = itemsConMeses.find(it => it.estadoItem !== "rechazado") ?? itemsConMeses[0] ?? nuevoItemVacio();
 
           const payload = {
             nombrePaciente: form.nombrePaciente,
@@ -650,10 +661,10 @@ export function RecetaModal({
             false
           ).catch(console.error);
 
-          // Descontar stock en inventario para cada medicamento prescrito
+          // Descontar stock en inventario para cada medicamento prescrito (solo los no rechazados)
           const { increment, updateDoc: uDoc, doc: fDoc } = await import("firebase/firestore");
           for (const it of itemsConMeses) {
-            if (it.codigoMedicamento && it.cantidad > 0) {
+            if (it.estadoItem !== "rechazado" && it.codigoMedicamento && it.cantidad > 0) {
               uDoc(fDoc(db, "inventario", it.codigoMedicamento), {
                 stock: increment(-it.cantidad)
               }).catch(console.error);
@@ -1042,62 +1053,153 @@ export function RecetaModal({
                     (recetaObjetivo && (item.mesesDescontados ?? 0) > 0) ||
                     (recetaVinculada && idx < getItemsDeReceta(recetaVinculada).length)
                   );
+                  const isRechazado = item.estadoItem === "rechazado";
 
                   return (
-                    <div key={idx} className="bg-white border border-[#DDE6F5] rounded-xl p-3 space-y-2.5">
+                    <div
+                      key={idx}
+                      className={`border rounded-xl p-3 space-y-2.5 transition-all ${
+                        isRechazado
+                          ? "bg-red-50/40 border-red-300 shadow-sm"
+                          : "bg-white border-[#DDE6F5]"
+                      }`}
+                    >
                       {/* Encabezado del ítem */}
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-[#5D7299] uppercase tracking-widest flex items-center gap-1.5">
+                        <span className="text-[11px] font-bold text-[#5D7299] uppercase tracking-widest flex items-center gap-1.5 flex-wrap">
                           Medicamento {idx + 1}
                           {item.medicamento === "SOLICITUD_RECETA" && (
                             <span className="text-amber-600 normal-case font-semibold">— Solicitud sin med.</span>
                           )}
+                          {isRechazado && (
+                            <span className="text-red-700 bg-red-100 border border-red-200 px-2 py-0.5 rounded-full text-[10px] font-black normal-case">
+                              ❌ Rechazado
+                            </span>
+                          )}
                         </span>
-                        {isItemExistente ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#5D7299] bg-[#EFF3FB] border border-[#DDE6F5] px-2 py-0.5 rounded-lg">
-                            <Lock className="w-3 h-3 text-[#8FA3C4]" /> Prescrito previamente
-                          </span>
-                        ) : formItems.length > 1 ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormItems(prev => prev.filter((_, i) => i !== idx));
-                              setActiveComboIdx(null);
-                            }}
-                            className="flex items-center gap-1 text-[11px] text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-3 h-3" /> Quitar
-                          </button>
-                        ) : null}
+
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* Toggle Rechazar Fármaco Individual (Solo médico y cuando la decisión general no es 'rechazado') */}
+                          {isDoctorMode && form.estado !== "rechazado" && (
+                            isRechazado ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormItems(prev => prev.map((it, i) => i === idx ? { ...it, estadoItem: "autorizado" } : it));
+                                }}
+                                className="flex items-center gap-1 text-[11px] font-bold text-brand-blue hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors border border-brand-blue/30"
+                                title="Reincorporar este fármaco para que sea despachado"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5 text-brand-blue" /> Reincorporar
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormItems(prev => prev.map((it, i) => i === idx ? { ...it, estadoItem: "rechazado", motivoRechazoItem: it.motivoRechazoItem || "No pertinente / Tratamiento no corresponde" } : it));
+                                }}
+                                className="flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors border border-red-200 hover:border-red-300"
+                                title="Rechazar individualmente este fármaco dejando los otros vigentes"
+                              >
+                                <XCircle className="w-3.5 h-3.5 text-red-500" /> Rechazar fármaco
+                              </button>
+                            )
+                          )}
+
+                          {isItemExistente ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#5D7299] bg-[#EFF3FB] border border-[#DDE6F5] px-2 py-0.5 rounded-lg">
+                              <Lock className="w-3 h-3 text-[#8FA3C4]" /> Prescrito previamente
+                            </span>
+                          ) : formItems.length > 1 ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormItems(prev => prev.filter((_, i) => i !== idx));
+                                setActiveComboIdx(null);
+                              }}
+                              className="flex items-center gap-1 text-[11px] text-[#8FA3C4] hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors"
+                              title="Eliminar este fármaco de la lista"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
 
+                      {/* Bloque de motivo cuando el fármaco está rechazado individualmente */}
+                      {isRechazado && (
+                        <div className="bg-red-50/90 border border-red-200 rounded-xl p-3 space-y-2 animate-fade-in shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold text-red-800 flex items-center gap-1.5">
+                              <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                              Fármaco No Autorizado Clínicamente — No se despachará en Farmacia
+                            </p>
+                            <span className="text-[10px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
+                              No se despacha
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-red-700/90">
+                            Indique el motivo clínico del rechazo (quedará registrado para farmacia y paciente):
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {[
+                              "No pertinente / Tratamiento no corresponde",
+                              "Requiere control médico presencial",
+                              "Receta ya emitida / Duplicada en AVIS",
+                              "Faltan exámenes o parámetros alterados",
+                              "Contraindicado clínicamente",
+                            ].map((motivoRapido) => (
+                              <button
+                                key={motivoRapido}
+                                type="button"
+                                onClick={() => setFormItems(prev => prev.map((it, i) => i === idx ? { ...it, motivoRechazoItem: motivoRapido } : it))}
+                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg border transition-all text-left ${
+                                  item.motivoRechazoItem === motivoRapido
+                                    ? "bg-red-600 text-white border-red-700 shadow-sm"
+                                    : "bg-white text-red-700 border-red-200 hover:bg-red-100/60"
+                                }`}
+                              >
+                                ✦ {motivoRapido}
+                              </button>
+                            ))}
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Motivo o justificación clínica..."
+                            value={item.motivoRechazoItem || ""}
+                            onChange={(e) => setFormItems(prev => prev.map((it, i) => i === idx ? { ...it, motivoRechazoItem: e.target.value } : it))}
+                            className="w-full bg-white border border-red-200 rounded-lg px-3 py-1.5 text-xs text-red-900 placeholder-red-300 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-200"
+                          />
+                        </div>
+                      )}
+
                       {isItemExistente ? (
-                        <div className="space-y-2">
+                        <div className={`space-y-2 ${isRechazado ? "opacity-60" : ""}`}>
                           <div>
                             <label className={labelClass}>Medicamento</label>
-                            <div className={`${inputDisabledClass} font-semibold text-brand-indigo`}>
+                            <div className={`${inputDisabledClass} font-semibold ${isRechazado ? "line-through text-red-700" : "text-brand-indigo"}`}>
                               {item.medicamento}
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className={labelClass}>Cant. (Unid.)</label>
-                              <div className={`${inputDisabledClass} text-center font-bold`}>
-                                {item.cantidad}
+                              <div className={`${inputDisabledClass} text-center font-bold ${isRechazado ? "line-through text-red-400" : ""}`}>
+                                {isRechazado ? 0 : item.cantidad}
                               </div>
                             </div>
                             <div>
                               <label className={labelClass}>Auto-Renovación</label>
                               <div className={`${inputDisabledClass} text-sm font-semibold`}>
-                                {item.autoRenovacion ? `${item.autoRenovacion} meses` : "Sin renovación"}
+                                {isRechazado ? "Cancelada" : item.autoRenovacion ? `${item.autoRenovacion} meses` : "Sin renovación"}
                               </div>
                             </div>
                           </div>
                         </div>
                       ) : (
-                        <>
+                        <div className={isRechazado ? "opacity-75 space-y-2.5" : "space-y-2.5"}>
                           {/* Aviso de solicitud genérica */}
-                          {item.medicamento === "SOLICITUD_RECETA" && (
+                          {item.medicamento === "SOLICITUD_RECETA" && !isRechazado && (
                             <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2">
                               <span className="text-sm">📋</span>
                               <p className="text-xs text-amber-700 font-semibold">Asigne un medicamento del inventario</p>
@@ -1108,9 +1210,10 @@ export function RecetaModal({
                           <div className="relative">
                             <label className={labelClass}>Medicamento</label>
                             <input
-                              required={form.estado !== "rechazado" && item.medicamento !== "SOLICITUD_RECETA"}
+                              disabled={isRechazado}
+                              required={form.estado !== "rechazado" && !isRechazado && item.medicamento !== "SOLICITUD_RECETA"}
                               type="text"
-                              placeholder={form.estado === "rechazado" ? "No requerido al rechazar..." : "Buscar en el inventario..."}
+                              placeholder={isRechazado ? "Fármaco no autorizado..." : form.estado === "rechazado" ? "No requerido al rechazar..." : "Buscar en el inventario..."}
                               value={item.medicamento === "SOLICITUD_RECETA" ? "" : item.medicamento}
                               onChange={(e) => {
                                 setFormItems(prev => prev.map((it, i) =>
@@ -1118,10 +1221,10 @@ export function RecetaModal({
                                 ));
                                 setActiveComboIdx(idx);
                               }}
-                              onFocus={() => setActiveComboIdx(idx)}
-                              className={`${inputClass} text-brand-indigo font-semibold placeholder-brand-indigo/30 focus:border-brand-indigo border-brand-indigo/30`}
+                              onFocus={() => { if (!isRechazado) setActiveComboIdx(idx); }}
+                              className={`${inputClass} ${isRechazado ? "text-red-700 line-through bg-red-50/20 border-red-200" : "text-brand-indigo font-semibold placeholder-brand-indigo/30 focus:border-brand-indigo border-brand-indigo/30"}`}
                             />
-                            {activeComboIdx === idx && (
+                            {activeComboIdx === idx && !isRechazado && (
                               <div className="absolute z-20 w-full mt-1 bg-white border border-[#DDE6F5] rounded-xl shadow-lg max-h-52 overflow-y-auto">
                                 {inventario
                                   .filter(inv =>
@@ -1159,25 +1262,27 @@ export function RecetaModal({
                             <div>
                               <label className={labelClass} title="Cantidad total a despachar">Cant. (Unid.)</label>
                               <input
-                                required={form.estado !== "rechazado"}
+                                disabled={isRechazado}
+                                required={form.estado !== "rechazado" && !isRechazado}
                                 type="number"
-                                min={form.estado === "rechazado" ? undefined : "1"}
-                                placeholder={form.estado === "rechazado" ? "Opcional" : "Ej: 30"}
-                                value={item.cantidad > 0 ? item.cantidad : ""}
+                                min={form.estado === "rechazado" || isRechazado ? undefined : "1"}
+                                placeholder={isRechazado ? "0 (Rechazado)" : form.estado === "rechazado" ? "Opcional" : "Ej: 30"}
+                                value={isRechazado ? "" : (item.cantidad > 0 ? item.cantidad : "")}
                                 onChange={(e) => setFormItems(prev => prev.map((it, i) =>
                                   i === idx ? { ...it, cantidad: Number(e.target.value) } : it
                                 ))}
-                                className={`${inputClass} text-center font-bold`}
+                                className={`${inputClass} text-center font-bold ${isRechazado ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""}`}
                               />
                             </div>
                             <div>
                               <label className={labelClass}>Auto-Renovación</label>
                               <select
-                                value={item.autoRenovacion ?? 0}
+                                disabled={isRechazado}
+                                value={isRechazado ? 0 : (item.autoRenovacion ?? 0)}
                                 onChange={(e) => setFormItems(prev => prev.map((it, i) =>
                                   i === idx ? { ...it, autoRenovacion: Number(e.target.value) } : it
                                 ))}
-                                className={`${inputClass} text-sm`}
+                                className={`${inputClass} text-sm ${isRechazado ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""}`}
                               >
                                 <option value={0}>Sin renovación</option>
                                 <option value={1}>1 mes</option>
@@ -1259,7 +1364,7 @@ export function RecetaModal({
                               </div>
                             )}
                           </div>
-                        </>
+                        </div>
                       )}
                     </div>
                   );
@@ -1274,6 +1379,19 @@ export function RecetaModal({
                   <Plus className="w-4 h-4" />
                   Agregar otro medicamento
                 </button>
+
+                {/* Banner informativo de Autorización Parcial */}
+                {form.estado === "completado" && formItems.some(it => it.estadoItem === "rechazado") && (
+                  <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-900 animate-fade-in shadow-sm">
+                    <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Autorización Parcial configurada</p>
+                      <p className="text-amber-800/90 text-[11px] mt-0.5">
+                        Al confirmar, se autorizarán únicamente los fármacos activos. Los ítems marcados en rojo quedarán descartados con su motivo clínico sin despachar stock.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -1606,7 +1724,11 @@ export function RecetaModal({
               : isDoctorMode && !receta
               ? `Emitir Receta ${currentTipoLabel}`
               : isDoctorMode
-              ? (form.estado === "completado" ? `Autorizar Receta ${currentTipoLabel}` : form.estado === "rechazado" ? "Confirmar Rechazo" : "Confirmar Decisión")
+              ? (form.estado === "completado"
+                  ? (formItems.some(it => it.estadoItem === "rechazado")
+                      ? `Autorizar Receta (Parcial)`
+                      : `Autorizar Receta ${currentTipoLabel}`)
+                  : form.estado === "rechazado" ? "Confirmar Rechazo" : "Confirmar Decisión")
               : "Guardar Registro"}
           </button>
         </div>

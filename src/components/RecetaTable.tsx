@@ -1,13 +1,13 @@
 import { useState } from "react";
 import type { Receta, FarmaciaConfig, FarmaciaUser } from "../types";
-import { CheckCircle2, XCircle, Clock, Trash2, Edit, Printer, Plus, ChevronDown, ChevronRight, History } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Trash2, Edit, Printer, Plus, ChevronDown, ChevronRight, History, AlertCircle } from "lucide-react";
 import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { RecetaModal } from "./RecetaModal";
 import { TicketModal } from "./TicketModal";
 import { AuditoriaDrawer } from "./AuditoriaDrawer";
 import { RutBadge } from "./RutBadge";
-import { getItemsDeReceta, getEstadoItemRenovacion } from "../lib/recetaHelpers";
+import { getItemsDeReceta, getEstadoItemRenovacion, esAutorizacionParcial } from "../lib/recetaHelpers";
 
 export function RecetaTable({ 
   recetas, 
@@ -39,6 +39,7 @@ export function RecetaTable({
   });
 
   const getAlertColor = (receta: Receta) => {
+    if (receta.estado === "completado" && esAutorizacionParcial(receta)) return "bg-amber-50 text-amber-700 border-amber-300 shadow-sm";
     if (receta.estado === "completado") return "bg-green-50 text-green-700 border-green-200";
     if (receta.estado === "rechazado") return "bg-slate-100 text-slate-500 border-slate-200";
     
@@ -165,9 +166,10 @@ export function RecetaTable({
                     <td className="px-6 py-4">
                       <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium whitespace-nowrap ${getAlertColor(receta)}`}>
                         {receta.estado === 'pendiente' && <Clock className="w-3.5 h-3.5" />}
-                        {receta.estado === 'completado' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                        {receta.estado === 'completado' && esAutorizacionParcial(receta) && <AlertCircle className="w-3.5 h-3.5 text-amber-600" />}
+                        {receta.estado === 'completado' && !esAutorizacionParcial(receta) && <CheckCircle2 className="w-3.5 h-3.5" />}
                         {receta.estado === 'rechazado' && <XCircle className="w-3.5 h-3.5" />}
-                        <span className="capitalize">{receta.estado}</span>
+                        <span className="capitalize">{receta.estado === 'completado' && esAutorizacionParcial(receta) ? 'Parcial' : receta.estado}</span>
                       </div>
                     </td>
 
@@ -188,18 +190,26 @@ export function RecetaTable({
                             <span className="inline-flex items-center gap-1 text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5">
                               📋 Pendiente médico
                             </span>
+                          ) : firstItem.estadoItem === "rechazado" ? (
+                            <span className="font-semibold text-red-500 line-through text-sm">
+                              {firstItem.medicamento}
+                            </span>
                           ) : (
                             <span className="font-semibold text-brand-indigo text-sm">
                               {firstItem.medicamento}
                             </span>
                           )}
-                          {(firstItem.cantidad ?? 0) > 0 && (
+                          {firstItem.estadoItem === "rechazado" ? (
+                            <span className="text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 px-1.5 py-0.5 rounded-full" title={firstItem.motivoRechazoItem}>
+                              ❌ Rechazado
+                            </span>
+                          ) : (firstItem.cantidad ?? 0) > 0 ? (
                             <span className="text-[11px] font-bold text-[#5D7299] bg-[#F0F4FF] px-1.5 py-0.5 rounded border border-[#DDE6F5]">
                               ×{firstItem.cantidad}
                             </span>
-                          )}
-                          {/* Badge de renovación del primer item */}
-                          {receta.estado === "completado" && firstItem.medicamento !== "SOLICITUD_RECETA" && (() => {
+                          ) : null}
+                          {/* Badge de renovación del primer item si no está rechazado */}
+                          {receta.estado === "completado" && firstItem.estadoItem !== "rechazado" && firstItem.medicamento !== "SOLICITUD_RECETA" && (() => {
                             const est = getEstadoItemRenovacion(firstItem as any, receta.fechaSolicitud);
                             return (
                               <span className={`text-[10px] font-bold ${est.bg} ${est.text} border ${est.border} rounded-full px-1.5 py-0.5`}>
@@ -226,29 +236,40 @@ export function RecetaTable({
                           <div className="mt-2 w-full space-y-1.5 bg-[#F8FAFF] border border-[#DDE6F5] rounded-xl p-3 shadow-sm">
                             <p className="text-[10px] font-bold text-[#5D7299] uppercase tracking-widest mb-2">Todos los medicamentos</p>
                             {items.map((it, idx) => {
-                              const est = receta.estado === "completado" && it.medicamento !== "SOLICITUD_RECETA"
+                              const est = receta.estado === "completado" && it.estadoItem !== "rechazado" && it.medicamento !== "SOLICITUD_RECETA"
                                 ? getEstadoItemRenovacion(it, receta.fechaSolicitud)
                                 : null;
                               return (
-                                <div key={idx} className="flex items-start gap-2 bg-white rounded-lg border border-[#DDE6F5] px-3 py-2">
+                                <div key={idx} className={`flex items-start gap-2 rounded-lg border px-3 py-2 ${it.estadoItem === "rechazado" ? "bg-red-50/50 border-red-200" : "bg-white border-[#DDE6F5]"}`}>
                                   <span className="text-[11px] font-bold text-[#5D7299] min-w-[18px] mt-0.5">{idx + 1}.</span>
                                   <div className="flex-1 min-w-0">
-                                    <span className="text-sm font-semibold text-brand-indigo block leading-tight">
+                                    <span className={`text-sm font-semibold block leading-tight ${it.estadoItem === "rechazado" ? "text-red-700 line-through" : "text-brand-indigo"}`}>
                                       {it.medicamento === "SOLICITUD_RECETA" ? "📋 Pendiente médico" : it.medicamento}
                                     </span>
-                                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                      {it.cantidad > 0 && (
-                                        <span className="text-[10px] font-bold text-[#5D7299] bg-[#F0F4FF] px-1.5 py-0.5 rounded border border-[#DDE6F5]">
-                                          ×{it.cantidad} unidades
-                                        </span>
-                                      )}
-                                      {est && (
-                                        <span className={`text-[10px] font-bold ${est.bg} ${est.text} border ${est.border} rounded-full px-1.5 py-0.5`}>
-                                          {est.label}
-                                        </span>
-                                      )}
-                                    </div>
+                                    {it.estadoItem === "rechazado" ? (
+                                      <p className="text-[11px] text-red-600 font-medium mt-0.5">
+                                        ❌ Rechazado: {it.motivoRechazoItem || "No pertinente"}
+                                      </p>
+                                    ) : (
+                                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                        {it.cantidad > 0 && (
+                                          <span className="text-[10px] font-bold text-[#5D7299] bg-[#F0F4FF] px-1.5 py-0.5 rounded border border-[#DDE6F5]">
+                                            ×{it.cantidad} unidades
+                                          </span>
+                                        )}
+                                        {est && (
+                                          <span className={`text-[10px] font-bold ${est.bg} ${est.text} border ${est.border} rounded-full px-1.5 py-0.5`}>
+                                            {est.label}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
+                                  {it.estadoItem === "rechazado" && (
+                                    <span className="text-[10px] font-bold text-red-700 bg-red-100 border border-red-200 px-2 py-0.5 rounded-md flex-shrink-0">
+                                      No despachar
+                                    </span>
+                                  )}
                                 </div>
                               );
                             })}

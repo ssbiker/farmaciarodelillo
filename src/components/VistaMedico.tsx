@@ -4,7 +4,7 @@ import { CheckCircle2, Clock, XCircle, AlertCircle, Stethoscope, Pill, ArrowRigh
 import { RecetaModal } from "./RecetaModal";
 import { AuditoriaDrawer } from "./AuditoriaDrawer";
 import { RutBadge } from "./RutBadge";
-import { getItemsDeReceta } from "../lib/recetaHelpers";
+import { getItemsDeReceta, esAutorizacionParcial, contarItemsAutorizados } from "../lib/recetaHelpers";
 
 function formatDate(ts: any): string {
   if (!ts) return "—";
@@ -53,15 +53,20 @@ function RecetaCard({ receta, config, onAction, onAuditoria }: { receta: Receta;
       receta.estado === "pendiente"
         ? `bg-white border-[#DDE6F5] hover:bg-[#F8FAFF] ${onAction ? 'cursor-pointer hover:shadow-md hover:border-brand-blue/30 group' : ''}`
         : receta.estado === "completado"
-          ? "bg-green-50 border-green-200"
+          ? esAutorizacionParcial(receta)
+            ? "bg-amber-50/50 border-amber-200"
+            : "bg-green-50 border-green-200"
           : "bg-[#F8FAFF] border-[#EEF3FC]"
     }`}>
       <div className={`mt-0.5 p-1.5 rounded-lg flex-shrink-0 transition-colors ${
-        receta.estado === "completado" ? "bg-green-500/20" :
-        receta.estado === "rechazado" ? "bg-[#EFF3FB]" : "bg-yellow-500/15"
+        receta.estado === "completado"
+          ? esAutorizacionParcial(receta) ? "bg-amber-500/20" : "bg-green-500/20"
+          : receta.estado === "rechazado" ? "bg-[#EFF3FB]" : "bg-yellow-500/15"
       } ${onAction ? 'group-hover:bg-brand-blue/10' : ''}`}>
         {receta.estado === "completado"
-          ? <CheckCircle2 className="w-4 h-4 text-green-600" />
+          ? esAutorizacionParcial(receta)
+            ? <AlertCircle className="w-4 h-4 text-amber-600" />
+            : <CheckCircle2 className="w-4 h-4 text-green-600" />
           : receta.estado === "rechazado"
             ? <XCircle className="w-4 h-4 text-[#5D7299]" />
             : <Clock className={`w-4 h-4 text-yellow-600 ${onAction ? 'group-hover:text-brand-blue' : ''}`} />
@@ -76,7 +81,7 @@ function RecetaCard({ receta, config, onAction, onAuditoria }: { receta: Receta;
           const items = getItemsDeReceta(receta);
           const first = items[0] || { medicamento: receta.medicamento, cantidad: receta.cantidad };
           const extra = items.length - 1;
-          const itemsTooltip = items.map((it, idx) => `${idx + 1}. ${it.medicamento === "SOLICITUD_RECETA" ? "Solicitud s/med" : it.medicamento}${it.cantidad ? ` ×${it.cantidad}` : ""}`).join("\n");
+          const itemsTooltip = items.map((it, idx) => `${idx + 1}. ${it.medicamento === "SOLICITUD_RECETA" ? "Solicitud s/med" : it.medicamento}${it.cantidad ? ` ×${it.cantidad}` : ""}${it.estadoItem === "rechazado" ? ` (Rechazado: ${it.motivoRechazoItem || "No pertinente"})` : ""}`).join("\n");
 
           return (
             <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
@@ -84,10 +89,16 @@ function RecetaCard({ receta, config, onAction, onAuditoria }: { receta: Receta;
                 <span className="text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
                   📋 Solicitud s/med
                 </span>
+              ) : first.estadoItem === "rechazado" ? (
+                <span className="text-xs text-red-600 line-through font-bold">{first.medicamento}</span>
               ) : (
                 <span className="text-xs text-brand-indigo font-bold">{first.medicamento}</span>
               )}
-              {first.cantidad ? (
+              {first.estadoItem === "rechazado" ? (
+                <span className="text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 px-1.5 py-0.2 rounded">
+                  ❌ Rechazado
+                </span>
+              ) : first.cantidad ? (
                 <span className="text-[10px] font-bold text-[#5D7299] bg-[#F0F4FF] px-1.5 py-0.2 rounded border border-[#DDE6F5]">
                   ×{first.cantidad}
                 </span>
@@ -104,8 +115,15 @@ function RecetaCard({ receta, config, onAction, onAuditoria }: { receta: Receta;
           {tipoBadge}
           <span className="text-[11px] text-[#5D7299]">Sec. {receta.sector}</span>
           <UrgenciaBadge receta={receta} config={config} />
+          {receta.estado === "completado" && esAutorizacionParcial(receta) && (
+            <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+              Parcial ({contarItemsAutorizados(receta)} de {getItemsDeReceta(receta).length})
+            </span>
+          )}
           {receta.estado === "completado" && receta.fechaReceta && (
-            <span className="text-[11px] text-green-700">Autorizada {formatDate(receta.fechaReceta)}</span>
+            <span className={`text-[11px] ${esAutorizacionParcial(receta) ? "text-amber-800 font-medium" : "text-green-700"}`}>
+              {esAutorizacionParcial(receta) ? "Autorizada parcial" : "Autorizada"} {formatDate(receta.fechaReceta)}
+            </span>
           )}
           {receta.estado === "rechazado" && (
             <span className="text-[11px] text-[#5D7299]">Rechazada {formatDate(receta.actualizadoEn)}</span>
