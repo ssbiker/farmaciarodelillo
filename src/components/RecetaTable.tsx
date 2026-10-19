@@ -6,6 +6,7 @@ import { db } from "../lib/firebase";
 import { RecetaModal } from "./RecetaModal";
 import { TicketModal } from "./TicketModal";
 import { AuditoriaDrawer } from "./AuditoriaDrawer";
+import { RutBadge } from "./RutBadge";
 import { getItemsDeReceta, getEstadoItemRenovacion } from "../lib/recetaHelpers";
 
 export function RecetaTable({ 
@@ -77,9 +78,12 @@ export function RecetaTable({
 
   const filteredRecetas = recetas.filter(r => {
     const q = search.toLowerCase();
+    const cleanSearch = search.replace(/[^0-9kK]/gi, "").toUpperCase();
+    const cleanRut = (r.rut || "").replace(/[^0-9kK]/gi, "").toUpperCase();
+    const matchesRut = r.rut.includes(search) || (cleanSearch.length >= 2 && cleanRut.includes(cleanSearch));
     const matchesSearch =
       r.nombrePaciente.toLowerCase().includes(q) ||
-      r.rut.includes(search) ||
+      matchesRut ||
       getItemsDeReceta(r).some(it => it.medicamento.toLowerCase().includes(q) && it.medicamento !== "SOLICITUD_RECETA");
     const matchesEstado = filterEstado === "all" || r.estado === filterEstado;
     return matchesSearch && matchesEstado;
@@ -171,7 +175,9 @@ export function RecetaTable({
                     <td className="px-6 py-4 font-medium text-[#0F1B35] whitespace-nowrap">{receta.nombrePaciente}</td>
 
                     {/* RUT */}
-                    <td className="px-6 py-4 text-[#3D5278] font-mono text-xs whitespace-nowrap">{receta.rut}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <RutBadge rut={receta.rut} className="text-[#3D5278]" />
+                    </td>
 
                     {/* Medicamentos — columna expandible */}
                     <td className="px-6 py-4 max-w-xs">

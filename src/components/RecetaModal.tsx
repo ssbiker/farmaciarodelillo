@@ -7,7 +7,8 @@ import { AuditoriaDrawer } from "./AuditoriaDrawer";
 import { encryptRecetaFields } from "../lib/crypto";
 import { sincronizarRecetaPublica } from "../lib/recetaPublica";
 import type { Receta, FarmaciaUser, ItemReceta } from "../types";
-import { getItemsDeReceta, nuevoItemVacio, isRecetaVigente } from "../lib/recetaHelpers";
+import { getItemsDeReceta, nuevoItemVacio, isRecetaVigente, formatRut, validarRut } from "../lib/recetaHelpers";
+import { RutBadge } from "./RutBadge";
 
 export function RecetaModal({
   isOpen,
@@ -373,30 +374,6 @@ export function RecetaModal({
   const targetTipo = !recetaObjetivo
     ? (formTipo === "controladas" ? "controlado" : formTipo === "maternales" ? "maternal" : formTipo === "respiratorias" ? "respiratorio" : "cronico")
     : (recetaObjetivo.tipo === "controlado" ? "controlado" : recetaObjetivo.tipo === "maternal" ? "maternal" : recetaObjetivo.tipo === "respiratorio" ? "respiratorio" : "cronico");
-
-  const formatRut = (raw: string) => {
-    const clean = raw.replace(/[^0-9kK]/g, "").toUpperCase();
-    if (clean.length <= 1) return clean;
-    const dv = clean.slice(-1);
-    const body = clean.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    return `${body}-${dv}`;
-  };
-
-  const validarRut = (rut: string) => {
-    const clean = rut.replace(/[^0-9kK]/g, "").toUpperCase();
-    if (clean.length < 2) return false;
-    const body = clean.slice(0, -1);
-    const dv = clean.slice(-1);
-    let sum = 0;
-    let multiplier = 2;
-    for (let i = body.length - 1; i >= 0; i--) {
-      sum += parseInt(body[i], 10) * multiplier;
-      multiplier = multiplier === 7 ? 2 : multiplier + 1;
-    }
-    const expectedDv = 11 - (sum % 11);
-    const finalDv = expectedDv === 11 ? '0' : expectedDv === 10 ? 'K' : expectedDv.toString();
-    return dv === finalDv;
-  };
 
   const handleMedicoChange = (uid: string) => {
     const medico = medicos.find((m) => m.id === uid);
@@ -929,19 +906,22 @@ export function RecetaModal({
                     )}
                   </div>
                   <div>
-                    <label className={labelClass}>RUT</label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-semibold text-[#3D5278] uppercase tracking-wide">RUT</label>
+                      <RutBadge rut={form.rut || receta?.rut} />
+                    </div>
                     {!receta || puedeEditarDatos ? (
                       <input
                         required
                         type="text"
-                        placeholder="12.345.678-9"
+                        placeholder="12345678-9"
                         value={form.rut}
                         maxLength={12}
                         onChange={(e) => setForm({ ...form, rut: formatRut(e.target.value) })}
                         className={`${inputClass} font-mono`}
                       />
                     ) : (
-                      <div className={`${inputDisabledClass} font-mono`}>{receta?.rut}</div>
+                      <div className={`${inputDisabledClass} font-mono`}>{formatRut(receta?.rut || form.rut)}</div>
                     )}
                   </div>
                 </div>
@@ -1307,7 +1287,7 @@ export function RecetaModal({
                 </div>
                 <div>
                   <label className={labelClass}>RUT</label>
-                  <input required type="text" placeholder="12.345.678-9" value={form.rut} maxLength={12}
+                  <input required type="text" placeholder="12345678-9" value={form.rut} maxLength={12}
                     onChange={(e) => setForm({ ...form, rut: formatRut(e.target.value) })} className={`${inputClass} font-mono`} />
                 </div>
               </div>

@@ -10,6 +10,7 @@ import { registrarAccion } from "../lib/auditoria";
 import { RecetaModal } from "./RecetaModal";
 import { TicketModal } from "./TicketModal";
 import { AuditoriaDrawer } from "./AuditoriaDrawer";
+import { RutBadge } from "./RutBadge";
 import { getItemsDeReceta, getEstadoItemRenovacion, isRecetaVigente } from "../lib/recetaHelpers";
 
 function daysSince(ts: any): number {
@@ -225,8 +226,10 @@ export function RecetaList({
 
   const filtered = visibles.filter((r) => {
     const q = search.toLowerCase();
+    const cleanSearch = search.replace(/[^0-9kK]/gi, "").toUpperCase();
+    const cleanRut = (r.rut || "").replace(/[^0-9kK]/gi, "").toUpperCase();
     const matchNombre = r.nombrePaciente.toLowerCase().includes(q);
-    const matchRut = r.rut.includes(search);
+    const matchRut = r.rut.includes(search) || (cleanSearch.length >= 2 && cleanRut.includes(cleanSearch));
     // Buscar en todos los medicamentos (multi-ítem o plano)
     const matchMed = getItemsDeReceta(r).some(it =>
       it.medicamento.toLowerCase().includes(q) && it.medicamento !== "SOLICITUD_RECETA"
@@ -372,7 +375,7 @@ export function RecetaList({
                       <span className={`font-semibold ${sinVigencia ? "text-slate-400" : "text-[#0F1B35]"}`}>{receta.nombrePaciente}</span>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="font-mono text-[#3D5278] text-xs whitespace-nowrap">{receta.rut}</span>
+                      <RutBadge rut={receta.rut} className="text-[#3D5278]" />
                     </td>
                     <td className="px-5 py-4">
                       {(() => {

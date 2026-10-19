@@ -143,3 +143,38 @@ export function isRecetaVigente(receta: Receta): boolean {
   const currentMonth = Math.max(1, elapsedMonths + 1);
   return currentMonth <= maxRenovacion;
 }
+
+/**
+ * Formatea un RUT chileno sin puntos y con guión (ej: 12345678-9).
+ * Formato preferido por el personal médico para compatibilidad con AVIS.
+ * Limpia puntos, espacios y caracteres extraños, manteniendo el dígito verificador separado por guion.
+ */
+export function formatRut(raw: string | undefined | null): string {
+  if (!raw) return "";
+  const clean = String(raw).replace(/[^0-9kK]/g, "").toUpperCase();
+  if (clean.length <= 1) return clean;
+  const dv = clean.slice(-1);
+  const body = clean.slice(0, -1);
+  return `${body}-${dv}`;
+}
+
+/**
+ * Valida un RUT chileno mediante el algoritmo estándar de módulo 11.
+ */
+export function validarRut(rut: string | undefined | null): boolean {
+  if (!rut) return false;
+  const clean = String(rut).replace(/[^0-9kK]/g, "").toUpperCase();
+  if (clean.length < 2) return false;
+  const body = clean.slice(0, -1);
+  const dv = clean.slice(-1);
+  let sum = 0;
+  let multiplier = 2;
+  for (let i = body.length - 1; i >= 0; i--) {
+    sum += parseInt(body[i], 10) * multiplier;
+    multiplier = multiplier === 7 ? 2 : multiplier + 1;
+  }
+  const expectedDv = 11 - (sum % 11);
+  const finalDv = expectedDv === 11 ? '0' : expectedDv === 10 ? 'K' : expectedDv.toString();
+  return dv === finalDv;
+}
+

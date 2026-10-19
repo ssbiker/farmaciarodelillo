@@ -1,6 +1,6 @@
 import { X, Printer } from "lucide-react";
 import type { Receta } from "../types";
-import { getItemsDeReceta } from "../lib/recetaHelpers";
+import { getItemsDeReceta, formatRut } from "../lib/recetaHelpers";
 
 export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () => void }) {
   const formatDate = (ts: any) => {
@@ -72,7 +72,7 @@ export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () =
                 </div>
                 <div>
                   <p className="text-[11px] text-[#5D7299] mb-0.5">RUT</p>
-                  <p className="font-mono font-bold text-base text-[#0F1B35]">{receta.rut}</p>
+                  <p className="font-mono font-bold text-base text-[#0F1B35]">{formatRut(receta.rut)}</p>
                 </div>
               </div>
             </div>

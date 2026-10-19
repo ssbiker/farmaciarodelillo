@@ -3,6 +3,7 @@ import type { Receta, FarmaciaUser, FarmaciaConfig } from "../types";
 import { CheckCircle2, Clock, XCircle, AlertCircle, Stethoscope, Pill, ArrowRight, Plus, History, Baby, Wind } from "lucide-react";
 import { RecetaModal } from "./RecetaModal";
 import { AuditoriaDrawer } from "./AuditoriaDrawer";
+import { RutBadge } from "./RutBadge";
 import { getItemsDeReceta } from "../lib/recetaHelpers";
 
 function formatDate(ts: any): string {
@@ -69,7 +70,7 @@ function RecetaCard({ receta, config, onAction, onAuditoria }: { receta: Receta;
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <p className={`font-semibold text-sm truncate transition-colors ${onAction ? 'text-[#0F1B35] group-hover:text-brand-blue' : 'text-[#0F1B35]'}`}>{receta.nombrePaciente}</p>
-          <span className="font-mono text-[11px] text-[#5D7299] whitespace-nowrap">{receta.rut}</span>
+          <RutBadge rut={receta.rut} className="text-[#5D7299] text-[11px]" />
         </div>
         {(() => {
           const items = getItemsDeReceta(receta);

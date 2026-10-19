@@ -7,6 +7,7 @@ import {
 import { db } from "../lib/firebase";
 import { registrarAccion, registrarEliminacionDefinitiva } from "../lib/auditoria";
 import { decryptRecetaFields } from "../lib/crypto";
+import { formatRut } from "../lib/recetaHelpers";
 import type { Receta, FarmaciaUser } from "../types";
 
 function formatFecha(ts: any): string {
@@ -133,7 +134,7 @@ export function PapeleraModal({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-[#0F1B35]">{receta.nombrePaciente}</span>
-                      <span className="text-[11px] bg-[#EFF3FB] px-1.5 py-0.5 rounded-full text-[#3D5278] font-mono">{receta.rut}</span>
+                      <span className="text-[11px] bg-[#EFF3FB] px-1.5 py-0.5 rounded-full text-[#3D5278] font-mono">{formatRut(receta.rut)}</span>
                       <span className="text-[11px] bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full text-red-600">
                         {coleccion === "recetas_controladas" ? "💊 Controlada" : coleccion === "recetas_maternales" ? "🤰 Maternal" : coleccion === "recetas_respiratorias" ? "🫁 Respiratorio" : "📋 Crónica"} — Sec. {receta.sector}
                       </span>
