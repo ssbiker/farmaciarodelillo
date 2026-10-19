@@ -119,77 +119,171 @@ export function RecetaModal({
   });
   const tieneRecetasActivas = recetasActivasDelPaciente.length > 0;
 
-  const bannerRecetasActivas = tieneRecetasActivas && rutNormalizado.length >= 7 && (
-    <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 space-y-3">
-      <div className="flex items-start gap-2">
-        <span className="text-lg flex-shrink-0">⚠️</span>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-amber-800 uppercase tracking-widest">
-            {isDoctorMode ? "Paciente con prescripciones vigentes" : "Aviso: Paciente con Recetas Vigentes"}
-          </p>
-          <p className="text-xs text-amber-700 mt-0.5">
-            {isDoctorMode
-              ? "Este paciente tiene recetas activas en el sistema. Puede agregar el medicamento a una receta existente o crear una nueva receta de todas formas."
-              : "Este paciente ya cuenta con recetas vigentes. Se recomienda verificar con el médico tratante antes de crear una nueva solicitud, aunque puede continuar si es necesario."
-            }
-          </p>
-        </div>
-      </div>
-      <div className="space-y-1.5">
-        {recetasActivasDelPaciente.slice(0, 3).map(r => {
-          const items = getItemsDeReceta(r);
-          const yaVinculada = recetaVinculada?.id === r.id;
-          return (
-            <div key={r.id} className={`bg-white border rounded-xl px-3 py-2.5 transition-all ${
-              yaVinculada ? "border-brand-blue ring-2 ring-brand-blue/20 bg-blue-50/40" : "border-amber-200"
-            }`}>
-              <div className="flex justify-between items-start gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-bold text-amber-800">
-                    Receta {r.tipo === "controlado" ? "Controlada" : r.tipo === "maternal" ? "Maternal" : r.tipo === "respiratorio" ? "Respiratorio" : "Crónica"} — Sector {r.sector}
-                  </p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {items.slice(0, 3).map((it, i) => (
-                      <span key={i} className="text-[10px] bg-amber-100 text-amber-700 rounded px-1.5 py-0.5 font-semibold">
-                        {it.medicamento === "SOLICITUD_RECETA" ? "Sin med. asignado" : it.medicamento}
-                        {it.cantidad > 0 ? ` ×${it.cantidad}` : ""}
-                      </span>
-                    ))}
-                    {items.length > 3 && <span className="text-[10px] text-amber-600">+{items.length - 3} más</span>}
-                  </div>
-                </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                  r.estado === "completado" ? "bg-green-100 text-green-700" :
-                  r.estado === "rechazado" ? "bg-slate-100 text-slate-500" :
-                  "bg-yellow-100 text-yellow-700"
-                }`}>{r.estado}</span>
-              </div>
+  const currentTipoNormalizado: import("../types").TipoReceta = !receta
+    ? (formTipo === "controladas" ? "controlado" : formTipo === "maternales" ? "maternal" : formTipo === "respiratorias" ? "respiratorio" : "cronico")
+    : (receta.tipo === "controlado" ? "controlado" : receta.tipo === "maternal" ? "maternal" : receta.tipo === "respiratorio" ? "respiratorio" : "cronico");
 
-              {/* Botón para que el médico agregue fármacos directamente a esta receta */}
-              {isDoctorMode && !receta && (
-                <div className="mt-2 pt-2 border-t border-amber-100 flex justify-end">
-                  {yaVinculada ? (
-                    <span className="text-xs font-bold text-brand-blue flex items-center gap-1">
-                      ✓ Receta seleccionada para agregar fármaco
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => vincularReceta(r)}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-blue bg-brand-blue/10 hover:bg-brand-blue/20 border border-brand-blue/20 rounded-lg px-2.5 py-1 transition-colors"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Agregar medicamento a esta receta
-                    </button>
+  const currentTipoLabel = currentTipoNormalizado === "controlado"
+    ? "Controlada"
+    : currentTipoNormalizado === "maternal"
+    ? "Maternal"
+    : currentTipoNormalizado === "respiratorio"
+    ? "Respiratoria (ERA)"
+    : "Crónica";
+
+  const getTipoBadgeText = (tipo: string) => {
+    switch (tipo) {
+      case "controlado": return "💊 Controlada";
+      case "maternal": return "🤰 Maternal";
+      case "respiratorio": return "🫁 Respiratorio (ERA)";
+      default: return "🩺 Crónica";
+    }
+  };
+
+  const recetasMismoPrograma = recetasActivasDelPaciente.filter(r => r.tipo === currentTipoNormalizado);
+  const recetasOtrosProgramas = recetasActivasDelPaciente.filter(r => r.tipo !== currentTipoNormalizado);
+
+  const bannerRecetasActivas = tieneRecetasActivas && rutNormalizado.length >= 7 && (
+    <div className="space-y-3">
+      {/* 1. Alerta para recetas del MISMO programa (posible duplicidad / complementación dentro del programa) */}
+      {recetasMismoPrograma.length > 0 && (
+        <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 space-y-3 shadow-sm">
+          <div className="flex items-start gap-2.5">
+            <span className="text-xl flex-shrink-0">⚠️</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-black text-amber-900 uppercase tracking-wider">
+                {isDoctorMode ? `Receta ${currentTipoLabel} vigente detectada` : `Aviso: Receta ${currentTipoLabel} vigente`}
+              </p>
+              <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
+                {isDoctorMode
+                  ? `Este paciente ya cuenta con una receta vigente en el programa ${currentTipoLabel}. Puedes agregar un fármaco a la receta existente o emitir una nueva receta independiente.`
+                  : `Este paciente ya cuenta con una receta activa en este mismo programa. Verifique con el médico antes de duplicar la solicitud.`
+                }
+              </p>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            {recetasMismoPrograma.slice(0, 3).map(r => {
+              const items = getItemsDeReceta(r);
+              const yaVinculada = recetaVinculada?.id === r.id;
+              return (
+                <div key={r.id} className={`bg-white border rounded-xl px-3 py-2.5 transition-all ${
+                  yaVinculada ? "border-brand-blue ring-2 ring-brand-blue/20 bg-blue-50/40" : "border-amber-200"
+                }`}>
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-bold text-amber-900">
+                        {getTipoBadgeText(r.tipo)} — Sector {r.sector}
+                      </p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {items.slice(0, 3).map((it, i) => (
+                          <span key={i} className="text-[10px] bg-amber-100 text-amber-800 rounded px-1.5 py-0.5 font-semibold">
+                            {it.medicamento === "SOLICITUD_RECETA" ? "Sin med. asignado" : it.medicamento}
+                            {it.cantidad > 0 ? ` ×${it.cantidad}` : ""}
+                          </span>
+                        ))}
+                        {items.length > 3 && <span className="text-[10px] text-amber-600 font-bold">+{items.length - 3} más</span>}
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                      r.estado === "completado" ? "bg-green-100 text-green-700" :
+                      r.estado === "rechazado" ? "bg-slate-100 text-slate-500" :
+                      "bg-yellow-100 text-yellow-700"
+                    }`}>{r.estado}</span>
+                  </div>
+
+                  {/* Botón SOLO para recetas del mismo programa */}
+                  {isDoctorMode && !receta && (
+                    <div className="mt-2 pt-2 border-t border-amber-100 flex justify-end">
+                      {yaVinculada ? (
+                        <span className="text-xs font-bold text-brand-blue flex items-center gap-1">
+                          ✓ Receta seleccionada para agregar fármaco
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => vincularReceta(r)}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-blue bg-brand-blue/10 hover:bg-brand-blue/20 border border-brand-blue/20 rounded-lg px-2.5 py-1 transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Agregar medicamento a esta receta
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
+              );
+            })}
+            {recetasMismoPrograma.length > 3 && (
+              <p className="text-[11px] text-amber-600 text-center font-semibold">+{recetasMismoPrograma.length - 3} recetas más en este programa</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 2. Información clínica: Prescripciones en OTROS programas (coexistencia complementaria normal) */}
+      {recetasOtrosProgramas.length > 0 && (
+        <div className="bg-sky-50/70 border border-sky-200 rounded-2xl p-4 space-y-3 shadow-sm">
+          <div className="flex items-start gap-2.5">
+            <span className="text-xl flex-shrink-0">🫁</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-xs font-black text-sky-950 uppercase tracking-wider">
+                  Tratamientos vigentes en otros programas clínicos
+                </p>
+                <span className="text-[10px] bg-sky-200/60 text-sky-900 font-bold px-2 py-0.5 rounded-full">
+                  Coexistencia complementaria
+                </span>
+              </div>
+              <p className="text-xs text-sky-800 mt-0.5 leading-relaxed">
+                Este paciente tiene prescripciones activas en otros programas de salud (ej: Respiratorio ERA, Controlados, Maternal).
+                <b className="font-semibold text-sky-950 ml-1">Son recetas independientes que no interfieren con la receta actual.</b>
+              </p>
             </div>
-          );
-        })}
-        {recetasActivasDelPaciente.length > 3 && (
-          <p className="text-[11px] text-amber-600 text-center font-semibold">+{recetasActivasDelPaciente.length - 3} recetas más</p>
-        )}
-      </div>
+          </div>
+          <div className="space-y-1.5">
+            {recetasOtrosProgramas.slice(0, 3).map(r => {
+              const items = getItemsDeReceta(r);
+              return (
+                <div key={r.id} className="bg-white/95 border border-sky-200/80 rounded-xl px-3 py-2.5">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-[11px] font-bold text-sky-950">
+                          {getTipoBadgeText(r.tipo)} — Sector {r.sector}
+                        </p>
+                        <span className="text-[9px] bg-teal-50 text-teal-700 font-semibold px-1.5 py-0.2 rounded border border-teal-200">
+                          Programa independiente
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {items.slice(0, 3).map((it, i) => (
+                          <span key={i} className="text-[10px] bg-sky-100/70 text-sky-800 rounded px-1.5 py-0.5 font-medium">
+                            {it.medicamento === "SOLICITUD_RECETA" ? "Sin med. asignado" : it.medicamento}
+                            {it.cantidad > 0 ? ` ×${it.cantidad}` : ""}
+                            {it.autoRenovacion ? ` (${it.autoRenovacion}m)` : ""}
+                          </span>
+                        ))}
+                        {items.length > 3 && <span className="text-[10px] text-sky-600 font-bold">+{items.length - 3} más</span>}
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                      r.estado === "completado" ? "bg-green-100 text-green-700" :
+                      r.estado === "rechazado" ? "bg-slate-100 text-slate-500" :
+                      "bg-yellow-100 text-yellow-700"
+                    }`}>{r.estado}</span>
+                  </div>
+                </div>
+              );
+            })}
+            {recetasOtrosProgramas.length > 3 && (
+              <p className="text-[11px] text-sky-600 text-center font-semibold">+{recetasOtrosProgramas.length - 3} recetas más en otros programas</p>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-sky-700 pt-1 font-medium border-t border-sky-100">
+            <span className="text-emerald-600 font-bold">✓</span> Puedes autorizar o emitir la receta actual con total tranquilidad; se mantendrá en su respectivo programa.
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -352,6 +446,16 @@ export function RecetaModal({
 
       if (isDoctorMode) {
         if (recetaObjetivo) {
+          // Si el médico autoriza la receta, verificar que tenga al menos un fármaco válido y cantidad > 0
+          if (form.estado === "completado") {
+            const itemsValidos = formItems.filter(it => it.medicamento && it.medicamento !== "SOLICITUD_RECETA" && (it.cantidad ?? 0) > 0);
+            if (itemsValidos.length === 0) {
+              alert("Para autorizar la receta, seleccione el medicamento del inventario y defina una cantidad mayor a 0.");
+              setLoading(false);
+              return;
+            }
+          }
+
           // ── Modo médico: guarda items[] + estado en receta existente ──────────────────────────────
           const targetDocCollection = getCollectionForReceta(recetaObjetivo, formTipo || tipo);
           let finalCollection = targetDocCollection;
@@ -1473,9 +1577,9 @@ export function RecetaModal({
               : isSuperAdmin && receta
               ? "Guardar Corrección (Super Admin)"
               : isDoctorMode && !receta
-              ? "Emitir Receta Médica"
+              ? `Emitir Receta ${currentTipoLabel}`
               : isDoctorMode
-              ? "Confirmar Decisión"
+              ? (form.estado === "completado" ? `Autorizar Receta ${currentTipoLabel}` : form.estado === "rechazado" ? "Confirmar Rechazo" : "Confirmar Decisión")
               : "Guardar Registro"}
           </button>
         </div>

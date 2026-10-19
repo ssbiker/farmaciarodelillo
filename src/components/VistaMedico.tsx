@@ -354,7 +354,7 @@ export function VistaMedico({
           onClose={() => setCrearRecetaOpen(false)}
           receta={null}
           medicos={medicos}
-          tipo="controladas"
+          tipo="cronicas"
           sector="A"
           farmaciaUser={farmaciaUser}
           soloAutorizacion={true}
