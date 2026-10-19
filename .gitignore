@@ -25,3 +25,6 @@ dist-ssr
 
 # Service Account Firebase (NUNCA subir a Git)
 scripts/serviceAccount.json
+
+# Firebase CLI cache
+.firebase
