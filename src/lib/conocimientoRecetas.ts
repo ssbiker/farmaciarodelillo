@@ -301,6 +301,60 @@ export const CONOCIMIENTO_SISTEMA: ArticuloConocimiento[] = [
     ]
   },
 
+  // ─── CONSULTAS DE ESTADO Y BÚSQUEDA ──────────────────────────
+  {
+    id: "estado-receta-completada",
+    titulo: "¿Cómo saber si una receta está completada o autorizada?",
+    categoria: "recetas",
+    rolesRelevantes: ["todos"],
+    palabrasClave: [
+      "como saber si esta completada",
+      "receta completada",
+      "saber si se autorizo",
+      "como saber si esta lista",
+      "estado de una receta",
+      "ver estado receta",
+      "como se si la autorizaron",
+      "donde veo si ya esta lista",
+      "completada",
+      "completado"
+    ],
+    resumen: "Para verificar si una receta ya fue autorizada por el médico y está lista para despacho:",
+    pasos: [
+      "1. Columna Estado: En la tabla de la cartera, el badge verde indicará 'Completado'.",
+      "2. Botón de Impresora: Al pasar el cursor sobre la fila del paciente, si el botón azul de la impresora está activo, la receta ya está completada.",
+      "3. Filtro rápido: Arriba de la tabla, cambia el filtro a 'Completadas' o escribe el RUT en el buscador.",
+      "4. En 'Mi Panel' (médicos): En la sección 'Historial reciente' se listan las autorizadas en color verde."
+    ],
+    detallesImportantes: [
+      "Si tiene badge ámbar 'Parcial', significa que fue aprobada parcialmente (algunos medicamentos autorizados y otros rechazados)."
+    ]
+  },
+  {
+    id: "buscar-filtrar-receta-desaparecida",
+    titulo: "¿Qué hacer si no encuentro una receta o desapareció?",
+    categoria: "recetas",
+    rolesRelevantes: ["todos"],
+    palabrasClave: [
+      "no encuentro una receta",
+      "receta desaparecida",
+      "donde esta la receta",
+      "no la veo",
+      "no aparece en la lista",
+      "buscar por rut"
+    ],
+    resumen: "Si no encuentras una receta ingresada previamente:",
+    pasos: [
+      "1. Revisa la pestaña correcta: Verifica si es Controlada, Crónica, Maternal o Respiratoria (ERA) y el sector (A, B o CECOSF).",
+      "2. Revisa el filtro de estado: Asegúrate de que el filtro esté en 'Todos los estados' (no solo Pendientes).",
+      "3. Usa el buscador: Digita el RUT o apellido del paciente en la barra de búsqueda.",
+      "4. Papelera: Si fue eliminada por error, el administrador puede buscarla en la Papelera y restaurarla."
+    ],
+    detallesImportantes: [
+      "Las recetas nunca se borran solas; todas las eliminaciones van a la Papelera con motivo y quedan en auditoría."
+    ]
+  },
+
   // ─── SEGURIDAD, CIFRADO Y PORTAL PACIENTE ─────────────────────
   {
     id: "seguridad-cifrado-portal-paciente",

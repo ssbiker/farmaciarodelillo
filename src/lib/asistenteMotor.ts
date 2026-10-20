@@ -89,6 +89,50 @@ function analizarSituacionEspecifica(
 ): string | null {
   const saludo = generarSaludo(rolUsuario, nombreUsuario);
 
+  // 0. Caso: Saber si una receta está completada / autorizada / estado
+  const pideSaberEstado =
+    queryNorm.includes("saber") ||
+    queryNorm.includes("ver") ||
+    queryNorm.includes("como se") ||
+    queryNorm.includes("donde veo") ||
+    queryNorm.includes("identificar");
+  const mencionaCompletada =
+    queryNorm.includes("completad") ||
+    queryNorm.includes("autorizad") ||
+    queryNorm.includes("lista") ||
+    queryNorm.includes("aprobada");
+
+  if (
+    (pideSaberEstado && mencionaCompletada) ||
+    queryNorm.includes("receta completada") ||
+    queryNorm.includes("como saber el estado") ||
+    queryNorm.includes("ver estado de una receta") ||
+    queryNorm.includes("como saber si fue autorizada") ||
+    queryNorm.includes("esta completada")
+  ) {
+    return `${saludo}\n\nPara saber si una receta ya está **Completada (autorizada)**:\n\n` +
+      `1. **Columna 'Estado':** En la tabla del sector, busca al paciente. Si el badge está en verde **'Completado'**, el médico ya la autorizó.\n` +
+      `2. **Botón de Impresora 🖨️:** Pasa el cursor sobre la fila; si el botón azul de la impresora está habilitado, está completada y lista para imprimir el ticket de entrega.\n` +
+      `3. **Filtro de Estado:** Arriba de la tabla, cambia el filtro a **'Completadas'** o escribe el RUT en el buscador para verla al instante.\n` +
+      `4. **Si eres médico:** En *'Mi Panel'* revisa la sección *'Historial reciente'* (tarjetas verdes).\n\n` +
+      `💡 Si el badge es ámbar **'Parcial'**, significa que se autorizó con algunos medicamentos aprobados y otros rechazados.`;
+  }
+
+  // 0.1 Caso: Receta no aparece / desaparecida / buscarla
+  if (
+    queryNorm.includes("no encuentro") ||
+    queryNorm.includes("no aparece") ||
+    queryNorm.includes("se borro") ||
+    queryNorm.includes("desaparecio") ||
+    queryNorm.includes("donde esta la receta")
+  ) {
+    return `${saludo}\n\nSi no encuentras una receta ingresada:\n\n` +
+      `1. **Verifica la pestaña:** Asegúrate de estar en el programa correcto (Controladas, Crónicas, Maternales o ERA) y sector (A, B o CECOSF).\n` +
+      `2. **Revisa los filtros:** Comprueba que el filtro de estado esté en **'Todos los estados'** (no solo Pendientes).\n` +
+      `3. **Usa el buscador:** Escribe el RUT (formato 12345678-9) o apellido en la barra de búsqueda.\n` +
+      `4. **Papelera:** Si fue eliminada por error, el administrador puede entrar a la Papelera y presionar **'Restaurar'**.`;
+  }
+
   // 1. Caso Candado puesto / Asignada a otro médico
   if (
     queryNorm.includes("candado") ||
