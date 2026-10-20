@@ -7,6 +7,7 @@ import type { User } from "firebase/auth";
 import { LoginScreen } from "./components/LoginScreen";
 import { Dashboard } from "./components/Dashboard";
 import { AdminSettings } from "./components/AdminSettings";
+import { AsistenteFlotante } from "./components/AsistenteFlotante";
 import { LogOut, Settings, ArrowLeft } from "lucide-react";
 import type { FarmaciaUser } from "./types";
 
@@ -176,6 +177,9 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+
+      {/* Asistente Experto Interno ($0, Cero Latencia, 100% Seguro) */}
+      <AsistenteFlotante farmaciaUser={farmaciaUser} isMedico={isMedico} isFuncionario={isFuncionario} isAdmin={isAdmin} />
     </div>
   );
 }
