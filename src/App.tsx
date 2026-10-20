@@ -25,8 +25,8 @@ export default function App() {
             const userData = userDoc.data() as FarmaciaUser;
             const role = (userData.role || "").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             const isAdmin = role === "admin" || role === "quimico" || currentUser.email === "ssanchez@cmvalparaiso.cl";
-            const isMedico = role === "medico" || userData.isMedico === true;
-            const isFuncionario = role === "funcionario" || userData.isFuncionario === true;
+            const isMedico = userData.isMedico === true || (role === "medico" && userData.isFuncionario !== true);
+            const isFuncionario = (userData.isFuncionario === true || role === "funcionario") && !isMedico;
             // Médicos, funcionarios, admins y usuarios con acceso concedido tienen acceso directo
             const hasAccess = isAdmin || userData.inFarmaciaTeam === true || userData.hasFarmaciaAccess === true || isMedico || isFuncionario;
 
@@ -90,8 +90,8 @@ export default function App() {
   const isAdmin = role === "admin" || role === "quimico" || user.email === "ssanchez@cmvalparaiso.cl";
   // Considera tanto el role string como el flag booleano independiente
   // Así un admin con isMedico: true puede autorizar sin perder su acceso admin
-  const isMedico      = role === "medico"      || farmaciaUser.isMedico      === true;
-  const isFuncionario = role === "funcionario" || farmaciaUser.isFuncionario === true;
+  const isMedico      = farmaciaUser.isMedico === true || (role === "medico" && farmaciaUser.isFuncionario !== true);
+  const isFuncionario = (farmaciaUser.isFuncionario === true || role === "funcionario") && !isMedico;
 
   return (
     <div className="min-h-screen page-bg text-[#0F1B35] flex flex-col">

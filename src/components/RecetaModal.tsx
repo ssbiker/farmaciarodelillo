@@ -63,7 +63,7 @@ export function RecetaModal({
     farmaciaUser?.email?.toLowerCase() === "ssanchez@cmvalparaiso.cl" ||
     farmaciaUser?.role === "superadmin"
   );
-  const isDoctorUser = farmaciaUser.role === 'medico' || farmaciaUser.isMedico === true;
+  const isDoctorUser = farmaciaUser.isMedico === true || (farmaciaUser.role === 'medico' && farmaciaUser.isFuncionario !== true);
   const isDoctorMode = soloAutorizacion || isDoctorUser || isSuperAdmin;
   const [formTipo, setFormTipo] = useState<"controladas" | "cronicas" | "maternales" | "respiratorias">(tipo);
   const [formSector, setFormSector] = useState<"A" | "B" | "CECOSF">(sector);
@@ -762,7 +762,7 @@ export function RecetaModal({
 
         } else {
           // Auto-asignar médico si quien crea es un médico
-          if (!payload.medicoUid && (farmaciaUser.role === 'medico' || farmaciaUser.isMedico)) {
+          if (!payload.medicoUid && isDoctorUser) {
             payload.medicoUid = farmaciaUser.id;
             payload.medicoReceta = farmaciaUser.name;
             (payload as any).creadoPorMedico = true;

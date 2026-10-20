@@ -50,21 +50,43 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
 
   const toggleMedicoRole = async (user: FarmaciaUser) => {
     setSavingUserId(user.id);
-    // Usa flag booleano independiente — NO toca el campo role
-    // Así un admin puede tener isMedico: true sin perder su rol de admin
-    const esMedico = user.role?.toLowerCase() === "medico" || user.isMedico === true;
-    await updateDoc(doc(db, "users", user.id), { isMedico: !esMedico });
-    showToast((!esMedico ? "🩺 Permiso Médico activado" : "❌ Permiso Médico desactivado") + ": " + user.name);
+    const currentlyMedico = user.isMedico === true || (user.role?.toLowerCase() === "medico" && user.isFuncionario !== true);
+    const newMedico = !currentlyMedico;
+
+    const updates: Record<string, any> = {
+      isMedico: newMedico,
+      isFuncionario: false,
+    };
+    if (user.role !== "admin" && user.role !== "quimico") {
+      updates.role = newMedico ? "medico" : "funcionario";
+    }
+    if (newMedico && !user.inFarmaciaTeam) {
+      updates.inFarmaciaTeam = true;
+    }
+
+    await updateDoc(doc(db, "users", user.id), updates);
+    showToast((newMedico ? "🩺 Rol Médico activado" : "❌ Rol Médico desactivado") + ": " + (user.name || user.email));
     setSavingUserId(null);
   };
 
   const toggleFuncionarioRole = async (user: FarmaciaUser) => {
     setSavingUserId(user.id);
-    // Usa flag booleano independiente — NO toca el campo role
-    // Así un admin puede tener isFuncionario: true sin perder su rol de admin
-    const esFuncionario = user.role?.toLowerCase() === "funcionario" || user.isFuncionario === true;
-    await updateDoc(doc(db, "users", user.id), { isFuncionario: !esFuncionario });
-    showToast((!esFuncionario ? "📋 Permiso Funcionario activado" : "❌ Permiso Funcionario desactivado") + ": " + user.name);
+    const currentlyFuncionario = (user.isFuncionario === true || user.role?.toLowerCase() === "funcionario") && user.isMedico !== true;
+    const newFuncionario = !currentlyFuncionario;
+
+    const updates: Record<string, any> = {
+      isFuncionario: newFuncionario,
+      isMedico: false,
+    };
+    if (user.role !== "admin" && user.role !== "quimico") {
+      updates.role = newFuncionario ? "funcionario" : "usuario";
+    }
+    if (newFuncionario && !user.inFarmaciaTeam) {
+      updates.inFarmaciaTeam = true;
+    }
+
+    await updateDoc(doc(db, "users", user.id), updates);
+    showToast((newFuncionario ? "📋 Rol Funcionario activado" : "❌ Rol Funcionario desactivado") + ": " + (user.name || user.email));
     setSavingUserId(null);
   };
 
@@ -166,10 +188,9 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
           {users
             .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
             .map((u) => {
-              // Considera role string (usuarios con role:"medico"/"funcionario")
-              // Y también el flag booleano (admins con permiso adicional)
-              const isMedico      = u.role?.toLowerCase() === "medico"      || u.isMedico      === true;
-              const isFuncionario = u.role?.toLowerCase() === "funcionario" || u.isFuncionario === true;
+              // Considera flags booleanos y role plano sin conflicto
+              const isMedico = u.isMedico === true || (u.role?.toLowerCase() === "medico" && u.isFuncionario !== true);
+              const isFuncionario = (u.isFuncionario === true || u.role?.toLowerCase() === "funcionario") && !isMedico;
               const hasAccess = u.inFarmaciaTeam === true;
               const isCurrentUser = u.id === currentUser.uid;
               const isLoading = savingUserId === u.id;
@@ -208,13 +229,13 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
                     {/* Toggle Médico */}
-                    <button onClick={() => toggleMedicoRole(u)} disabled={isLoading || isFuncionario}
+                    <button onClick={() => toggleMedicoRole(u)} disabled={isLoading}
                       title={isMedico ? "Quitar rol Médico" : "Marcar como Médico"}
                       className={`p-2 rounded-lg text-xs transition-all disabled:opacity-30 ${isMedico ? "bg-brand-blue/10 text-brand-blue hover:bg-brand-blue/20" : "bg-[#EFF3FB] text-[#5D7299] hover:bg-brand-blue/10 hover:text-brand-blue"}`}>
                       <Stethoscope className="w-4 h-4" />
                     </button>
                     {/* Toggle Funcionario */}
-                    <button onClick={() => toggleFuncionarioRole(u)} disabled={isLoading || isMedico}
+                    <button onClick={() => toggleFuncionarioRole(u)} disabled={isLoading}
                       title={isFuncionario ? "Quitar rol Funcionario" : "Marcar como Funcionario"}
                       className={`p-2 rounded-lg text-xs transition-all disabled:opacity-30 ${isFuncionario ? "bg-orange-500/10 text-orange-600 hover:bg-orange-500/20" : "bg-[#EFF3FB] text-[#5D7299] hover:bg-orange-500/10 hover:text-orange-500"}`}>
                       <ClipboardList className="w-4 h-4" />

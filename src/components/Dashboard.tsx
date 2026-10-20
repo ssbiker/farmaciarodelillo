@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, onSnapshot, query, orderBy, doc, setDoc, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, doc, setDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { decryptRecetaFields } from "../lib/crypto";
 import type { Receta, FarmaciaUser, FarmaciaConfig, ItemReceta } from "../types";
@@ -44,11 +44,11 @@ export function Dashboard({
       else { await setDoc(doc(db, "farmacia_config", "settings"), DEFAULT_CONFIG); setConfig(DEFAULT_CONFIG); }
     });
 
-    getDocs(collection(db, "users")).then((snap) => {
+    const unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
       setMedicos(
         snap.docs
           .map((d) => ({ id: d.id, ...d.data() } as FarmaciaUser))
-          .filter((u) => u.role?.toLowerCase() === "medico" || u.isMedico === true)
+          .filter((u) => u.isMedico === true || (u.role?.toLowerCase() === "medico" && u.isFuncionario !== true))
       );
     });
 
@@ -76,7 +76,7 @@ export function Dashboard({
       () => setRecetasRespiratorias([])
     );
 
-    return () => { unsubConfig(); unsubCtrl(); unsubCron(); unsubMaternal(); unsubResp(); };
+    return () => { unsubConfig(); unsubCtrl(); unsubCron(); unsubMaternal(); unsubResp(); unsubUsers(); };
   }, []);
 
   const todasRecetas = [...recetasControladas, ...recetasCronicas, ...recetasMaternales, ...recetasRespiratorias];
