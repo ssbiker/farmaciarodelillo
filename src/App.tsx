@@ -84,7 +84,12 @@ export default function App() {
   }
 
   if (!user || !farmaciaUser) {
-    return <LoginScreen onLogin={handleLogin} externalError={authError} />;
+    return (
+      <>
+        <LoginScreen onLogin={handleLogin} externalError={authError} />
+        <AsistenteFlotante />
+      </>
+    );
   }
 
   const role = (farmaciaUser.role || "").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");

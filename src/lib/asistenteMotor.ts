@@ -1,6 +1,8 @@
 /**
- * Motor semántico y procesador de consultas para el Asistente Experto.
- * 100% en cliente, sin APIs externas, ultra rápido y adaptado a la terminología del CESFAM.
+ * Motor de Inteligencia y Procesamiento de Lenguaje Natural para el Asistente Experto.
+ * Soporta dos modos:
+ * 1. Modo IA Gemini Flash (Free Tier $0 de Google): Generación conversacional 100% fluida en lenguaje natural.
+ * 2. Modo Local Conversacional: Síntesis dinámica de respuestas en lenguaje natural sin internet ni APIs.
  */
 
 import {
@@ -9,10 +11,11 @@ import {
   type ArticuloConocimiento,
 } from "./conocimientoRecetas";
 
-export interface ResultadoConsulta {
-  tipo: "exito" | "seguridad" | "sin_resultados";
-  mensaje?: string;
-  articulos: ArticuloConocimiento[];
+export interface MensajeIA {
+  texto: string;
+  tipo: "exito" | "seguridad" | "sin_resultados" | "error";
+  fuente: "gemini_ia" | "motor_local";
+  articulosRelacionados?: ArticuloConocimiento[];
   sugerencias?: string[];
 }
 
@@ -22,15 +25,15 @@ export interface ResultadoConsulta {
 function normalizarTexto(texto: string): string {
   return texto
     .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[¿?¡!.,:;()[\]{}"'\-_/\\]/g, " ")
-    .replace(/\s+/g, " ")
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
 /**
- * Obtiene la raíz básica de una palabra en español para coincidencia morfológica.
+ * Obtiene la raíz de una palabra para coincidencia semántica en español.
  */
 function obtenerRaiz(palabra: string): string {
   if (palabra.length <= 4) return palabra;
@@ -49,9 +52,6 @@ function obtenerRaiz(palabra: string): string {
   return palabra.slice(0, Math.min(palabra.length, 6));
 }
 
-/**
- * Diccionario de sinónimos y variantes terminológicas.
- */
 const SINONIMOS: Record<string, string[]> = {
   autoriz: ["aprobar", "firmar", "validar", "completar", "despachar", "autorizar", "autorizo", "autorizacion"],
   rechaz: ["negar", "denegar", "anular", "cancelar", "objetar", "rechazo", "rechazar"],
@@ -70,23 +70,130 @@ const SINONIMOS: Record<string, string[]> = {
   calcul: ["dosis", "calcular", "horas", "dias", "asistente", "comprimidos"],
 };
 
-// Palabras muy comunes que no aportan diferenciación
-const STOP_WORDS = new Set(["como", "para", "con", "que", "una", "uno", "los", "las", "del", "por", "sobre", "este", "esta", "receta", "recetas", "sistema"]);
+const STOP_WORDS = new Set([
+  "como", "para", "con", "que", "una", "uno", "los", "las", "del", "por", "sobre",
+  "este", "esta", "estos", "estas", "receta", "recetas", "sistema", "hago", "hacer",
+  "puedo", "puede", "tengo", "tiene", "debo", "debe", "cual", "cuales", "donde",
+  "el", "la", "lo", "un", "unos", "unas", "al",
+  "y", "e", "o", "u", "a", "en", "de", "se", "si", "no", "es", "son", "su", "sus",
+  "me", "te", "le", "nos", "les", "mi", "mis", "tu", "tus", "ya", "ni"
+]);
 
 /**
- * Procesa la consulta del usuario en lenguaje natural.
+ * Construye el System Prompt completo para alimentar a la IA de Gemini con todo el conocimiento.
  */
-export function consultarAsistente(
+function construirSystemPrompt(rolUsuario?: string): string {
+  const articulosTexto = CONOCIMIENTO_SISTEMA.map((a) => {
+    return `### TEMA: ${a.titulo} (Categoría: ${a.categoria})\nResumen: ${a.resumen}\nPasos:\n${(a.pasos || []).map((p) => `- ${p}`).join("\n")}\nDetalles clave:\n${(a.detallesImportantes || []).map((d) => `* ${d}`).join("\n")}`;
+  }).join("\n\n");
+
+  return `Eres el Asistente Experto y Colega Virtual del Sistema de Recetas de Farmacia del CESFAM Rodelillo.
+Tu función es guiar a médicos, funcionarios y químicos farmacéuticos sobre cómo utilizar la plataforma web de recetas médicas.
+El usuario actual tiene el rol: ${rolUsuario || "personal del CESFAM"}.
+
+REGLAS ESTRICTAS DE SEGURIDAD:
+1. SOLO respondes sobre el funcionamiento del software de recetas del CESFAM Rodelillo.
+2. Si el usuario te pide un diagnóstico médico, indicación de fármacos para curar una enfermedad personal, síntomas o qué remedio tomar: RECHAZA respetuosamente la consulta explicando que por normativa sanitaria no realizas recomendaciones clínicas ni diagnósticos médicos.
+3. Si el usuario te hace preguntas ajenas a la plataforma (chistes, política, clima, etc.): recuerda amablemente que eres un asistente de soporte operativo de la web de recetas.
+4. Habla con tono empático, claro, profesional, en español chileno respetuoso de salud pública (ej: boxes, sectores A y B, CECOSF, funcionarios, carteras, AVIS/Rayen).
+5. Sé directo y sintetiza las respuestas con pasos claros (1, 2, 3), evitando rodeos innecesarios.
+
+CONOCIMIENTO ACTUALIZADO DEL SISTEMA (Manual Oficial + Novedades del Código):
+${articulosTexto}
+
+NOVEDADES IMPORTANTES DEL CÓDIGO QUE DEBES CONOCER:
+- Hay 4 tipos de recetas: Controladas (rojo/púrpura), Crónicas (azul), Maternales (morado) y Respiratorias/ERA (teal).
+- Botón '✓ Solicitud Receta' (SOLICITUD_RECETA): los funcionarios pueden crear la solicitud sin saber el fármaco, y el médico lo define al autorizar.
+- Multi-medicamento: una receta puede tener varios fármacos (items[]).
+- Autorización Parcial: el médico puede autorizar unos fármacos y rechazar otros con motivo clínico individual.
+- Vincular a Receta Existente: si el paciente ya tiene receta vigente en el mismo programa, el médico puede anexar el fármaco para no duplicar recetas.
+- Formato RUT sin puntos para AVIS: 12345678-9.
+- Cifrado AES-256 en cliente de nombres y RUTs, y portal paciente con SHA-256 salted hash.`;
+}
+
+/**
+ * Consulta a la IA de Google Gemini (Free Tier) directamente desde el navegador del usuario.
+ */
+export async function consultarGeminiIA(
   consulta: string,
+  apiKey: string,
   rolUsuario?: "medico" | "funcionario" | "admin"
-): ResultadoConsulta {
-  // 1. Verificación estricta de seguridad clínica y pertinencia
+): Promise<MensajeIA> {
   const chequeoSeguridad = verificarSeguridadYContexto(consulta);
   if (!chequeoSeguridad.permitido) {
     return {
+      texto: chequeoSeguridad.motivo!,
       tipo: "seguridad",
-      mensaje: chequeoSeguridad.motivo,
-      articulos: [],
+      fuente: "gemini_ia",
+      sugerencias: [
+        "¿Cómo autorizo una receta?",
+        "¿Cómo ingresar una nueva solicitud?",
+        "¿Qué significa la alerta roja?",
+      ],
+    };
+  }
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: consulta }],
+          },
+        ],
+        systemInstruction: {
+          parts: [{ text: construirSystemPrompt(rolUsuario) }],
+        },
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 800,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      console.warn("[Gemini API Error]", errData);
+      // Si la clave es inválida o falla, usar fallback local fluido
+      return consultarModoConversacionalLocal(consulta, rolUsuario);
+    }
+
+    const data = await response.json();
+    const textoRespuesta =
+      data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "No pude generar una respuesta en este momento. Por favor reformula tu consulta.";
+
+    return {
+      texto: textoRespuesta,
+      tipo: "exito",
+      fuente: "gemini_ia",
+      sugerencias: obtenerSugerenciasPorRol(rolUsuario),
+    };
+  } catch (error) {
+    console.error("[Gemini Connection Error]", error);
+    return consultarModoConversacionalLocal(consulta, rolUsuario);
+  }
+}
+
+/**
+ * Modo Conversacional Local: Sintetiza una respuesta humana, amigable y explicada en lenguaje natural
+ * sin necesidad de internet ni APIs externas.
+ */
+export function consultarModoConversacionalLocal(
+  consulta: string,
+  rolUsuario?: "medico" | "funcionario" | "admin"
+): MensajeIA {
+  const chequeoSeguridad = verificarSeguridadYContexto(consulta);
+  if (!chequeoSeguridad.permitido) {
+    return {
+      texto: chequeoSeguridad.motivo!,
+      tipo: "seguridad",
+      fuente: "motor_local",
       sugerencias: [
         "¿Cómo autorizo una receta?",
         "¿Cómo ingresar una nueva solicitud?",
@@ -98,9 +205,9 @@ export function consultarAsistente(
   const queryNorm = normalizarTexto(consulta);
   if (!queryNorm || queryNorm.length < 2) {
     return {
+      texto: "¡Hola! Por favor cuéntame qué necesitas saber sobre el sistema de recetas del CESFAM (por ejemplo: cómo autorizar recetas, qué hacer con las alertas rojas o cómo ingresar un paciente).",
       tipo: "sin_resultados",
-      articulos: [],
-      mensaje: "Por favor escribe una consulta sobre el uso del sistema (ej: 'cómo autorizo', 'alerta roja', 'solicitud genérica').",
+      fuente: "motor_local",
       sugerencias: obtenerSugerenciasPorRol(rolUsuario),
     };
   }
@@ -109,7 +216,7 @@ export function consultarAsistente(
   const terminosClave = palabras.filter((w) => !STOP_WORDS.has(w));
   const raicesUsuario = terminosClave.map(obtenerRaiz);
 
-  // 2. Calcular puntaje de coincidencia para cada artículo
+  // Puntuación semántica
   const puntuados = CONOCIMIENTO_SISTEMA.map((art) => {
     let score = 0;
     const tituloNorm = normalizarTexto(art.titulo);
@@ -117,23 +224,21 @@ export function consultarAsistente(
     const keywordsNorm = art.palabrasClave.map((k) => normalizarTexto(k));
     const raicesArticulo = keywordsNorm.map(obtenerRaiz);
 
-    // A) Frase completa
     if (queryNorm.length > 5 && tituloNorm.includes(queryNorm)) score += 60;
     if (queryNorm.length > 5 && resumenNorm.includes(queryNorm)) score += 30;
 
-    // B) Coincidencia de raíces de intención
-    for (const raiz of raicesUsuario) {
-      if (obtenerRaiz(tituloNorm).includes(raiz) || tituloNorm.includes(raiz)) {
-        score += 35;
+    // Coincidencia exacta de frase o palabras clave compuestas (ej: "no se el medicamento", "solicitud generica")
+    for (const kw of keywordsNorm) {
+      if (kw.length >= 4 && (queryNorm.includes(kw) || kw.includes(queryNorm))) {
+        score += 80;
       }
-      if (raicesArticulo.some((r) => r.includes(raiz) || raiz.includes(r))) {
-        score += 30;
-      }
-      if (resumenNorm.includes(raiz)) {
-        score += 15;
-      }
+    }
 
-      // Chequeo de sinónimos
+    for (const raiz of raicesUsuario) {
+      if (obtenerRaiz(tituloNorm).includes(raiz) || tituloNorm.includes(raiz)) score += 35;
+      if (raicesArticulo.some((r) => r.includes(raiz) || raiz.includes(r))) score += 30;
+      if (resumenNorm.includes(raiz)) score += 15;
+
       for (const [clave, lista] of Object.entries(SINONIMOS)) {
         if (clave === raiz || lista.some((s) => s.includes(raiz) || raiz.includes(s))) {
           if (art.palabrasClave.some((k) => lista.includes(normalizarTexto(k)))) {
@@ -143,13 +248,9 @@ export function consultarAsistente(
       }
     }
 
-    // C) Boost por rol
     if (rolUsuario) {
-      if (art.rolesRelevantes.includes(rolUsuario)) {
-        score += 12;
-      } else if (!art.rolesRelevantes.includes("todos")) {
-        score -= 8;
-      }
+      if (art.rolesRelevantes.includes(rolUsuario)) score += 12;
+      else if (!art.rolesRelevantes.includes("todos")) score -= 8;
     }
 
     return { articulo: art, score };
@@ -162,27 +263,70 @@ export function consultarAsistente(
 
   if (resultados.length === 0) {
     return {
+      texto: "No tengo registrado un procedimiento exacto para esa consulta. Te recomiendo revisar si tu duda se relaciona con autorizaciones médicas, ingreso de solicitudes, alertas de plazos o inventario.",
       tipo: "sin_resultados",
-      articulos: [],
-      mensaje: "No encontré una respuesta exacta para esa búsqueda. Intenta con palabras clave como 'autorizar', 'rechazar', 'solicitud genérica', 'alerta roja' o 'inventario'.",
+      fuente: "motor_local",
       sugerencias: obtenerSugerenciasPorRol(rolUsuario),
     };
   }
 
-  const articulosPrincipales = resultados.slice(0, 2);
-  const sugerenciasRelacionadas = Array.from(
-    new Set(articulosPrincipales.flatMap((a) => a.preguntasFrecuentesRelacionadas || []))
-  ).slice(0, 3);
+  const art = resultados[0];
+  
+  // Construcción de respuesta fluida en lenguaje natural humano
+  const saludo = rolUsuario === "medico" ? "Hola doctor/a." : rolUsuario === "funcionario" ? "Hola." : "Hola estimado/a colega.";
+  let respuestaHumana = `${saludo} Con gusto te oriento con respecto a tu consulta:\n\n`;
+  respuestaHumana += `${art.resumen}\n\n`;
+
+  if (art.pasos && art.pasos.length > 0) {
+    respuestaHumana += `**El procedimiento paso a paso es:**\n`;
+    art.pasos.forEach((p, idx) => {
+      // Limpiar prefijo 1., 2. si ya viene en el texto
+      const pasoLimpio = p.replace(/^\d+\.\s*/, "");
+      respuestaHumana += `${idx + 1}. ${pasoLimpio}\n`;
+    });
+    respuestaHumana += `\n`;
+  }
+
+  if (art.detallesImportantes && art.detallesImportantes.length > 0) {
+    respuestaHumana += `💡 **Detalle importante a tener en cuenta:**\n`;
+    art.detallesImportantes.forEach((d) => {
+      respuestaHumana += `• ${d}\n`;
+    });
+  }
 
   return {
+    texto: respuestaHumana,
     tipo: "exito",
-    articulos: articulosPrincipales,
-    sugerencias: sugerenciasRelacionadas.length > 0 ? sugerenciasRelacionadas : obtenerSugerenciasPorRol(rolUsuario),
+    fuente: "motor_local",
+    articulosRelacionados: resultados.slice(0, 2),
+    sugerencias: obtenerSugerenciasPorRol(rolUsuario),
   };
 }
 
 /**
- * Genera preguntas rápidas sugeridas según el rol del usuario actual.
+ * Función principal que decide si llamar a Gemini o al motor conversacional local.
+ */
+export async function procesarPreguntaAsistente(
+  consulta: string,
+  rolUsuario?: "medico" | "funcionario" | "admin",
+  apiKeyPersonal?: string
+): Promise<MensajeIA> {
+  // 1. Revisar si hay API key en variable de entorno o en localStorage
+  const apiKey =
+    apiKeyPersonal ||
+    (typeof window !== "undefined" ? localStorage.getItem("cesfam_gemini_api_key") : null) ||
+    (typeof import.meta !== "undefined" && import.meta.env ? import.meta.env.VITE_GEMINI_API_KEY : undefined);
+
+  if (apiKey && apiKey.trim().length > 10) {
+    return await consultarGeminiIA(consulta, apiKey.trim(), rolUsuario);
+  }
+
+  // 2. Si no hay API key, utilizar el motor conversacional local estructurado
+  return consultarModoConversacionalLocal(consulta, rolUsuario);
+}
+
+/**
+ * Preguntas sugeridas por rol.
  */
 export function obtenerSugerenciasPorRol(
   rol?: "medico" | "funcionario" | "admin"
