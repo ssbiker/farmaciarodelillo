@@ -180,9 +180,10 @@ const TABLA_INTENCIONES: TablaIntencion[] = [
   {
     id: "estado-receta-vencida",
     senales: [
-      "vencida", "esta vencida", "receta vencida", "ya vencio", "plazo vencido",
-      "paso la fecha", "paso el plazo", "supero la fecha", "fecha limite paso",
-      "cuanto tiempo tiene", "en cuantos dias vence", "cuando vence",
+      "receta vencida", "esta vencida", "vencida", "vencido", "vencidas", "recetas vencidas",
+      "que es una receta vencida", "por que esta vencida", "cuando se considera vencida",
+      "ya vencio", "plazo vencido", "paso la fecha", "paso el plazo", "supero la fecha",
+      "fecha limite paso", "cuanto tiempo tiene", "en cuantos dias vence", "cuando vence",
     ],
     responder: (_q, saludo) =>
       conEncabezado(
@@ -664,23 +665,33 @@ function detectarIntencion(
 ): string | null {
   const saludo = generarSaludo(rolUsuario, nombreUsuario);
 
-  let mejorMatch: { intencion: TablaIntencion; hits: number } | null = null;
+  let mejorMatch: { intencion: TablaIntencion; score: number } | null = null;
 
   for (const intencion of TABLA_INTENCIONES) {
     const umbral = intencion.umbral ?? 1;
+    let score = 0;
     let hits = 0;
 
     for (const senal of intencion.senales) {
       if (typeof senal === "function") {
-        if (senal(queryNorm)) hits++;
+        if (senal(queryNorm)) {
+          hits++;
+          score += 15;
+        }
       } else {
-        if (queryNorm.includes(normalizarTexto(senal))) hits++;
+        const senalNorm = normalizarTexto(senal);
+        if (queryNorm.includes(senalNorm)) {
+          hits++;
+          // Frases de varias palabras pesan mucho más que palabras sueltas
+          const esFrase = senalNorm.includes(" ");
+          score += esFrase ? 25 : 8;
+        }
       }
     }
 
-    if (hits >= umbral) {
-      if (!mejorMatch || hits > mejorMatch.hits) {
-        mejorMatch = { intencion, hits };
+    if (hits >= umbral && score > 0) {
+      if (!mejorMatch || score > mejorMatch.score) {
+        mejorMatch = { intencion, score };
       }
     }
   }
@@ -808,22 +819,46 @@ export function consultarModoConversacionalLocal(
     };
   }
 
-  // ── PASO 1: Enriquecer query con contexto del historial previo ───────────
-  let queryEnriquecida = queryNorm;
+  // ── PASO 1: Evaluar PRIMERO la consulta ACTUAL sin contaminar con historial ──
+  const respuestaDirecta = detectarIntencion(queryNorm, rolUsuario, nombreUsuario);
+  if (respuestaDirecta) {
+    return {
+      texto: respuestaDirecta,
+      tipo: "exito",
+      fuente: "motor_local",
+      sugerencias: obtenerSugerenciasPorRol(rolUsuario),
+    };
+  }
+
+  // ── PASO 2: Solo si la consulta actual es breve/ambigua o no dio match, recurrir a historial ──
+  let respuestaConHistorial: string | null = null;
+  let queryParaFallback = queryNorm;
+
   if (historial && historial.length > 0) {
     const ultimoMensajeUsuario = historial
       .filter((h) => h.remitente === "usuario")
-      .slice(-2)
+      .slice(-1)
       .map((h) => normalizarTexto(h.texto))
       .join(" ");
-    queryEnriquecida = `${ultimoMensajeUsuario} ${queryNorm}`;
+
+    const pareceContinuacion =
+      queryNorm.length < 30 ||
+      queryNorm.startsWith("y ") ||
+      queryNorm.startsWith("pero ") ||
+      queryNorm.startsWith("entonces ") ||
+      queryNorm.startsWith("como ") ||
+      queryNorm.startsWith("donde ") ||
+      queryNorm.startsWith("quien ");
+
+    if (pareceContinuacion && ultimoMensajeUsuario) {
+      queryParaFallback = `${ultimoMensajeUsuario} ${queryNorm}`;
+      respuestaConHistorial = detectarIntencion(queryParaFallback, rolUsuario, nombreUsuario);
+    }
   }
 
-  // ── PASO 2: Detección de intención con tabla semántica ───────────────────
-  const respuestaIntencion = detectarIntencion(queryEnriquecida, rolUsuario, nombreUsuario);
-  if (respuestaIntencion) {
+  if (respuestaConHistorial) {
     return {
-      texto: respuestaIntencion,
+      texto: respuestaConHistorial,
       tipo: "exito",
       fuente: "motor_local",
       sugerencias: obtenerSugerenciasPorRol(rolUsuario),
@@ -831,7 +866,7 @@ export function consultarModoConversacionalLocal(
   }
 
   // ── PASO 3: Scoring semántico ponderado como fallback ────────────────────
-  const palabras = queryEnriquecida.split(" ").filter((w) => w.length >= 3);
+  const palabras = queryParaFallback.split(" ").filter((w) => w.length >= 3);
   const terminosClave = palabras.filter((w) => !STOP_WORDS.has(w));
   const raicesUsuario = terminosClave.map(obtenerRaiz);
 
