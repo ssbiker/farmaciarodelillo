@@ -389,7 +389,7 @@ export function RecetaModal({
   // Asistente de Cálculo Matemático
   const [calcOpenIdx, setCalcOpenIdx] = useState<number | null>(null);
   const [calcDosis, setCalcDosis] = useState("1");
-  const [calcHoras, setCalcHoras] = useState("8");
+  const [calcHoras, setCalcHoras] = useState("24");
   const [calcDias, setCalcDias] = useState("30");
 
   const runCalculadora = (d: string, h: string, days: string, targetIdx: number = 0) => {
@@ -1265,6 +1265,7 @@ export function RecetaModal({
                                 disabled={isRechazado}
                                 required={form.estado !== "rechazado" && !isRechazado}
                                 type="number"
+                                step="any"
                                 min={form.estado === "rechazado" || isRechazado ? undefined : "1"}
                                 placeholder={isRechazado ? "0 (Rechazado)" : form.estado === "rechazado" ? "Opcional" : "Ej: 30"}
                                 value={isRechazado ? "" : (item.cantidad > 0 ? item.cantidad : "")}
@@ -1309,57 +1310,171 @@ export function RecetaModal({
                               }}
                               className="text-[11px] text-brand-blue font-bold flex items-center gap-1 hover:underline outline-none"
                             >
-                              {calcOpenIdx === idx ? "Ocultar asistente de cálculo" : "✦ Asistente de cálculo matemático"}
+                              {calcOpenIdx === idx ? "Ocultar asistente de cálculo" : "✦ Asistente de cálculo matemático y posología"}
                             </button>
                             {calcOpenIdx === idx && (
-                              <div className="mt-2 bg-brand-blue/5 border border-brand-blue/15 rounded-xl p-3 flex flex-wrap gap-3 items-end">
-                                <div>
-                                  <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Dosis (u.)</label>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="0.5"
-                                    value={calcDosis}
-                                    onChange={(e) => {
-                                      setCalcDosis(e.target.value);
-                                      runCalculadora(e.target.value, calcHoras, calcDias, idx);
-                                    }}
-                                    className="w-16 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center font-bold focus:border-brand-blue outline-none"
-                                  />
-                                </div>
-                                <div className="pb-1.5 text-[#5D7299] text-xs font-bold">cada</div>
-                                <div>
-                                  <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Horas</label>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={calcHoras}
-                                    onChange={(e) => {
-                                      setCalcHoras(e.target.value);
-                                      runCalculadora(calcDosis, e.target.value, calcDias, idx);
-                                    }}
-                                    className="w-16 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center font-bold focus:border-brand-blue outline-none"
-                                  />
-                                </div>
-                                <div className="pb-1.5 text-[#5D7299] text-xs font-bold">por</div>
-                                <div>
-                                  <label className="block text-[11px] uppercase font-bold text-brand-blue mb-1">Días</label>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={calcDias}
-                                    onChange={(e) => {
-                                      setCalcDias(e.target.value);
-                                      runCalculadora(calcDosis, calcHoras, e.target.value, idx);
-                                    }}
-                                    className="w-16 bg-white border border-brand-blue/20 rounded-lg px-2 py-1.5 text-sm text-center font-bold focus:border-brand-blue outline-none"
-                                  />
-                                </div>
-                                <div className="pb-1.5 ml-auto text-right">
-                                  <span className="text-[10px] font-bold text-brand-blue/70 uppercase block">Total calculado</span>
-                                  <span className="text-sm font-black text-brand-blue bg-white border border-brand-blue/20 rounded-lg px-2.5 py-1 inline-block shadow-sm">
-                                    {Math.ceil((24 / (parseFloat(calcHoras) || 24)) * (parseFloat(calcDosis) || 0) * (parseFloat(calcDias) || 0))} unid.
+                              <div className="mt-2.5 bg-gradient-to-br from-brand-blue/5 via-sky-50/40 to-indigo-50/30 border border-brand-blue/20 rounded-2xl p-3.5 space-y-3 shadow-sm">
+                                <div className="flex items-center justify-between flex-wrap gap-1">
+                                  <span className="text-[10px] font-bold text-brand-blue uppercase tracking-wider flex items-center gap-1">
+                                    ✦ Calculadora de Posología
                                   </span>
+                                  <span className="text-[10px] text-[#5D7299]">Dosis fraccionadas permitidas (ej: 0.25)</span>
+                                </div>
+
+                                {/* Fila de controles principales */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                  {/* 1. Dosis por toma */}
+                                  <div className="space-y-1">
+                                    <label className="block text-[11px] uppercase font-bold text-brand-blue">Dosis por toma</label>
+                                    <div className="flex items-center gap-1.5">
+                                      <input
+                                        type="number"
+                                        min="0.05"
+                                        step="any"
+                                        placeholder="0.25"
+                                        value={calcDosis}
+                                        onChange={(e) => {
+                                          setCalcDosis(e.target.value);
+                                          runCalculadora(e.target.value, calcHoras, calcDias, idx);
+                                        }}
+                                        className="w-full bg-white border border-brand-blue/30 rounded-xl px-2.5 py-1.5 text-sm text-center font-black text-brand-blue focus:border-brand-blue outline-none shadow-inner"
+                                      />
+                                      <span className="text-xs font-semibold text-[#5D7299]">comp.</span>
+                                    </div>
+                                    {/* Chips rápidos de dosis */}
+                                    <div className="flex flex-wrap gap-1 pt-1">
+                                      {[
+                                        { label: "¼ (0.25)", val: "0.25" },
+                                        { label: "½ (0.5)", val: "0.5" },
+                                        { label: "¾ (0.75)", val: "0.75" },
+                                        { label: "1", val: "1" },
+                                        { label: "1½ (1.5)", val: "1.5" },
+                                        { label: "2", val: "2" },
+                                      ].map(chip => (
+                                        <button
+                                          key={chip.val}
+                                          type="button"
+                                          onClick={() => {
+                                            setCalcDosis(chip.val);
+                                            runCalculadora(chip.val, calcHoras, calcDias, idx);
+                                          }}
+                                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg border transition-all ${
+                                            calcDosis === chip.val
+                                              ? "bg-brand-blue text-white border-brand-blue shadow-sm scale-105"
+                                              : "bg-white text-[#3D5278] border-[#DDE6F5] hover:bg-brand-blue/10 hover:text-brand-blue"
+                                          }`}
+                                        >
+                                          {chip.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* 2. Frecuencia en horas */}
+                                  <div className="space-y-1">
+                                    <label className="block text-[11px] uppercase font-bold text-brand-blue">Frecuencia (Horas)</label>
+                                    <div className="flex items-center gap-1.5">
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        step="1"
+                                        placeholder="24"
+                                        value={calcHoras}
+                                        onChange={(e) => {
+                                          setCalcHoras(e.target.value);
+                                          runCalculadora(calcDosis, e.target.value, calcDias, idx);
+                                        }}
+                                        className="w-full bg-white border border-brand-blue/30 rounded-xl px-2.5 py-1.5 text-sm text-center font-black text-brand-blue focus:border-brand-blue outline-none shadow-inner"
+                                      />
+                                      <span className="text-xs font-semibold text-[#5D7299]">hrs.</span>
+                                    </div>
+                                    {/* Chips rápidos de horas */}
+                                    <div className="flex flex-wrap gap-1 pt-1">
+                                      {[
+                                        { label: "24h (1x)", val: "24" },
+                                        { label: "12h (2x)", val: "12" },
+                                        { label: "8h (3x)", val: "8" },
+                                        { label: "6h (4x)", val: "6" },
+                                      ].map(chip => (
+                                        <button
+                                          key={chip.val}
+                                          type="button"
+                                          onClick={() => {
+                                            setCalcHoras(chip.val);
+                                            runCalculadora(calcDosis, chip.val, calcDias, idx);
+                                          }}
+                                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg border transition-all ${
+                                            calcHoras === chip.val
+                                              ? "bg-brand-blue text-white border-brand-blue shadow-sm scale-105"
+                                              : "bg-white text-[#3D5278] border-[#DDE6F5] hover:bg-brand-blue/10 hover:text-brand-blue"
+                                          }`}
+                                        >
+                                          {chip.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* 3. Días de tratamiento */}
+                                  <div className="space-y-1">
+                                    <label className="block text-[11px] uppercase font-bold text-brand-blue">Días de Tratamiento</label>
+                                    <div className="flex items-center gap-1.5">
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        step="1"
+                                        placeholder="30"
+                                        value={calcDias}
+                                        onChange={(e) => {
+                                          setCalcDias(e.target.value);
+                                          runCalculadora(calcDosis, calcHoras, e.target.value, idx);
+                                        }}
+                                        className="w-full bg-white border border-brand-blue/30 rounded-xl px-2.5 py-1.5 text-sm text-center font-black text-brand-blue focus:border-brand-blue outline-none shadow-inner"
+                                      />
+                                      <span className="text-xs font-semibold text-[#5D7299]">días</span>
+                                    </div>
+                                    {/* Chips rápidos de días */}
+                                    <div className="flex flex-wrap gap-1 pt-1">
+                                      {[
+                                        { label: "30d (1m)", val: "30" },
+                                        { label: "60d (2m)", val: "60" },
+                                        { label: "90d (3m)", val: "90" },
+                                      ].map(chip => (
+                                        <button
+                                          key={chip.val}
+                                          type="button"
+                                          onClick={() => {
+                                            setCalcDias(chip.val);
+                                            runCalculadora(calcDosis, calcHoras, chip.val, idx);
+                                          }}
+                                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg border transition-all ${
+                                            calcDias === chip.val
+                                              ? "bg-brand-blue text-white border-brand-blue shadow-sm scale-105"
+                                              : "bg-white text-[#3D5278] border-[#DDE6F5] hover:bg-brand-blue/10 hover:text-brand-blue"
+                                          }`}
+                                        >
+                                          {chip.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Barra de resultado y desglose */}
+                                <div className="bg-white/90 border border-brand-blue/20 rounded-xl p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                                  <div className="text-xs text-[#5D7299]">
+                                    <span className="font-semibold text-brand-blue">Cálculo:</span>{" "}
+                                    {(24 / (parseFloat(calcHoras) || 24)).toFixed(1).replace(".0", "")} toma(s)/día × {calcDosis} comp. × {calcDias} días ={" "}
+                                    <span className="font-bold text-[#0F1B35]">
+                                      {((24 / (parseFloat(calcHoras) || 24)) * (parseFloat(calcDosis) || 0) * (parseFloat(calcDias) || 0)).toFixed(2).replace(/\.?0+$/, "")} comp.
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                                    <span className="text-[11px] font-bold text-brand-blue/80 uppercase">Total a despachar:</span>
+                                    <span className="text-base font-black text-brand-blue bg-brand-blue/10 border border-brand-blue/30 rounded-lg px-3 py-0.5 shadow-sm">
+                                      {Math.ceil((24 / (parseFloat(calcHoras) || 24)) * (parseFloat(calcDosis) || 0) * (parseFloat(calcDias) || 0))} unid.
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             )}

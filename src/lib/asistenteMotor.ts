@@ -522,10 +522,10 @@ const TABLA_INTENCIONES: TablaIntencion[] = [
         saludo,
         `Para calcular la cantidad de unidades a despachar sin errores matemáticos:\n\n` +
         `1. En el modal médico, haz clic en **'Asistente de cálculo'**.\n` +
-        `2. Ingresa la **dosis por toma** (ej: 1 comprimido).\n` +
-        `3. Selecciona la **frecuencia en horas** (ej: cada 8 horas = 3 tomas/día; cada 12h = 2 tomas; cada 24h = 1 toma).\n` +
+        `2. Ingresa o selecciona la **dosis por toma** (ej: chips rápidos para 0.25 de Levotiroxina/Hidroclorotiazida, 0.5 o 1 comp).\n` +
+        `3. Selecciona la **frecuencia en horas** (ej: cada 24 horas = 1 toma/día; cada 12h = 2 tomas; cada 8h = 3 tomas).\n` +
         `4. Indica el **periodo en días** (ej: 30 días para un mes regular).\n` +
-        `5. El sistema multiplica automáticamente (ej: 1 × 3 tomas/día × 30 días = **90 unidades**) y rellena la casilla de cantidad.\n\n` +
+        `5. El sistema calcula y redondea automáticamente hacia arriba (ej: 0.25 comp cada 24h × 30 días = **8 unidades**) y rellena la casilla de cantidad.\n\n` +
         `💡 El médico siempre puede ajustar el total manualmente si necesita un margen adicional.`
       ),
   },

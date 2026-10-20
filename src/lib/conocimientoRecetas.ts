@@ -154,10 +154,10 @@ export const CONOCIMIENTO_SISTEMA: ArticuloConocimiento[] = [
     resumen: "Para evitar errores matemáticos al calcular la cantidad de comprimidos o unidades a despachar:",
     pasos: [
       "1. En el modal médico, abre la herramienta 'Asistente de cálculo'.",
-      "2. Ingresa la 'Dosis por toma' (ej: 1 comprimido).",
-      "3. Ingresa 'Cada cuántas horas' (ej: cada 8 horas = 3 tomas al día; cada 12 horas = 2 tomas; cada 24 horas = 1 toma).",
+      "2. Ingresa la 'Dosis por toma' o selecciona un chip rápido (ej: 0.25 para ¼ comp de Levotiroxina/Hidroclorotiazida, 0.5 para ½ comp, o 1 comp).",
+      "3. Ingresa 'Cada cuántas horas' (ej: cada 24 horas = 1 toma al día; cada 12 horas = 2 tomas; cada 8 horas = 3 tomas).",
       "4. Ingresa 'Por cuántos días' (ej: 30 días para un mes regular).",
-      "5. El sistema calcula automáticamente el total (ej: 1 cada 8h × 30 días = 90 comprimidos) y rellena la casilla de cantidad."
+      "5. El sistema calcula automáticamente el total redondeado hacia arriba (ej: 0.25 cada 24h × 30 días = 8 comprimidos a despachar) y rellena la casilla de cantidad."
     ],
     detallesImportantes: [
       "La cantidad final siempre puede ser ajustada manualmente por el médico si se requiere un margen adicional."
