@@ -37,6 +37,23 @@ export const CONOCIMIENTO_SISTEMA: ArticuloConocimiento[] = [
     ]
   },
   {
+    id: "sectores-atencion-cesfam",
+    titulo: "¿Cómo se organizan los sectores (Sector A, Sector B y CECOSF)?",
+    categoria: "recetas",
+    rolesRelevantes: ["todos"],
+    palabrasClave: ["sectores", "sector a", "sector b", "cecosf", "diferencia sectores", "territorio"],
+    resumen: "El CESFAM Rodelillo organiza su atención clínica y comunitaria en 3 sectores territoriales:",
+    pasos: [
+      "1. Sector A: Pacientes asignados al sector territorial A del CESFAM.",
+      "2. Sector B: Pacientes asignados al sector territorial B del centro.",
+      "3. CECOSF: Usuarios que reciben atención primaria en el Centro Comunitario de Salud Familiar dependiente de la red Rodelillo.",
+      "4. En el sistema: Cada programa (Crónicas, Controladas, Maternales y Respiratorias) cuenta con pestañas exclusivas para cada sector para mantener el orden de entrega."
+    ],
+    detallesImportantes: [
+      "Al ingresar un paciente en ventanilla, el funcionario debe asegurarse de registrarlo en la pestaña del sector al que pertenece."
+    ]
+  },
+  {
     id: "error-credenciales-acceso-denegado",
     titulo: "¿Qué hacer si dice 'Credenciales incorrectas' o 'Acceso Denegado'?",
     categoria: "errores",
@@ -185,6 +202,90 @@ export const CONOCIMIENTO_SISTEMA: ArticuloConocimiento[] = [
     ],
     detallesImportantes: [
       "Ahorra tiempo a los funcionarios en ventanilla y evita que elijan por error una presentación o concentración incorrecta."
+    ]
+  },
+  {
+    id: "recetas-cronicas",
+    titulo: "¿Qué son las recetas crónicas y cómo se gestionan?",
+    categoria: "recetas",
+    rolesRelevantes: ["todos"],
+    palabrasClave: [
+      "recetas cronicas",
+      "receta cronica",
+      "que son las recetas cronicas",
+      "que es una receta cronica",
+      "programa cronico",
+      "cronicos",
+      "cronicas",
+      "cronica",
+      "tratamiento prolongado",
+      "patologia cronica"
+    ],
+    resumen: "Las Recetas Crónicas corresponden a prescripciones de tratamientos continuos para pacientes con enfermedades crónicas no transmisibles (hipertensión, diabetes, dislipidemia, hipotiroidismo, salud cardiovascular o patologías prolongadas):",
+    pasos: [
+      "1. Organización en el sistema: Se gestionan desde la pestaña superior 'Crónicas', con carteras separadas por Sector A, Sector B y CECOSF.",
+      "2. Múltiples medicamentos: Permiten ingresar y autorizar varios fármacos en una misma receta médica.",
+      "3. Auto-Renovación (1 a 6 meses): El médico puede configurar que el stock se descuente de forma automática al inicio de cada mes, evitando que el paciente deba tramitar una receta todos los meses.",
+      "4. Asistente de Cálculo: Permite calcular automáticamente los comprimidos necesarios para el mes según la dosis y la frecuencia en horas.",
+      "5. Prevención de Duplicados: Si el paciente ya tiene una receta crónica en curso, el sistema advierte en amarillo y permite 'Vincular' el nuevo medicamento."
+    ],
+    detallesImportantes: [
+      "En ventanilla, si el funcionario no conoce el fármaco exacto, puede usar el botón '✓ Solicitud Receta' para que el médico seleccione el producto al autorizar."
+    ]
+  },
+  {
+    id: "recetas-controladas",
+    titulo: "¿Qué son las recetas controladas y qué exigencias tienen?",
+    categoria: "recetas",
+    rolesRelevantes: ["todos"],
+    palabrasClave: [
+      "recetas controladas",
+      "receta controlada",
+      "que son las recetas controladas",
+      "que es una receta controlada",
+      "farmacos controlados",
+      "psicotropicos",
+      "estupefacientes",
+      "controlados",
+      "controlada",
+      "receta retenida"
+    ],
+    resumen: "Las Recetas Controladas son aquellas que contienen medicamentos sujetos a estricto control legal y fiscalización sanitaria (psicotrópicos, estupefacientes y benzodiazepinas como Clonazepam o Diazepam):",
+    pasos: [
+      "1. Cartera dedicada: Se gestionan exclusivamente desde la pestaña 'Controladas' (Sector A, B y CECOSF).",
+      "2. Autorización Médica Requerida: Ninguna receta controlada puede ser entregada sin la previa revisión y autorización del médico facultativo.",
+      "3. Trazabilidad Estricta: Cada evento (creación, edición, autorización o rechazo) queda registrado de forma inalterable en el Historial de Auditoría con fecha, hora y usuario.",
+      "4. Control de Inventario: El stock se descuenta en tiempo real. No se permite entrega si el inventario marca stock en rojo (agotado).",
+      "5. Impresión de Ticket: El comprobante de retiro solo puede imprimirse una vez completada y firmada la solicitud."
+    ],
+    detallesImportantes: [
+      "Si la receta controlada tiene candado 🔒 asignado a un médico específico, solo ese profesional o el químico farmacéutico/administrador pueden autorizarla."
+    ]
+  },
+  {
+    id: "tipos-recetas-sistema",
+    titulo: "¿Cuáles son los 4 tipos de recetas o programas que maneja el sistema?",
+    categoria: "recetas",
+    rolesRelevantes: ["todos"],
+    palabrasClave: [
+      "tipos de recetas",
+      "que tipos de recetas",
+      "cuales son las recetas",
+      "que programas hay",
+      "carteras de recetas",
+      "cuantos tipos de recetas",
+      "programas del sistema",
+      "pestañas de recetas"
+    ],
+    resumen: "El sistema del CESFAM Rodelillo organiza la atención en 4 grandes programas de recetas médicas:",
+    pasos: [
+      "1. 💊 Crónicas: Tratamientos prolongados y continuos (HTA, diabetes, etc.), con opción de auto-renovación mensual de 1 a 6 meses.",
+      "2. 🔒 Controladas: Fármacos bajo fiscalización especial (psicotrópicos y estupefacientes) con máxima rigurosidad de auditoría y stock.",
+      "3. 🤰 Maternales: Recetas destinadas a pacientes gestantes o en puerperio (distintivo morado).",
+      "4. 🫁 Respiratorias (ERA): Programa de enfermedades respiratorias del adulto e infantil, asma, EPOC y terapia inhalatoria (distintivo verde azulado)."
+    ],
+    detallesImportantes: [
+      "Cada uno de estos 4 programas cuenta con carteras independientes para Sector A, Sector B y CECOSF."
     ]
   },
   {

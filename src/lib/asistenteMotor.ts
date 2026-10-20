@@ -650,6 +650,113 @@ const TABLA_INTENCIONES: TablaIntencion[] = [
         `💡 Cada programa mantiene sus contadores de pendientes y urgentes separados para no mezclar metas del centro de salud.`
       ),
   },
+
+  // ──────────────────────────────────────────────────────────────
+  // GRUPO T: TIPOS DE RECETAS, CRÓNICAS Y CONTROLADAS
+  // ──────────────────────────────────────────────────────────────
+
+  {
+    id: "recetas-cronicas",
+    senales: [
+      "recetas cronicas", "receta cronica", "que son las recetas cronicas",
+      "que es una receta cronica", "programa cronico", "programa de cronicos",
+      "paciente cronico", "medicamento cronico", "cartera cronica", "cronicas",
+      "cronica", "patologia cronica", "tratamiento cronico", "receta de cronicos"
+    ],
+    responder: (_q, saludo) =>
+      conEncabezado(
+        saludo,
+        `Las **Recetas Crónicas** son aquellas destinadas a pacientes con tratamientos prolongados o continuos de patologías no transmisibles (hipertensión, diabetes, dislipidemia, hipotiroidismo, salud cardiovascular o salud mental estable).\n\n` +
+        `**Organización en el Sistema:**\n` +
+        `• Se encuentran en la pestaña superior **'Crónicas'**, distribuidas en 3 carteras: **Sector A**, **Sector B** y **CECOSF**.\n` +
+        `• Permiten añadir múltiples medicamentos en una sola solicitud (` + "`items`" + `).\n\n` +
+        `**Funcionalidades Clave:**\n` +
+        `1. **Auto-Renovación (1 a 6 meses):** Al autorizar la receta, el médico puede programar entregas mensuales automáticas para que el stock se descuente cada mes sin necesidad de que el paciente ingrese una nueva solicitud cada 30 días.\n` +
+        `2. **Asistente de Cálculo:** Herramienta para calcular automáticamente la cantidad de comprimidos según dosis y frecuencia horaria.\n` +
+        `3. **Detección de Receta Vigente:** Si el paciente ya tiene una receta crónica en curso, el sistema avisa y permite 'Vincular' el nuevo fármaco en lugar de duplicar registros.\n` +
+        `4. **Solicitud Genérica:** El funcionario puede usar el botón '✓ Solicitud Receta' si desconoce el fármaco exacto en ventanilla.`
+      ),
+  },
+
+  {
+    id: "recetas-controladas",
+    senales: [
+      "recetas controladas", "receta controlada", "que son las recetas controladas",
+      "que es una receta controlada", "medicamento controlado", "farmacos controlados",
+      "psicotropicos", "estupefacientes", "benzodiacepinas", "controlados", "controlada",
+      "receta retenida", "cartera controlada"
+    ],
+    responder: (_q, saludo) =>
+      conEncabezado(
+        saludo,
+        `Las **Recetas Controladas** corresponden a prescripciones de fármacos sujetos a estricta fiscalización y regulación sanitaria especial (psicotrópicos, estupefacientes, benzodiazepinas como Clonazepam, Diazepam, etc.).\n\n` +
+        `**Organización en el Sistema:**\n` +
+        `• Se gestionan desde la pestaña **'Controladas'**, organizadas por **Sector A**, **Sector B** y **CECOSF**.\n` +
+        `• Requieren **autorización médica obligatoria** antes de cualquier despacho en farmacia.\n\n` +
+        `**Puntos Críticos:**\n` +
+        `1. **Trazabilidad Estricta:** Cada cambio, autorización o rechazo queda asentado en el Historial de Auditoría inalterable.\n` +
+        `2. **Descuento de Stock en Tiempo Real:** El inventario se actualiza de inmediato para cuadrar el balance de farmacia.\n` +
+        `3. **Impresión de Ticket:** El comprobante solo puede imprimirse una vez completada y autorizada por el médico facultativo.\n` +
+        `4. **Candado 🔒:** Si la receta fue asignada nominalmente a un médico, solo ese profesional o el administrador pueden autorizarla.`
+      ),
+  },
+
+  {
+    id: "tipos-recetas-programas",
+    senales: [
+      "tipos de recetas", "que tipos de recetas", "cuales son las recetas",
+      "que recetas hay", "que programas hay", "cuales son los programas",
+      "carteras de recetas", "cuantos tipos de recetas", "programas del sistema",
+      "que pestanas hay", "como se dividen las recetas"
+    ],
+    responder: (_q, saludo) =>
+      conEncabezado(
+        saludo,
+        `El sistema del CESFAM Rodelillo organiza la atención farmacéutica en **4 grandes programas de recetas**, cada uno con carteras independientes por Sector (A, B y CECOSF):\n\n` +
+        `1. 💊 **Crónicas:** Tratamientos continuos y prolongados (hipertensión, diabetes, etc.). Permite auto-renovación de 1 a 6 meses.\n` +
+        `2. 🔒 **Controladas:** Fármacos bajo fiscalización sanitaria especial (psicotrópicos y estupefacientes) con máxima auditoría y trazabilidad de stock.\n` +
+        `3. 🤰 **Maternales:** Atención a pacientes gestantes o en puerperio (suplementación prenatal, hierro, etc.) con distintivo morado.\n` +
+        `4. 🫁 **Respiratorias (ERA):** Terapia inhalatoria y tratamiento de asma y EPOC con distintivo verde azulado.\n\n` +
+        `💡 Cada programa cuenta con contadores independientes de recetas pendientes y vencidas (rojas) para facilitar el control de gestión.`
+      ),
+  },
+
+  {
+    id: "sectores-atencion-cesfam",
+    senales: [
+      "que son los sectores", "sector a", "sector b", "cecosf",
+      "diferencia entre sectores", "por que hay sectores", "que sector elegir",
+      "como se dividen los sectores", "los sectores"
+    ],
+    responder: (_q, saludo) =>
+      conEncabezado(
+        saludo,
+        `El CESFAM Rodelillo divide a su población y equipos de salud en **3 sectores de atención territorial**:\n\n` +
+        `• 🟢 **Sector A:** Atiende a los pacientes inscritos y residentes en el área geográfica del Sector A.\n` +
+        `• 🔵 **Sector B:** Atiende a la población asignada al Sector B del centro.\n` +
+        `• 🟣 **CECOSF:** Atiende a los usuarios del Centro Comunitario de Salud Familiar correspondiente a la red Rodelillo.\n\n` +
+        `**En el sistema:**\n` +
+        `Cada programa (Crónicas, Controladas, Maternales y ERA) tiene pestañas separadas por Sector. Al ingresar una solicitud, el funcionario debe seleccionar el sector donde el paciente está registrado en su ficha clínica.`
+      ),
+  },
+
+  {
+    id: "panel-medico",
+    senales: [
+      "que es mi panel", "mi panel", "donde esta mi panel", "panel del medico",
+      "que veo en mi panel", "como funciona mi panel"
+    ],
+    responder: (_q, saludo) =>
+      conEncabezado(
+        saludo,
+        `**'Mi Panel'** es la estación de trabajo exclusiva para médicos facultativos:\n\n` +
+        `**Secciones del panel:**\n` +
+        `1. **Pendientes asignadas a mí:** Recetas donde fuiste designado como médico tratante (con candado 🔒). Solo tú o un administrador pueden autorizarlas.\n` +
+        `2. **Sin médico asignado:** Solicitudes libres del sector que cualquier médico disponible puede tomar y resolver directamente.\n` +
+        `3. **Historial reciente:** Registro visual de las últimas recetas que autorizaste o rechazaste en tu turno.\n\n` +
+        `💡 Desde Mi Panel puedes abrir cualquier receta, seleccionar fármacos de inventario, usar el asistente de cálculo de dosis y configurar auto-renovaciones.`
+      ),
+  },
 ];
 
 // ─── MOTOR DE INTENCIONES ─────────────────────────────────────────────────────
