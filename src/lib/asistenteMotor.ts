@@ -1,8 +1,7 @@
 /**
  * Motor de Inteligencia y Procesamiento de Lenguaje Natural para el Asistente Experto.
- * Soporta dos modos:
- * 1. Modo IA Gemini Flash (Free Tier $0 de Google): Generación conversacional 100% fluida en lenguaje natural.
- * 2. Modo Local Conversacional: Síntesis dinámica de respuestas en lenguaje natural sin internet ni APIs.
+ * Comprensión de contexto, situaciones clínicas y administrativas del CESFAM Rodelillo.
+ * 100% en cliente, sin APIs externas obligatorias, seguro y adaptado a la terminología real de salud.
  */
 
 import {
@@ -19,16 +18,21 @@ export interface MensajeIA {
   sugerencias?: string[];
 }
 
+export interface TurnoHistorial {
+  remitente: "usuario" | "asistente";
+  texto: string;
+}
+
 /**
  * Normaliza una cadena eliminando tildes, signos de puntuación y espacios redundantes.
  */
 function normalizarTexto(texto: string): string {
   return texto
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9 ]/g, ' ')
-    .replace(/\s+/g, ' ')
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -52,24 +56,6 @@ function obtenerRaiz(palabra: string): string {
   return palabra.slice(0, Math.min(palabra.length, 6));
 }
 
-const SINONIMOS: Record<string, string[]> = {
-  autoriz: ["aprobar", "firmar", "validar", "completar", "despachar", "autorizar", "autorizo", "autorizacion"],
-  rechaz: ["negar", "denegar", "anular", "cancelar", "objetar", "rechazo", "rechazar"],
-  ingres: ["ingresar", "ingreso", "nueva solicitud", "crear", "formulario", "registrar"],
-  medicamento: ["farmaco", "remedio", "droga", "pastilla", "comprimido", "inhalador", "jarabe"],
-  vencid: ["urgente", "roja", "atrasada", "demorada", "plazo cumplido", "expirada", "vencida"],
-  amarill: ["pronta", "vencer", "amarilla", "tiempo", "aviso"],
-  vincul: ["repetida", "duplicada", "doble", "vigente", "misma", "anexar", "vincular"],
-  papeler: ["basura", "borrada", "eliminada", "restaurar", "recuperar", "papelera"],
-  auditor: ["historial", "reloj", "quien fue", "quien cambio", "trazabilidad", "registro", "auditoria"],
-  inventari: ["planilla", "stock master", "archivo", "subir", "cargar", "inventario", "stock", "excel"],
-  imprim: ["ticket", "impresora", "papel", "comprobante", "hoja", "imprimir", "impresion"],
-  matern: ["embarazo", "gestante", "puerpera", "matrona", "maternal", "maternales"],
-  respirat: ["era", "asma", "epoc", "salbutamol", "inhalador", "bronquial", "respiratorio", "respiratorias"],
-  acceso: ["login", "entrar", "clave", "password", "denegado", "credenciales", "acceso"],
-  calcul: ["dosis", "calcular", "horas", "dias", "asistente", "comprimidos"],
-};
-
 const STOP_WORDS = new Set([
   "como", "para", "con", "que", "una", "uno", "los", "las", "del", "por", "sobre",
   "este", "esta", "estos", "estas", "receta", "recetas", "sistema", "hago", "hacer",
@@ -80,44 +66,160 @@ const STOP_WORDS = new Set([
 ]);
 
 /**
- * Construye el System Prompt completo para alimentar a la IA de Gemini con todo el conocimiento.
+ * Saludo contextual profesional y respetuoso (sin la palabra 'colega').
  */
-function construirSystemPrompt(rolUsuario?: string): string {
-  const articulosTexto = CONOCIMIENTO_SISTEMA.map((a) => {
-    return `### TEMA: ${a.titulo} (Categoría: ${a.categoria})\nResumen: ${a.resumen}\nPasos:\n${(a.pasos || []).map((p) => `- ${p}`).join("\n")}\nDetalles clave:\n${(a.detallesImportantes || []).map((d) => `* ${d}`).join("\n")}`;
-  }).join("\n\n");
-
-  return `Eres el Asistente Experto y Colega Virtual del Sistema de Recetas de Farmacia del CESFAM Rodelillo.
-Tu función es guiar a médicos, funcionarios y químicos farmacéuticos sobre cómo utilizar la plataforma web de recetas médicas.
-El usuario actual tiene el rol: ${rolUsuario || "personal del CESFAM"}.
-
-REGLAS ESTRICTAS DE SEGURIDAD:
-1. SOLO respondes sobre el funcionamiento del software de recetas del CESFAM Rodelillo.
-2. Si el usuario te pide un diagnóstico médico, indicación de fármacos para curar una enfermedad personal, síntomas o qué remedio tomar: RECHAZA respetuosamente la consulta explicando que por normativa sanitaria no realizas recomendaciones clínicas ni diagnósticos médicos.
-3. Si el usuario te hace preguntas ajenas a la plataforma (chistes, política, clima, etc.): recuerda amablemente que eres un asistente de soporte operativo de la web de recetas.
-4. Habla con tono empático, claro, profesional, en español chileno respetuoso de salud pública (ej: boxes, sectores A y B, CECOSF, funcionarios, carteras, AVIS/Rayen).
-5. Sé directo y sintetiza las respuestas con pasos claros (1, 2, 3), evitando rodeos innecesarios.
-
-CONOCIMIENTO ACTUALIZADO DEL SISTEMA (Manual Oficial + Novedades del Código):
-${articulosTexto}
-
-NOVEDADES IMPORTANTES DEL CÓDIGO QUE DEBES CONOCER:
-- Hay 4 tipos de recetas: Controladas (rojo/púrpura), Crónicas (azul), Maternales (morado) y Respiratorias/ERA (teal).
-- Botón '✓ Solicitud Receta' (SOLICITUD_RECETA): los funcionarios pueden crear la solicitud sin saber el fármaco, y el médico lo define al autorizar.
-- Multi-medicamento: una receta puede tener varios fármacos (items[]).
-- Autorización Parcial: el médico puede autorizar unos fármacos y rechazar otros con motivo clínico individual.
-- Vincular a Receta Existente: si el paciente ya tiene receta vigente en el mismo programa, el médico puede anexar el fármaco para no duplicar recetas.
-- Formato RUT sin puntos para AVIS: 12345678-9.
-- Cifrado AES-256 en cliente de nombres y RUTs, y portal paciente con SHA-256 salted hash.`;
+function generarSaludo(rolUsuario?: string, nombreUsuario?: string): string {
+  const nombreLimpio = (nombreUsuario || "").trim().split(" ")[0];
+  if (rolUsuario === "medico") {
+    return nombreLimpio ? `Estimado/a Dr./Dra. ${nombreLimpio}:` : "Estimado/a Doctor/a:";
+  }
+  if (rolUsuario === "funcionario") {
+    return nombreLimpio ? `Hola ${nombreLimpio}:` : "Estimado/a funcionario/a:";
+  }
+  return nombreLimpio ? `Hola ${nombreLimpio}:` : "Hola, gusto en saludarte:";
 }
 
 /**
- * Consulta a la IA de Google Gemini (Free Tier) directamente desde el navegador del usuario.
+ * Detector de intenciones y situaciones específicas complejas del CESFAM.
+ */
+function analizarSituacionEspecifica(
+  queryNorm: string,
+  rolUsuario?: string,
+  nombreUsuario?: string
+): string | null {
+  const saludo = generarSaludo(rolUsuario, nombreUsuario);
+
+  // 1. Caso Candado puesto / Asignada a otro médico
+  if (
+    queryNorm.includes("candado") ||
+    queryNorm.includes("bloqueada") ||
+    (queryNorm.includes("otro") && (queryNorm.includes("medico") || queryNorm.includes("doctor"))) ||
+    queryNorm.includes("no puedo autorizar")
+  ) {
+    return `${saludo}\n\nEn el sistema, cuando una receta aparece con el icono de candado 🔒 significa que **fue asignada nominalmente a otro médico específico**.\n\n` +
+      `Por normativa de responsabilidad clínica y trazabilidad:\n` +
+      `1. **Solo el médico asignado** (o un administrador) tiene permisos para abrirla y autorizarla desde su panel.\n` +
+      `2. **Si el médico tratante no está de turno** o necesitas atender la receta de urgencia, solicita al químico farmacéutico o administrador que reasigne la receta a tu nombre desde la administración.\n` +
+      `3. Las recetas que dicen *"Sin médico asignado"* están libres y cualquier médico del sector puede tomarlas directamente.`;
+  }
+
+  // 2. Caso Solicitud Genérica / No sé o no sabe el medicamento
+  const mencionaMed = queryNorm.includes("medicamento") || queryNorm.includes("remedio") || queryNorm.includes("farmaco");
+  const mencionaDesconocimiento = queryNorm.includes("no se") || queryNorm.includes("no sabe") || queryNorm.includes("sin") || queryNorm.includes("desconoce") || queryNorm.includes("no tiene");
+  if (
+    (mencionaMed && mencionaDesconocimiento) ||
+    queryNorm.includes("solicitud generica") ||
+    queryNorm.includes("solicitud receta") ||
+    queryNorm.includes("solicitud s/med")
+  ) {
+    return `${saludo}\n\nNo te preocupes si al atender al paciente en ventanilla no conoces el medicamento exacto.\n\n` +
+      `Para eso existe la **Solicitud Genérica**:\n` +
+      `1. En el formulario de *Nueva Solicitud*, haz clic en el botón superior derecho **'⚕ Solicitud Receta'**.\n` +
+      `2. El botón cambiará a **'✓ Solicitud Receta'** y ocultará el buscador de medicamentos.\n` +
+      `3. Puedes ingresar una nota explicativa en el campo de texto (ej: *"Paciente viene a control, solicita renovación de tratamiento crónico"*).\n` +
+      `4. Al guardar, la receta queda visible para los doctores con el distintivo *'📋 Solicitud s/med'*. El médico tratante será quien seleccione el fármaco exacto, la presentación y las unidades al momento de autorizar.`;
+  }
+
+  // 3. Caso Autorización Parcial / Múltiples fármacos
+  if (
+    queryNorm.includes("parcial") ||
+    queryNorm.includes("rechazar solo uno") ||
+    queryNorm.includes("rechazar un medicamento") ||
+    queryNorm.includes("algunos si y otros no") ||
+    queryNorm.includes("multiples farmacos") ||
+    queryNorm.includes("dos medicamentos")
+  ) {
+    return `${saludo}\n\nEl sistema permite recetas con múltiples fármacos (` + "`items`" + `) y soporta **Autorización Parcial**:\n\n` +
+      `Si una receta contiene varios medicamentos y uno de ellos no corresponde o no tiene indicación clínica:\n` +
+      `1. No es necesario rechazar toda la receta. En la ventana de decisión médica verás la lista de cada uno de los medicamentos.\n` +
+      `2. Puedes marcar individualmente como **'Rechazado'** solo el fármaco que no procede y escribir su motivo clínico obligatorio.\n` +
+      `3. Mantén los demás medicamentos válidos como **'Autorizados'** con su cantidad correspondiente.\n` +
+      `4. Al confirmar, la receta pasa a estado *Completada* con el badge ámbar **'Parcial (X de Y autorizados)'**.\n` +
+      `5. En el Ticket impreso saldrán normalmente los medicamentos aprobados para retiro y saldrá tachado en rojo el rechazado con su motivo clínico.`;
+  }
+
+  // 4. Caso Detección de Recetas Vigentes / Vincular
+  if (
+    queryNorm.includes("vincular") ||
+    queryNorm.includes("receta vigente") ||
+    queryNorm.includes("duplicada") ||
+    queryNorm.includes("ya tiene receta") ||
+    queryNorm.includes("misma receta")
+  ) {
+    return `${saludo}\n\nEl sistema cuenta con un motor de prevención de duplicidad por RUT:\n\n` +
+      `• **Si el paciente ya tiene una receta activa en el MISMO programa (ej: Crónicas):** Aparecerá un banner amarillo de advertencia. Si eres médico, verás el botón **'Vincular a Receta Existente'**. Al presionarlo, el sistema anexará el nuevo fármaco a la receta previa en lugar de crear un duplicado innecesario.\n` +
+      `• **Si la receta activa es de OTRO programa (ej: es Crónico y ahora consulta por Maternal o ERA):** El sistema muestra un aviso informativo de antecedentes, pero permite crear la solicitud independiente sin bloquear el ingreso.\n\n` +
+      `💡 Esto asegura que no se dupliquen entregas de stock ni se emitan tickets paralelos para un mismo paciente.`;
+  }
+
+  // 5. Caso Impresión de Ticket
+  if (
+    queryNorm.includes("imprimir ticket") ||
+    queryNorm.includes("no puedo imprimir") ||
+    queryNorm.includes("no sale la impresora") ||
+    queryNorm.includes("comprobante de receta")
+  ) {
+    return `${saludo}\n\nRespecto a la impresión del comprobante:\n\n` +
+      `1. **Requisito indispensable:** El botón de la impresora (azul) **solo está disponible cuando la receta está en estado 'Completado'** (ya autorizada por un médico). No se pueden imprimir recetas en estado *Pendiente* ni *Rechazado*.\n` +
+      `2. **Cómo imprimir:** En la tabla de la cartera, pasa el cursor sobre la fila del paciente y presiona el botón azul con icono de impresora.\n` +
+      `3. Se abrirá la vista previa del ticket con los datos del paciente, sector, fármacos autorizados y espacio de firma.\n` +
+      `4. Si la receta tuvo autorización parcial, el medicamento no autorizado saldrá tachado con su motivo médico para total claridad en el mesón de entrega.`;
+  }
+
+  // 6. Caso Alertas de Colores y Plazos
+  if (
+    queryNorm.includes("alerta roja") ||
+    queryNorm.includes("por que sale rojo") ||
+    queryNorm.includes("receta vencida") ||
+    queryNorm.includes("alerta amarilla") ||
+    queryNorm.includes("contador rojo")
+  ) {
+    return `${saludo}\n\nLos colores del tablero te indican la urgencia de atención de cada receta:\n\n` +
+      `• 🔴 **Alerta Roja / Vencida:** La solicitud ya superó la fecha límite fijada o lleva más de 5 días activa sin resolverse (tiempo configurable por el administrador). Requiere atención médica inmediata. Además, las pestañas muestran un contador numérico rojo pulsante para indicar cuántas urgencias hay en ese sector.\n` +
+      `• 🟡 **Alerta Amarilla:** La receta está a 3 días o menos de alcanzar su límite de espera. Conviene revisarla antes de que pase a zona crítica.\n` +
+      `• 🟢 **Verde / Completada:** Receta debidamente revisada y autorizada por el médico tratante, lista para impresión y entrega.`;
+  }
+
+  // 7. Caso Asistente de Cálculo de Dosis
+  if (
+    queryNorm.includes("asistente de calculo") ||
+    queryNorm.includes("calcular dosis") ||
+    queryNorm.includes("cada 8 horas") ||
+    queryNorm.includes("cuantas unidades despachar") ||
+    queryNorm.includes("calcular cantidad")
+  ) {
+    return `${saludo}\n\nPara evitar errores de dosificación o cálculo manual de cajas:\n\n` +
+      `1. En la ventana de decisión médica, haz clic en **'Asistente de cálculo'**.\n` +
+      `2. Ingresa la dosis por toma (ej: 1 comprimido).\n` +
+      `3. Selecciona la frecuencia en horas (ej: cada 8 horas = 3 veces al día; cada 12 horas = 2 veces al día).\n` +
+      `4. Indica el periodo en días (ej: 30 días).\n` +
+      `5. El sistema multiplica automáticamente (ej: 1 × 3 tomas/día × 30 días = 90 unidades) y completa la casilla de cantidad a despachar.`;
+  }
+
+  // 8. Caso Problemas de Stock o Inventario
+  if (
+    queryNorm.includes("stock en rojo") ||
+    queryNorm.includes("sin stock") ||
+    queryNorm.includes("medicamento agotado") ||
+    queryNorm.includes("subir excel")
+  ) {
+    return `${saludo}\n\nSobre el stock y disponibilidad en farmacia:\n\n` +
+      `• **Colores de stock:** En la lista de inventario, el verde indica stock suficiente, el amarillo stock bajo (10 unidades o menos) y el rojo stock agotado (0 unidades).\n` +
+      `• **Al autorizar:** Si un medicamento no tiene stock suficiente, se debe coordinar con el químico farmacéutico o elegir un equivalente disponible.\n` +
+      `• **Para reponer inventario:** El químico farmacéutico o administrador debe ir a la pestaña *'Inventario (Stock)'*, hacer clic en *'Subir Excel (Stock Master)'* y cargar la planilla oficial actualizada.`;
+  }
+
+  return null;
+}
+
+/**
+ * Consulta a la IA de Google Gemini (Free Tier) si hay clave configurada en el entorno.
  */
 export async function consultarGeminiIA(
   consulta: string,
   apiKey: string,
-  rolUsuario?: "medico" | "funcionario" | "admin"
+  rolUsuario?: "medico" | "funcionario" | "admin",
+  nombreUsuario?: string
 ): Promise<MensajeIA> {
   const chequeoSeguridad = verificarSeguridadYContexto(consulta);
   if (!chequeoSeguridad.permitido) {
@@ -133,6 +235,22 @@ export async function consultarGeminiIA(
     };
   }
 
+  const articulosTexto = CONOCIMIENTO_SISTEMA.map((a) => {
+    return `### TEMA: ${a.titulo} (Categoría: ${a.categoria})\nResumen: ${a.resumen}\nPasos:\n${(a.pasos || []).map((p) => `- ${p}`).join("\n")}\nDetalles clave:\n${(a.detallesImportantes || []).map((d) => `* ${d}`).join("\n")}`;
+  }).join("\n\n");
+
+  const systemPrompt = `Eres el Asistente Experto del Sistema de Recetas de Farmacia del CESFAM Rodelillo.
+Tu función es guiar a médicos y funcionarios sobre el funcionamiento de la web de recetas.
+El usuario es: ${nombreUsuario ? nombreUsuario + " (" + rolUsuario + ")" : rolUsuario || "personal del CESFAM"}.
+
+REGLAS DE COMUNICACIÓN Y SEGURIDAD:
+1. NUNCA uses la palabra 'colega'. Trata con respeto profesional: si es médico, dirígete como 'Doctor/a' o 'Dr./Dra.'. Si es funcionario, dirígete cordialmente por su nombre o como 'funcionario/a'.
+2. SOLO respondes sobre el software de recetas del CESFAM Rodelillo.
+3. Si el usuario pide un diagnóstico clínico o recomendaciones de fármacos para enfermedades personales, RECHAZA indicando que por seguridad sanitaria no realizas recomendaciones clínicas.
+4. Responde de forma clara, empática, directa y estructurada (1, 2, 3).
+
+BASE DE CONOCIMIENTO:\n${articulosTexto}`;
+
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}`;
 
   try {
@@ -140,33 +258,20 @@ export async function consultarGeminiIA(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: consulta }],
-          },
-        ],
-        systemInstruction: {
-          parts: [{ text: construirSystemPrompt(rolUsuario) }],
-        },
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 800,
-        },
+        contents: [{ role: "user", parts: [{ text: consulta }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: { temperature: 0.3, maxOutputTokens: 800 },
       }),
     });
 
     if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      console.warn("[Gemini API Error]", errData);
-      // Si la clave es inválida o falla, usar fallback local fluido
-      return consultarModoConversacionalLocal(consulta, rolUsuario);
+      return consultarModoConversacionalLocal(consulta, rolUsuario, nombreUsuario);
     }
 
     const data = await response.json();
     const textoRespuesta =
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "No pude generar una respuesta en este momento. Por favor reformula tu consulta.";
+      "No pude procesar la consulta en este momento.";
 
     return {
       texto: textoRespuesta,
@@ -174,19 +279,20 @@ export async function consultarGeminiIA(
       fuente: "gemini_ia",
       sugerencias: obtenerSugerenciasPorRol(rolUsuario),
     };
-  } catch (error) {
-    console.error("[Gemini Connection Error]", error);
-    return consultarModoConversacionalLocal(consulta, rolUsuario);
+  } catch {
+    return consultarModoConversacionalLocal(consulta, rolUsuario, nombreUsuario);
   }
 }
 
 /**
- * Modo Conversacional Local: Sintetiza una respuesta humana, amigable y explicada en lenguaje natural
- * sin necesidad de internet ni APIs externas.
+ * Modo Conversacional Local Inteligente: Razona situaciones clínicas y operativas del CESFAM
+ * en lenguaje natural humano sin requerir internet ni APIs externas.
  */
 export function consultarModoConversacionalLocal(
   consulta: string,
-  rolUsuario?: "medico" | "funcionario" | "admin"
+  rolUsuario?: "medico" | "funcionario" | "admin",
+  nombreUsuario?: string,
+  historial?: TurnoHistorial[]
 ): MensajeIA {
   const chequeoSeguridad = verificarSeguridadYContexto(consulta);
   if (!chequeoSeguridad.permitido) {
@@ -204,19 +310,42 @@ export function consultarModoConversacionalLocal(
 
   const queryNorm = normalizarTexto(consulta);
   if (!queryNorm || queryNorm.length < 2) {
+    const saludo = generarSaludo(rolUsuario, nombreUsuario);
     return {
-      texto: "¡Hola! Por favor cuéntame qué necesitas saber sobre el sistema de recetas del CESFAM (por ejemplo: cómo autorizar recetas, qué hacer con las alertas rojas o cómo ingresar un paciente).",
+      texto: `${saludo} Por favor cuéntame qué duda tienes sobre el sistema de recetas (por ejemplo: cómo autorizar recetas, qué hacer con recetas que tienen candado o cómo ingresar pacientes en ventanilla).`,
       tipo: "sin_resultados",
       fuente: "motor_local",
       sugerencias: obtenerSugerenciasPorRol(rolUsuario),
     };
   }
 
-  const palabras = queryNorm.split(" ").filter((w) => w.length >= 2);
+  // 1. Análisis de situaciones específicas y casos complejos
+  const respuestaSituacion = analizarSituacionEspecifica(queryNorm, rolUsuario, nombreUsuario);
+  if (respuestaSituacion) {
+    return {
+      texto: respuestaSituacion,
+      tipo: "exito",
+      fuente: "motor_local",
+      sugerencias: obtenerSugerenciasPorRol(rolUsuario),
+    };
+  }
+
+  // 2. Consideración de contexto del historial previo de la conversación
+  let queryEnriquecida = queryNorm;
+  if (historial && historial.length > 0) {
+    const ultimoMensajeUsuario = historial
+      .filter((h) => h.remitente === "usuario")
+      .slice(-2)
+      .map((h) => normalizarTexto(h.texto))
+      .join(" ");
+    queryEnriquecida = `${ultimoMensajeUsuario} ${queryNorm}`;
+  }
+
+  const palabras = queryEnriquecida.split(" ").filter((w) => w.length >= 3);
   const terminosClave = palabras.filter((w) => !STOP_WORDS.has(w));
   const raicesUsuario = terminosClave.map(obtenerRaiz);
 
-  // Puntuación semántica
+  // 3. Puntuación semántica ponderada
   const puntuados = CONOCIMIENTO_SISTEMA.map((art) => {
     let score = 0;
     const tituloNorm = normalizarTexto(art.titulo);
@@ -227,7 +356,6 @@ export function consultarModoConversacionalLocal(
     if (queryNorm.length > 5 && tituloNorm.includes(queryNorm)) score += 60;
     if (queryNorm.length > 5 && resumenNorm.includes(queryNorm)) score += 30;
 
-    // Coincidencia exacta de frase o palabras clave compuestas (ej: "no se el medicamento", "solicitud generica")
     for (const kw of keywordsNorm) {
       if (kw.length >= 4 && (queryNorm.includes(kw) || kw.includes(queryNorm))) {
         score += 80;
@@ -238,14 +366,6 @@ export function consultarModoConversacionalLocal(
       if (obtenerRaiz(tituloNorm).includes(raiz) || tituloNorm.includes(raiz)) score += 35;
       if (raicesArticulo.some((r) => r.includes(raiz) || raiz.includes(r))) score += 30;
       if (resumenNorm.includes(raiz)) score += 15;
-
-      for (const [clave, lista] of Object.entries(SINONIMOS)) {
-        if (clave === raiz || lista.some((s) => s.includes(raiz) || raiz.includes(s))) {
-          if (art.palabrasClave.some((k) => lista.includes(normalizarTexto(k)))) {
-            score += 25;
-          }
-        }
-      }
     }
 
     if (rolUsuario) {
@@ -262,8 +382,9 @@ export function consultarModoConversacionalLocal(
     .map((item) => item.articulo);
 
   if (resultados.length === 0) {
+    const saludo = generarSaludo(rolUsuario, nombreUsuario);
     return {
-      texto: "No tengo registrado un procedimiento exacto para esa consulta. Te recomiendo revisar si tu duda se relaciona con autorizaciones médicas, ingreso de solicitudes, alertas de plazos o inventario.",
+      texto: `${saludo}\n\nNo tengo un procedimiento registrado para esa consulta específica. Por favor verifica si tu duda se relaciona con autorizaciones en Mi Panel, ingreso de solicitudes, alertas de colores o gestión de stock.`,
       tipo: "sin_resultados",
       fuente: "motor_local",
       sugerencias: obtenerSugerenciasPorRol(rolUsuario),
@@ -271,16 +392,12 @@ export function consultarModoConversacionalLocal(
   }
 
   const art = resultados[0];
-  
-  // Construcción de respuesta fluida en lenguaje natural humano
-  const saludo = rolUsuario === "medico" ? "Hola doctor/a." : rolUsuario === "funcionario" ? "Hola." : "Hola estimado/a colega.";
-  let respuestaHumana = `${saludo} Con gusto te oriento con respecto a tu consulta:\n\n`;
-  respuestaHumana += `${art.resumen}\n\n`;
+  const saludo = generarSaludo(rolUsuario, nombreUsuario);
+  let respuestaHumana = `${saludo}\n\n${art.resumen}\n\n`;
 
   if (art.pasos && art.pasos.length > 0) {
-    respuestaHumana += `**El procedimiento paso a paso es:**\n`;
+    respuestaHumana += `**Pasos a seguir:**\n`;
     art.pasos.forEach((p, idx) => {
-      // Limpiar prefijo 1., 2. si ya viene en el texto
       const pasoLimpio = p.replace(/^\d+\.\s*/, "");
       respuestaHumana += `${idx + 1}. ${pasoLimpio}\n`;
     });
@@ -288,7 +405,7 @@ export function consultarModoConversacionalLocal(
   }
 
   if (art.detallesImportantes && art.detallesImportantes.length > 0) {
-    respuestaHumana += `💡 **Detalle importante a tener en cuenta:**\n`;
+    respuestaHumana += `💡 **A tener en cuenta:**\n`;
     art.detallesImportantes.forEach((d) => {
       respuestaHumana += `• ${d}\n`;
     });
@@ -304,25 +421,28 @@ export function consultarModoConversacionalLocal(
 }
 
 /**
- * Función principal que decide si llamar a Gemini o al motor conversacional local.
+ * Función principal que procesa la consulta con memoria de contexto e inteligencia situada.
  */
 export async function procesarPreguntaAsistente(
   consulta: string,
   rolUsuario?: "medico" | "funcionario" | "admin",
-  apiKeyPersonal?: string
+  nombreUsuario?: string,
+  historial?: TurnoHistorial[]
 ): Promise<MensajeIA> {
-  // 1. Revisar si hay API key en variable de entorno o en localStorage
+  const envKey =
+    typeof import.meta !== "undefined" && import.meta.env
+      ? import.meta.env.VITE_GEMINI_API_KEY
+      : undefined;
+
   const apiKey =
-    apiKeyPersonal ||
-    (typeof window !== "undefined" ? localStorage.getItem("cesfam_gemini_api_key") : null) ||
-    (typeof import.meta !== "undefined" && import.meta.env ? import.meta.env.VITE_GEMINI_API_KEY : undefined);
+    envKey ||
+    (typeof window !== "undefined" ? localStorage.getItem("cesfam_gemini_api_key") : null);
 
   if (apiKey && apiKey.trim().length > 10) {
-    return await consultarGeminiIA(consulta, apiKey.trim(), rolUsuario);
+    return await consultarGeminiIA(consulta, apiKey.trim(), rolUsuario, nombreUsuario);
   }
 
-  // 2. Si no hay API key, utilizar el motor conversacional local estructurado
-  return consultarModoConversacionalLocal(consulta, rolUsuario);
+  return consultarModoConversacionalLocal(consulta, rolUsuario, nombreUsuario, historial);
 }
 
 /**
@@ -335,16 +455,17 @@ export function obtenerSugerenciasPorRol(
     return [
       "¿Cómo autorizo una receta médica en Mi Panel?",
       "¿Qué es la 'Autorización Parcial' y cómo funciona con múltiples medicamentos?",
-      "¿Cómo funciona la detección de recetas vigentes y la opción 'Vincular'?",
-      "¿Cómo usar el Asistente de Cálculo de Dosis?",
+      "¿Por qué una receta me sale con candado 🔒?",
+      "¿Cómo funciona la opción de 'Vincular a Receta Existente'?",
+      "¿Cómo uso el Asistente de Cálculo de Dosis?",
     ];
   }
   if (rol === "funcionario") {
     return [
-      "¿Cómo ingresar una nueva solicitud de receta?",
-      "¿Qué es el botón '✓ Solicitud Receta' (Solicitud Genérica)?",
-      "¿Cómo funcionan las pestañas Maternales y Respiratorias (ERA)?",
-      "¿Cómo y cuándo se puede imprimir el ticket de receta?",
+      "¿Cómo ingreso una receta con el botón '✓ Solicitud Receta'?",
+      "¿Cómo ingresar recetas en Maternales o Respiratorias (ERA)?",
+      "¿Qué hago si sale advertencia de paciente con recetas vigentes?",
+      "¿Cómo imprimo el ticket de una receta completada?",
     ];
   }
   return [
