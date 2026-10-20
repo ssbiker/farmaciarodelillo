@@ -303,6 +303,88 @@ export const CONOCIMIENTO_SISTEMA: ArticuloConocimiento[] = [
 
   // ─── CONSULTAS DE ESTADO Y BÚSQUEDA ──────────────────────────
   {
+    id: "estado-receta-rechazada",
+    titulo: "¿Cómo saber si una receta fue rechazada y qué significa?",
+    categoria: "recetas",
+    rolesRelevantes: ["todos"],
+    palabrasClave: [
+      "como saber si esta rechazada",
+      "receta rechazada",
+      "saber si la rechazaron",
+      "fue rechazada",
+      "estado rechazado",
+      "rechazo",
+      "motivo de rechazo",
+      "por que fue rechazada",
+      "como veo si la rechazaron",
+      "rechazada",
+      "rechazado"
+    ],
+    resumen: "Cuando una receta pasa a estado Rechazado, significa que el médico evaluó la solicitud y determinó que no procede autorizarla:",
+    pasos: [
+      "1. Columna Estado: En la tabla de la cartera, la fila muestra el badge gris 'Rechazado'.",
+      "2. Motivo del Rechazo: Al hacer clic en la receta o pasar el cursor, verás el motivo redactado por el médico (ej: 'Requiere control presencial', 'Dosis inadecuada').",
+      "3. Impresión inhabilitada: Las recetas rechazadas no se pueden imprimir (el botón de impresora permanece bloqueado).",
+      "4. Devolución de Stock: Si la solicitud había reservado o descontado stock, el sistema lo reintegra automáticamente al inventario sin pérdidas.",
+      "5. En el mesón: El funcionario puede consultar el motivo exacto para orientar al paciente sobre los pasos a seguir (ej: solicitar hora médica)."
+    ],
+    detallesImportantes: [
+      "El motivo del rechazo queda registrado en el Historial de Auditoría con fecha, hora y firma del médico."
+    ]
+  },
+  {
+    id: "estado-receta-pendiente",
+    titulo: "¿Qué significa que una receta esté en estado 'Pendiente' y quién la atiende?",
+    categoria: "recetas",
+    rolesRelevantes: ["todos"],
+    palabrasClave: [
+      "receta pendiente",
+      "estado pendiente",
+      "como saber si esta pendiente",
+      "por que sigue pendiente",
+      "esperando medico",
+      "sin revisar",
+      "pendiente",
+      "no la han visto"
+    ],
+    resumen: "El estado Pendiente (badge azul) indica que la solicitud fue ingresada exitosamente pero aún no ha sido resuelta por un facultativo:",
+    pasos: [
+      "1. Columna Estado: Muestra el badge azul 'Pendiente'.",
+      "2. Alertas de color: Si la receta lleva varios días sin atención, cambiará automáticamente a Alerta Amarilla o Alerta Roja.",
+      "3. Quién la resuelve: Si dice 'Sin médico asignado', cualquier médico del sector puede abrirla en 'Mi Panel'. Si tiene candado 🔒, solo el médico asignado o el administrador.",
+      "4. Filtro rápido: Puedes seleccionar el filtro 'Pendientes' arriba de la tabla para ver únicamente las recetas que esperan revisión médica."
+    ],
+    detallesImportantes: [
+      "Los funcionarios pueden ver el estado pero no pueden autorizar; la autorización es un acto exclusivamente médico."
+    ]
+  },
+  {
+    id: "auto-renovacion-meses",
+    titulo: "¿Cómo funciona la Auto-Renovación de recetas y el descuento mensual de stock?",
+    categoria: "recetas",
+    rolesRelevantes: ["medico", "admin", "funcionario"],
+    palabrasClave: [
+      "auto renovacion",
+      "renovacion automatica",
+      "renovar receta",
+      "meses renovacion",
+      "ciclo",
+      "descuento mensual",
+      "cronicos renovacion",
+      "mes siguiente"
+    ],
+    resumen: "La Auto-Renovación permite dispensar tratamientos crónicos estables por varios meses sin que el paciente requiera una nueva receta cada mes:",
+    pasos: [
+      "1. Configuración médica: Al autorizar una receta en 'Mi Panel', el médico puede seleccionar entre 1 y 6 meses de auto-renovación.",
+      "2. Descuento automático: El sistema descuenta las unidades correspondientes al inicio de cada mes de forma automática.",
+      "3. Trazabilidad: Cada ciclo queda asentado en el historial de la receta.",
+      "4. Fin del ciclo: Cumplido el período autorizado, la receta expira o vuelve a estado de revisión médica para control clínico."
+    ],
+    detallesImportantes: [
+      "Asegura la adherencia al tratamiento de pacientes crónicos (hipertensos, diabéticos) descongestionando las ventanillas de solicitud."
+    ]
+  },
+  {
     id: "estado-receta-completada",
     titulo: "¿Cómo saber si una receta está completada o autorizada?",
     categoria: "recetas",
@@ -317,7 +399,8 @@ export const CONOCIMIENTO_SISTEMA: ArticuloConocimiento[] = [
       "como se si la autorizaron",
       "donde veo si ya esta lista",
       "completada",
-      "completado"
+      "completado",
+      "autorizada"
     ],
     resumen: "Para verificar si una receta ya fue autorizada por el médico y está lista para despacho:",
     pasos: [

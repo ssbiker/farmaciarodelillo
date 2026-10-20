@@ -32,6 +32,39 @@ interface ChatItem {
   sugerencias?: string[];
 }
 
+/**
+ * Renderizador de texto para formatear negritas (**texto**) y saltos de línea cleanly.
+ */
+function FormatoTextoIA({ texto }: { texto: string }) {
+  const lineas = texto.split("\n");
+  return (
+    <div className="space-y-1.5 leading-relaxed">
+      {lineas.map((linea, idx) => {
+        if (!linea.trim()) {
+          return <div key={idx} className="h-1.5" />;
+        }
+
+        const partes = linea.split(/(\*\*[^*]+\*\*)/g);
+
+        return (
+          <p key={idx} className="m-0">
+            {partes.map((p, pIdx) => {
+              if (p.startsWith("**") && p.endsWith("**")) {
+                return (
+                  <strong key={pIdx} className="font-bold text-[#0F1B35]">
+                    {p.slice(2, -2)}
+                  </strong>
+                );
+              }
+              return p;
+            })}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 export function AsistenteFlotante({
   farmaciaUser,
   isMedico = false,
@@ -73,7 +106,7 @@ export function AsistenteFlotante({
         {
           id: "bienvenida",
           remitente: "asistente",
-          texto: `${saludoInicial} Soy el Asistente del Sistema de Recetas de Farmacia del CESFAM Rodelillo.\n\nPuedes consultarme con tus propias palabras cualquier duda o situación del sistema: autorizaciones, recetas con candado 🔒, cómo usar el botón "Solicitud Receta" sin medicamento, rechazos parciales o inventario.`,
+          texto: `${saludoInicial} Soy el Asistente del Sistema de Recetas de Farmacia del CESFAM Rodelillo.\n\nPuedes consultarme con tus propias palabras cualquier duda del sistema: autorizaciones, recetas con candado 🔒, cómo saber si una receta está rechazada o completada, solicitudes sin medicamento o inventario.`,
           sugerencias: obtenerSugerenciasPorRol(rolDetectado),
         },
       ]);
@@ -227,14 +260,14 @@ export function AsistenteFlotante({
             <div className="flex items-center gap-1">
               <button
                 onClick={limpiarChat}
-                className="p-1.5 hover:bg-white/20 rounded-full transition-colors text-white/80 hover:text-white"
+                className="p-1.5 hover:bg-white/20 rounded-full transition-colors text-white/80 hover:text-white cursor-pointer"
                 title="Reiniciar chat"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setAbierto(false)}
-                className="p-1.5 hover:bg-white/20 rounded-full transition-colors text-white/80 hover:text-white"
+                className="p-1.5 hover:bg-white/20 rounded-full transition-colors text-white/80 hover:text-white cursor-pointer"
                 title="Cerrar asistente"
               >
                 <X className="w-5 h-5" />
@@ -246,7 +279,7 @@ export function AsistenteFlotante({
           <div className="flex items-center gap-1 p-2 bg-[#F8FAFF] border-b border-[#DDE6F5] text-xs font-semibold overflow-x-auto flex-shrink-0">
             <button
               onClick={() => setCategoriaTab("chat")}
-              className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                 categoriaTab === "chat"
                   ? "bg-white text-brand-blue shadow-sm border border-[#DDE6F5] font-bold"
                   : "text-[#5D7299] hover:bg-white/60"
@@ -257,7 +290,7 @@ export function AsistenteFlotante({
             </button>
             <button
               onClick={() => setCategoriaTab("medico")}
-              className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                 categoriaTab === "medico"
                   ? "bg-white text-brand-blue shadow-sm border border-[#DDE6F5] font-bold"
                   : "text-[#5D7299] hover:bg-white/60"
@@ -268,7 +301,7 @@ export function AsistenteFlotante({
             </button>
             <button
               onClick={() => setCategoriaTab("funcionario")}
-              className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                 categoriaTab === "funcionario"
                   ? "bg-white text-amber-700 shadow-sm border border-amber-200 font-bold"
                   : "text-[#5D7299] hover:bg-white/60"
@@ -279,7 +312,7 @@ export function AsistenteFlotante({
             </button>
             <button
               onClick={() => setCategoriaTab("temas")}
-              className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                 categoriaTab === "temas"
                   ? "bg-white text-brand-purple shadow-sm border border-brand-purple/20 font-bold"
                   : "text-[#5D7299] hover:bg-white/60"
@@ -299,7 +332,7 @@ export function AsistenteFlotante({
                   <button
                     key={art.id}
                     onClick={() => handleEnviar(art.titulo)}
-                    className="w-full text-left p-3 rounded-2xl bg-white border border-[#DDE6F5] hover:border-brand-blue hover:shadow-sm transition-all text-xs font-bold text-[#0F1B35] flex items-center justify-between"
+                    className="w-full text-left p-3 rounded-2xl bg-white border border-[#DDE6F5] hover:border-brand-blue hover:shadow-sm transition-all text-xs font-bold text-[#0F1B35] flex items-center justify-between cursor-pointer"
                   >
                     <span>{art.titulo}</span>
                     <span className="text-[10px] text-brand-blue bg-brand-blue/10 px-2 py-0.5 rounded-full font-bold">
@@ -321,7 +354,7 @@ export function AsistenteFlotante({
                   <button
                     key={i}
                     onClick={() => handleEnviar(p)}
-                    className="w-full text-left p-2.5 rounded-xl bg-white border border-[#DDE6F5] hover:border-brand-blue text-xs font-semibold text-[#0F1B35] transition-all"
+                    className="w-full text-left p-2.5 rounded-xl bg-white border border-[#DDE6F5] hover:border-brand-blue text-xs font-semibold text-[#0F1B35] transition-all cursor-pointer"
                   >
                     {p}
                   </button>
@@ -331,6 +364,7 @@ export function AsistenteFlotante({
               <div className="space-y-2">
                 <p className="text-xs font-bold text-amber-700 px-1">Preguntas habituales para Funcionarios:</p>
                 {[
+                  "¿Cómo saber si una receta está rechazada o completada?",
                   "¿Qué hago si no sé el medicamento al ingresar una solicitud?",
                   "¿Cómo ingresar recetas en Maternales o Respiratorias (ERA)?",
                   "¿Qué hago si sale advertencia de paciente con recetas vigentes?",
@@ -340,7 +374,7 @@ export function AsistenteFlotante({
                   <button
                     key={i}
                     onClick={() => handleEnviar(p)}
-                    className="w-full text-left p-2.5 rounded-xl bg-white border border-[#DDE6F5] hover:border-amber-400 text-xs font-semibold text-[#0F1B35] transition-all"
+                    className="w-full text-left p-2.5 rounded-xl bg-white border border-[#DDE6F5] hover:border-amber-400 text-xs font-semibold text-[#0F1B35] transition-all cursor-pointer"
                   >
                     {p}
                   </button>
@@ -365,19 +399,19 @@ export function AsistenteFlotante({
                       </div>
                       <div className="flex-1 space-y-2">
                         <div
-                          className={`p-4 rounded-2xl rounded-tl-sm text-xs leading-relaxed shadow-sm whitespace-pre-wrap ${
+                          className={`p-4 rounded-2xl rounded-tl-sm text-xs leading-relaxed shadow-sm ${
                             m.tipo === "seguridad"
                               ? "bg-amber-50 border border-amber-300 text-amber-900"
                               : "bg-white border border-[#DDE6F5] text-[#0F1B35]"
                           }`}
                         >
                           {m.tipo === "seguridad" && (
-                            <div className="flex items-center gap-1.5 font-black text-amber-800 mb-1.5">
+                            <div className="flex items-center gap-1.5 font-black text-amber-800 mb-2">
                               <AlertTriangle className="w-4 h-4 text-amber-600" />
                               Límite de Seguridad del Sistema
                             </div>
                           )}
-                          <div className="font-normal leading-relaxed">{m.texto}</div>
+                          <FormatoTextoIA texto={m.texto} />
                         </div>
 
                         {m.sugerencias && m.sugerencias.length > 0 && (
@@ -388,7 +422,7 @@ export function AsistenteFlotante({
                                 <button
                                   key={sIdx}
                                   onClick={() => handleEnviar(sug)}
-                                  className="text-[11px] bg-white border border-[#DDE6F5] hover:border-brand-blue text-[#0F1B35] px-2.5 py-1 rounded-full font-medium transition-all text-left shadow-2xs hover:shadow-xs"
+                                  className="text-[11px] bg-white border border-[#DDE6F5] hover:border-brand-blue text-[#0F1B35] px-2.5 py-1 rounded-full font-medium transition-all text-left shadow-2xs hover:shadow-xs cursor-pointer"
                                 >
                                   {sug}
                                 </button>
