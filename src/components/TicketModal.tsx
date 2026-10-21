@@ -1,6 +1,6 @@
 import { X, Printer } from "lucide-react";
 import type { Receta } from "../types";
-import { getItemsDeReceta, formatRut, esAutorizacionParcial } from "../lib/recetaHelpers";
+import { getItemsDeReceta, formatRut, esAutorizacionParcial, esPackCronicos } from "../lib/recetaHelpers";
 
 export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () => void }) {
   const formatDate = (ts: any) => {
@@ -83,28 +83,39 @@ export function TicketModal({ receta, onClose }: { receta: Receta; onClose: () =
               <div className="space-y-2">
                 {getItemsDeReceta(receta).map((it, idx) => {
                   const isRechazado = it.estadoItem === "rechazado";
+                  const isPack = esPackCronicos(it);
                   return (
                     <div 
                       key={idx} 
                       className={`flex justify-between items-center p-2.5 rounded-xl border ${
                         isRechazado 
                           ? "bg-red-50/70 border-red-200" 
+                          : isPack
+                          ? "bg-emerald-50/80 border-emerald-300 shadow-sm"
                           : "bg-white/80 border-brand-purple/20"
                       }`}
                     >
                       <div className="flex-1 min-w-0 pr-2">
-                        <span className={`font-bold text-sm block ${isRechazado ? "text-red-700 line-through" : "text-[#0F1B35]"}`}>
-                          {it.medicamento === "SOLICITUD_RECETA" ? "Solicitud sin med. asignado" : it.medicamento}
+                        <span className={`font-bold text-sm block ${isRechazado ? "text-red-700 line-through" : isPack ? "text-emerald-950 font-black" : "text-[#0F1B35]"}`}>
+                          {isPack ? "📦 Pack Crónicos (Tratamiento AVIS)" : it.medicamento === "SOLICITUD_RECETA" ? "Solicitud sin med. asignado" : it.medicamento}
                         </span>
-                        {isRechazado && (
+                        {isPack ? (
+                          <span className="text-[11px] font-semibold text-emerald-800 block mt-0.5">
+                            Despacho multifármaco según indicación activa en Ficha Clínica AVIS
+                          </span>
+                        ) : isRechazado ? (
                           <span className="text-[11px] font-semibold text-red-600 block mt-0.5">
                             ❌ NO DESPACHAR — Rechazado: {it.motivoRechazoItem || "No pertinente"}
                           </span>
-                        )}
+                        ) : null}
                       </div>
                       {isRechazado ? (
                         <span className="font-extrabold text-[10px] text-red-700 bg-red-100 px-2 py-0.5 rounded-lg border border-red-300 flex-shrink-0">
                           Rechazado
+                        </span>
+                      ) : isPack ? (
+                        <span className="font-extrabold text-xs text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-lg border border-emerald-300 flex-shrink-0">
+                          Pack AVIS
                         </span>
                       ) : it.cantidad > 0 ? (
                         <span className="font-extrabold text-xs text-brand-blue bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200 flex-shrink-0">

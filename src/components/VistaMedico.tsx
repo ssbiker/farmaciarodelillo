@@ -4,7 +4,7 @@ import { CheckCircle2, Clock, XCircle, AlertCircle, Stethoscope, Pill, ArrowRigh
 import { RecetaModal } from "./RecetaModal";
 import { AuditoriaDrawer } from "./AuditoriaDrawer";
 import { RutBadge } from "./RutBadge";
-import { getItemsDeReceta, esAutorizacionParcial, contarItemsAutorizados } from "../lib/recetaHelpers";
+import { getItemsDeReceta, esAutorizacionParcial, contarItemsAutorizados, esPackCronicos } from "../lib/recetaHelpers";
 
 function formatDate(ts: any): string {
   if (!ts) return "—";
@@ -81,11 +81,15 @@ function RecetaCard({ receta, config, onAction, onAuditoria }: { receta: Receta;
           const items = getItemsDeReceta(receta);
           const first = items[0] || { medicamento: receta.medicamento, cantidad: receta.cantidad };
           const extra = items.length - 1;
-          const itemsTooltip = items.map((it, idx) => `${idx + 1}. ${it.medicamento === "SOLICITUD_RECETA" ? "Solicitud s/med" : it.medicamento}${it.cantidad ? ` ×${it.cantidad}` : ""}${it.estadoItem === "rechazado" ? ` (Rechazado: ${it.motivoRechazoItem || "No pertinente"})` : ""}`).join("\n");
+          const itemsTooltip = items.map((it, idx) => `${idx + 1}. ${it.medicamento === "SOLICITUD_RECETA" ? "Solicitud s/med" : esPackCronicos(it) ? "Pack Crónicos (AVIS)" : it.medicamento}${it.cantidad ? ` ×${it.cantidad}` : ""}${it.estadoItem === "rechazado" ? ` (Rechazado: ${it.motivoRechazoItem || "No pertinente"})` : ""}`).join("\n");
 
           return (
             <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-              {first.medicamento === "SOLICITUD_RECETA" ? (
+              {esPackCronicos(first) ? (
+                <span className="text-[11px] font-bold bg-emerald-100/90 text-emerald-900 border border-emerald-300 rounded-lg px-2 py-0.5 shadow-sm">
+                  📦 Pack Crónicos (AVIS)
+                </span>
+              ) : first.medicamento === "SOLICITUD_RECETA" ? (
                 <span className="text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
                   📋 Solicitud s/med
                 </span>
@@ -97,6 +101,10 @@ function RecetaCard({ receta, config, onAction, onAuditoria }: { receta: Receta;
               {first.estadoItem === "rechazado" ? (
                 <span className="text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 px-1.5 py-0.2 rounded">
                   ❌ Rechazado
+                </span>
+              ) : esPackCronicos(first) ? (
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                  Multifármaco
                 </span>
               ) : first.cantidad ? (
                 <span className="text-[10px] font-bold text-[#5D7299] bg-[#F0F4FF] px-1.5 py-0.2 rounded border border-[#DDE6F5]">

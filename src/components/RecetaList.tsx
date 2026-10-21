@@ -11,7 +11,7 @@ import { RecetaModal } from "./RecetaModal";
 import { TicketModal } from "./TicketModal";
 import { AuditoriaDrawer } from "./AuditoriaDrawer";
 import { RutBadge } from "./RutBadge";
-import { getItemsDeReceta, getEstadoItemRenovacion, isRecetaVigente, esAutorizacionParcial } from "../lib/recetaHelpers";
+import { getItemsDeReceta, getEstadoItemRenovacion, isRecetaVigente, esAutorizacionParcial, esPackCronicos } from "../lib/recetaHelpers";
 
 function daysSince(ts: any): number {
   const now = new Date();
@@ -394,7 +394,11 @@ export function RecetaList({
                           <div className="flex flex-col gap-1 items-start">
                             {/* Primera línea: nombre del primer medicamento */}
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              {firstItem.medicamento === "SOLICITUD_RECETA" ? (
+                              {esPackCronicos(firstItem) ? (
+                                <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-emerald-100/90 text-emerald-900 border border-emerald-300 rounded-lg px-2.5 py-0.5 shadow-sm">
+                                  📦 Pack Crónicos (AVIS)
+                                </span>
+                              ) : firstItem.medicamento === "SOLICITUD_RECETA" ? (
                                 <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5">
                                   📋 Pendiente médico
                                 </span>
@@ -410,6 +414,10 @@ export function RecetaList({
                               {firstItem.estadoItem === "rechazado" ? (
                                 <span className="text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 px-1.5 py-0.5 rounded-full" title={firstItem.motivoRechazoItem}>
                                   ❌ Rechazado
+                                </span>
+                              ) : esPackCronicos(firstItem) ? (
+                                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                  Multifármaco
                                 </span>
                               ) : firstItem.cantidad ? (
                                 <span className="text-[11px] font-bold text-[#5D7299] bg-[#F0F4FF] px-1.5 py-0.5 rounded border border-[#DDE6F5]">
@@ -451,8 +459,8 @@ export function RecetaList({
                                     <div key={idx} className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${it.estadoItem === "rechazado" ? "bg-red-50/50 border-red-200" : "bg-white border-[#DDE6F5]"}`}>
                                       <span className="text-[11px] font-bold text-[#5D7299] min-w-[16px]">{idx + 1}.</span>
                                       <div className="flex-1 min-w-0">
-                                        <span className={`text-sm font-semibold block leading-tight ${it.estadoItem === "rechazado" ? "text-red-700 line-through" : "text-brand-indigo"}`}>
-                                          {it.medicamento === "SOLICITUD_RECETA" ? "📋 Pendiente médico" : it.medicamento}
+                                        <span className={`text-sm font-semibold block leading-tight ${it.estadoItem === "rechazado" ? "text-red-700 line-through" : esPackCronicos(it) ? "text-emerald-950 font-bold" : "text-brand-indigo"}`}>
+                                          {esPackCronicos(it) ? "📦 Pack Crónicos (Tratamiento AVIS)" : it.medicamento === "SOLICITUD_RECETA" ? "📋 Pendiente médico" : it.medicamento}
                                         </span>
                                         {it.estadoItem === "rechazado" ? (
                                           <p className="text-[11px] text-red-600 font-medium mt-0.5">
@@ -460,7 +468,11 @@ export function RecetaList({
                                           </p>
                                         ) : (
                                           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                            {it.cantidad > 0 && (
+                                            {esPackCronicos(it) ? (
+                                              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                                Despacho según Ficha AVIS
+                                              </span>
+                                            ) : it.cantidad > 0 && (
                                               <span className="text-[10px] font-bold text-[#5D7299] bg-[#F0F4FF] px-1.5 py-0.5 rounded border border-[#DDE6F5]">
                                                 ×{it.cantidad} unidades
                                               </span>

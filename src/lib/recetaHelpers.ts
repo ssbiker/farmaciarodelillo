@@ -201,3 +201,29 @@ export function contarItemsAutorizados(receta: Receta): number {
 export function contarItemsRechazados(receta: Receta): number {
   return getItemsDeReceta(receta).filter(it => it.estadoItem === "rechazado").length;
 }
+
+// ── Pack Crónicos (Tratamiento AVIS) ──
+export const PACK_CRONICOS_NOMBRE = "Pack Crónicos (Tratamiento AVIS)";
+export const PACK_CRONICOS_CODIGO = "PACK_CRONICOS";
+
+/**
+ * Determina si un ítem, receta o texto corresponde al Pack Crónicos (Tratamiento AVIS).
+ */
+export function esPackCronicos(target: string | ItemReceta | Receta | undefined | null): boolean {
+  if (!target) return false;
+  if (typeof target === "string") {
+    const s = target.toLowerCase();
+    return s.includes("pack cronicos") || s.includes("pack crónicos") || target === PACK_CRONICOS_CODIGO;
+  }
+  // Si es una Receta
+  if ("tipo" in target && "nombrePaciente" in target) {
+    const items = getItemsDeReceta(target as Receta);
+    return items.some(it => esPackCronicos(it));
+  }
+  // Si es un ItemReceta
+  const item = target as ItemReceta;
+  if (item.codigoMedicamento === PACK_CRONICOS_CODIGO) return true;
+  if (!item.medicamento) return false;
+  const med = item.medicamento.toLowerCase();
+  return med.includes("pack cronicos") || med.includes("pack crónicos");
+}

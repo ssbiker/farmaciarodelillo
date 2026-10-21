@@ -7,7 +7,7 @@ import { AuditoriaDrawer } from "./AuditoriaDrawer";
 import { encryptRecetaFields } from "../lib/crypto";
 import { sincronizarRecetaPublica } from "../lib/recetaPublica";
 import type { Receta, FarmaciaUser, ItemReceta } from "../types";
-import { getItemsDeReceta, nuevoItemVacio, isRecetaVigente, formatRut, validarRut } from "../lib/recetaHelpers";
+import { getItemsDeReceta, nuevoItemVacio, isRecetaVigente, formatRut, validarRut, PACK_CRONICOS_NOMBRE, PACK_CRONICOS_CODIGO, esPackCronicos } from "../lib/recetaHelpers";
 import { RutBadge } from "./RutBadge";
 
 export function RecetaModal({
@@ -84,6 +84,7 @@ export function RecetaModal({
   };
 
   const recetaObjetivo = receta || recetaVinculada;
+  const esRecetaCronica = formTipo === "cronicas" || tipo === "cronicas" || recetaObjetivo?.tipo === "cronico";
 
   const vincularReceta = (r: Receta) => {
     setRecetaVinculada(r);
@@ -425,7 +426,7 @@ export function RecetaModal({
         if (recetaObjetivo) {
           // Si el médico autoriza la receta, verificar que tenga al menos un fármaco válido y cantidad > 0 (que no esté rechazado individualmente)
           if (form.estado === "completado") {
-            const itemsValidos = formItems.filter(it => it.estadoItem !== "rechazado" && it.medicamento && it.medicamento !== "SOLICITUD_RECETA" && (it.cantidad ?? 0) > 0);
+            const itemsValidos = formItems.filter(it => it.estadoItem !== "rechazado" && it.medicamento && it.medicamento !== "SOLICITUD_RECETA" && (it.codigoMedicamento === PACK_CRONICOS_CODIGO || (it.cantidad ?? 0) > 0));
             if (itemsValidos.length === 0) {
               alert("Para autorizar la receta, al menos un medicamento debe estar autorizado con su cantidad mayor a 0. Si desea rechazar toda la receta, seleccione la opción 'Rechazar' en la decisión médica.");
               setLoading(false);
@@ -542,6 +543,11 @@ export function RecetaModal({
                 return { ...newIt, mesesDescontados: 0, autoRenovacion: 0 };
               }
 
+              // Pack Crónicos: nunca tocar inventario
+              if (newIt.codigoMedicamento === PACK_CRONICOS_CODIGO) {
+                return { ...newIt, mesesDescontados: 0 };
+              }
+
               if (newIt.codigoMedicamento && newIt.cantidad > 0) {
                 if (firstTime) {
                   // Primera vez: descontar si la receta está en estado completado
@@ -595,7 +601,7 @@ export function RecetaModal({
           }
         } else {
           // ── Modo médico: CREAR NUEVA RECETA CON MULTI-MEDICAMENTO ──────────────────
-          const itemsValidos = formItems.filter(it => it.estadoItem !== "rechazado" && it.codigoMedicamento && it.cantidad > 0);
+          const itemsValidos = formItems.filter(it => it.estadoItem !== "rechazado" && (it.codigoMedicamento === PACK_CRONICOS_CODIGO || (it.codigoMedicamento && it.cantidad > 0)));
           if (itemsValidos.length === 0) {
             alert("Por favor agregue al menos un medicamento válido del inventario con su cantidad que no esté rechazado.");
             setLoading(false);
@@ -604,7 +610,7 @@ export function RecetaModal({
 
           const itemsConMeses: ItemReceta[] = formItems.map((it) => ({
             ...it,
-            mesesDescontados: (form.estado === "completado" && it.estadoItem !== "rechazado" && it.codigoMedicamento && it.cantidad > 0) ? 1 : 0,
+            mesesDescontados: (form.estado === "completado" && it.estadoItem !== "rechazado" && it.codigoMedicamento && it.codigoMedicamento !== PACK_CRONICOS_CODIGO && it.cantidad > 0) ? 1 : 0,
           }));
 
           const primerItem = itemsConMeses.find(it => it.estadoItem !== "rechazado") ?? itemsConMeses[0] ?? nuevoItemVacio();
@@ -661,10 +667,10 @@ export function RecetaModal({
             false
           ).catch(console.error);
 
-          // Descontar stock en inventario para cada medicamento prescrito (solo los no rechazados)
+          // Descontar stock en inventario para cada medicamento prescrito (solo los no rechazados y no Pack)
           const { increment, updateDoc: uDoc, doc: fDoc } = await import("firebase/firestore");
           for (const it of itemsConMeses) {
-            if (it.estadoItem !== "rechazado" && it.codigoMedicamento && it.cantidad > 0) {
+            if (it.estadoItem !== "rechazado" && it.codigoMedicamento && it.codigoMedicamento !== PACK_CRONICOS_CODIGO && it.cantidad > 0) {
               uDoc(fDoc(db, "inventario", it.codigoMedicamento), {
                 stock: increment(-it.cantidad)
               }).catch(console.error);
@@ -729,7 +735,7 @@ export function RecetaModal({
           // Lógica de stock si se rechaza una receta que ya había descontado
           // O si cambia la cantidad (simplificado: si se rechaza, devolvemos el stock; si cambia cantidad, ajustamos)
           // Para no complicarlo mucho y evitar bugs, solo devolvemos si pasa a "rechazado" y antes no lo estaba.
-          if (payload.estado === "rechazado" && dataAntes.estado !== "rechazado" && payload.codigoMedicamento && payload.cantidad) {
+          if (payload.estado === "rechazado" && dataAntes.estado !== "rechazado" && payload.codigoMedicamento && payload.codigoMedicamento !== PACK_CRONICOS_CODIGO && payload.cantidad) {
             import("firebase/firestore").then(({ increment }) => {
               updateDoc(doc(db, "inventario", payload.codigoMedicamento as string), {
                 stock: increment(payload.cantidad as number)
@@ -737,7 +743,7 @@ export function RecetaModal({
             });
           }
           // Si era rechazado y ahora vuelve a pendiente/completado, volvemos a descontar
-          if (dataAntes.estado === "rechazado" && payload.estado !== "rechazado" && payload.codigoMedicamento && payload.cantidad) {
+          if (dataAntes.estado === "rechazado" && payload.estado !== "rechazado" && payload.codigoMedicamento && payload.codigoMedicamento !== PACK_CRONICOS_CODIGO && payload.cantidad) {
             import("firebase/firestore").then(({ increment }) => {
               updateDoc(doc(db, "inventario", payload.codigoMedicamento as string), {
                 stock: increment(-(payload.cantidad as number))
@@ -750,10 +756,10 @@ export function RecetaModal({
             const oldCodigo = dataAntes.codigoMedicamento as string;
             if (oldCodigo !== payload.codigoMedicamento || oldCantidad !== payload.cantidad) {
               import("firebase/firestore").then(({ increment }) => {
-                if (oldCodigo && oldCantidad > 0) {
+                if (oldCodigo && oldCodigo !== PACK_CRONICOS_CODIGO && oldCantidad > 0) {
                   updateDoc(doc(db, "inventario", oldCodigo), { stock: increment(oldCantidad) }).catch(e => console.error(e));
                 }
-                if (payload.codigoMedicamento && (payload.cantidad ?? 0) > 0) {
+                if (payload.codigoMedicamento && payload.codigoMedicamento !== PACK_CRONICOS_CODIGO && (payload.cantidad ?? 0) > 0) {
                   updateDoc(doc(db, "inventario", payload.codigoMedicamento as string), { stock: increment(-((payload.cantidad ?? 0) as number)) }).catch(e => console.error(e));
                 }
               });
@@ -782,7 +788,9 @@ export function RecetaModal({
             {
               campo: "medicamentos_agregados",
               antes: null,
-              despues: payload.medicamento && payload.medicamento !== "SOLICITUD_RECETA"
+              despues: payload.codigoMedicamento === PACK_CRONICOS_CODIGO
+                ? "📦 Pack Crónicos (Tratamiento AVIS)"
+                : payload.medicamento && payload.medicamento !== "SOLICITUD_RECETA"
                 ? `${payload.medicamento}${payload.cantidad ? ` ×${payload.cantidad}` : ""}`
                 : "📋 Solicitud de receta (pendiente de indicación médica)",
             },
@@ -1032,11 +1040,33 @@ export function RecetaModal({
                   ? "bg-gray-50 border-gray-200 opacity-70"
                   : "bg-[#F8FAFF] border-[#DDE6F5]"
               }`}>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-brand-blue uppercase tracking-widest">
-                    💊 Medicamentos de la Receta {form.estado === "rechazado" && <span className="text-red-500 font-semibold normal-case">(Opcional al rechazar)</span>}
-                  </p>
-                  <span className="text-[11px] text-[#8FA3C4]">{formItems.length} ítem{formItems.length !== 1 ? "s" : ""}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-bold text-brand-blue uppercase tracking-widest">
+                      💊 Medicamentos de la Receta {form.estado === "rechazado" && <span className="text-red-500 font-semibold normal-case">(Opcional al rechazar)</span>}
+                    </p>
+                    <span className="text-[11px] text-[#8FA3C4]">({formItems.length} ítem{formItems.length !== 1 ? "s" : ""})</span>
+                  </div>
+
+                  {esRecetaCronica && form.estado !== "rechazado" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentRenovacion = formItems[0]?.autoRenovacion ?? (form.autoRenovacion || 0);
+                        setFormItems([{
+                          medicamento: PACK_CRONICOS_NOMBRE,
+                          codigoMedicamento: PACK_CRONICOS_CODIGO,
+                          cantidad: 1,
+                          autoRenovacion: currentRenovacion,
+                          mesesDescontados: 0,
+                        }]);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-sm hover:shadow transition-all transform active:scale-95"
+                      title="Cargar automáticamente Pack Crónicos (Tratamiento AVIS)"
+                    >
+                      <span>⚡ Pack Crónicos (Tratamiento AVIS)</span>
+                    </button>
+                  )}
                 </div>
 
                 {form.estado === "rechazado" && (
@@ -1054,6 +1084,7 @@ export function RecetaModal({
                     (recetaVinculada && idx < getItemsDeReceta(recetaVinculada).length)
                   );
                   const isRechazado = item.estadoItem === "rechazado";
+                  const isPack = esPackCronicos(item);
 
                   return (
                     <div
@@ -1061,6 +1092,8 @@ export function RecetaModal({
                       className={`border rounded-xl p-3 space-y-2.5 transition-all ${
                         isRechazado
                           ? "bg-red-50/40 border-red-300 shadow-sm"
+                          : isPack
+                          ? "bg-emerald-50/20 border-emerald-200 shadow-sm"
                           : "bg-white border-[#DDE6F5]"
                       }`}
                     >
@@ -1070,6 +1103,11 @@ export function RecetaModal({
                           Medicamento {idx + 1}
                           {item.medicamento === "SOLICITUD_RECETA" && (
                             <span className="text-amber-600 normal-case font-semibold">— Solicitud sin med.</span>
+                          )}
+                          {isPack && (
+                            <span className="text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full text-[10px] font-black normal-case">
+                              📦 Pack Crónicos (AVIS)
+                            </span>
                           )}
                           {isRechazado && (
                             <span className="text-red-700 bg-red-100 border border-red-200 px-2 py-0.5 rounded-full text-[10px] font-black normal-case">
@@ -1119,6 +1157,18 @@ export function RecetaModal({
                               }}
                               className="flex items-center gap-1 text-[11px] text-[#8FA3C4] hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors"
                               title="Eliminar este fármaco de la lista"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          ) : isPack ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormItems([nuevoItemVacio()]);
+                                setActiveComboIdx(null);
+                              }}
+                              className="flex items-center gap-1 text-[11px] text-[#8FA3C4] hover:text-red-500 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors"
+                              title="Quitar Pack y usar medicamentos individuales"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -1173,7 +1223,75 @@ export function RecetaModal({
                         </div>
                       )}
 
-                      {isItemExistente ? (
+                      {isPack ? (
+                        <div className={`space-y-3 ${isRechazado ? "opacity-60" : ""}`}>
+                          <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-green-50 border border-emerald-200 rounded-xl p-3.5 space-y-2">
+                            <div className="flex items-start gap-2.5">
+                              <span className="text-2xl flex-shrink-0">📦</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  <p className="text-xs font-bold text-emerald-950 uppercase tracking-wide">
+                                    Pack Crónicos (Tratamiento AVIS)
+                                  </p>
+                                  <span className="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                                    Multifármaco Activo
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-emerald-900 mt-1 leading-relaxed">
+                                  Prescripción multifármaco vinculada a la <b>Ficha Clínica AVIS</b> activa del paciente. Farmacia despacha el conjunto de fármacos crónicos autorizados sin requerir desglose por fármaco ni posología individual en esta plataforma.
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 pt-1 border-t border-emerald-200/60 text-[10px] font-medium text-emerald-800">
+                              <span className="bg-white/80 px-2 py-0.5 rounded-md border border-emerald-200">✓ No descuenta stock unitario</span>
+                              <span className="bg-white/80 px-2 py-0.5 rounded-md border border-emerald-200">✓ Despacho en Farmacia según AVIS</span>
+                              <span className="bg-white/80 px-2 py-0.5 rounded-md border border-emerald-200">✓ 1 Tratamiento mensual</span>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className={labelClass}>Cantidad Prescrita</label>
+                              <div className={`${inputDisabledClass} font-semibold text-emerald-900 bg-emerald-50/50 border-emerald-200`}>
+                                1 Tratamiento Mensual
+                              </div>
+                            </div>
+                            <div>
+                              <label className={labelClass}>Auto-Renovación Médica</label>
+                              <select
+                                disabled={isRechazado}
+                                value={isRechazado ? 0 : (item.autoRenovacion ?? 0)}
+                                onChange={(e) => setFormItems(prev => prev.map((it, i) =>
+                                  i === idx ? { ...it, autoRenovacion: Number(e.target.value) } : it
+                                ))}
+                                className={`${inputClass} text-sm font-semibold text-emerald-900 border-emerald-300 focus:border-emerald-500`}
+                              >
+                                <option value={0}>Sin renovación (1 mes)</option>
+                                <option value={1}>1 mes adicional</option>
+                                <option value={2}>2 meses adicionales</option>
+                                <option value={3}>3 meses adicionales</option>
+                                <option value={4}>4 meses adicionales</option>
+                                <option value={5}>5 meses adicionales</option>
+                                <option value={6}>6 meses adicionales</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {!isItemExistente && (
+                            <div className="flex justify-end pt-0.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormItems(prev => prev.map((it, i) => i === idx ? nuevoItemVacio() : it));
+                                }}
+                                className="text-[11px] text-[#5D7299] hover:text-red-600 underline transition-colors"
+                              >
+                                Cambiar a medicamento individual del inventario
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : isItemExistente ? (
                         <div className={`space-y-2 ${isRechazado ? "opacity-60" : ""}`}>
                           <div>
                             <label className={labelClass}>Medicamento</label>
@@ -1528,33 +1646,65 @@ export function RecetaModal({
               {bannerRecetasActivas}
 
               <div>
-                {/* Etiqueta + toggle solicitud genérica */}
-                <div className="flex items-center justify-between mb-1.5">
+                {/* Etiqueta + toggle solicitud genérica + toggle Pack Crónicos */}
+                <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
                   <label className={labelClass}>Medicamento Solicitado</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nuevoValor = !esSolicitudGeneral;
-                      setEsSolicitudGeneral(nuevoValor);
-                      if (nuevoValor) {
-                        setForm({ ...form, medicamento: "SOLICITUD_RECETA", codigoMedicamento: "" });
-                        setIsComboboxOpen(false);
-                      } else {
-                        setForm({ ...form, medicamento: "", codigoMedicamento: "" });
-                      }
-                    }}
-                    className={`flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border transition-all ${
-                      esSolicitudGeneral
-                        ? "bg-amber-50 text-amber-700 border-amber-300 shadow-sm"
-                        : "bg-[#F0F4FF] text-[#5D7299] border-[#DDE6F5] hover:border-amber-300 hover:text-amber-600"
-                    }`}
-                  >
-                    {esSolicitudGeneral ? "✓ Solicitud Receta" : "⚕ Solicitud Receta"}
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {esRecetaCronica && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const isCurrentlyPack = form.codigoMedicamento === PACK_CRONICOS_CODIGO;
+                          if (isCurrentlyPack) {
+                            setForm({ ...form, medicamento: "", codigoMedicamento: "", cantidad: "" });
+                          } else {
+                            setForm({ ...form, medicamento: PACK_CRONICOS_NOMBRE, codigoMedicamento: PACK_CRONICOS_CODIGO, cantidad: "1" });
+                            setEsSolicitudGeneral(false);
+                            setIsComboboxOpen(false);
+                          }
+                        }}
+                        className={`flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border transition-all ${
+                          form.codigoMedicamento === PACK_CRONICOS_CODIGO
+                            ? "bg-emerald-100 text-emerald-800 border-emerald-300 shadow-sm"
+                            : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                        }`}
+                      >
+                        {form.codigoMedicamento === PACK_CRONICOS_CODIGO ? "✓ Pack Crónicos AVIS" : "📦 Pack Crónicos AVIS"}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nuevoValor = !esSolicitudGeneral;
+                        setEsSolicitudGeneral(nuevoValor);
+                        if (nuevoValor) {
+                          setForm({ ...form, medicamento: "SOLICITUD_RECETA", codigoMedicamento: "" });
+                          setIsComboboxOpen(false);
+                        } else {
+                          setForm({ ...form, medicamento: "", codigoMedicamento: "" });
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border transition-all ${
+                        esSolicitudGeneral
+                          ? "bg-amber-50 text-amber-700 border-amber-300 shadow-sm"
+                          : "bg-[#F0F4FF] text-[#5D7299] border-[#DDE6F5] hover:border-amber-300 hover:text-amber-600"
+                      }`}
+                    >
+                      {esSolicitudGeneral ? "✓ Solicitud Receta" : "⚕ Solicitud Receta"}
+                    </button>
+                  </div>
                 </div>
 
-                {/* Vista solicitud genérica (sin medicamento específico) */}
-                {esSolicitudGeneral ? (
+                {/* Vista Pack Crónicos en modo funcionario */}
+                {form.codigoMedicamento === PACK_CRONICOS_CODIGO ? (
+                  <div className="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                    <span className="text-2xl">📦</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-emerald-900">Pack Crónicos (Tratamiento AVIS)</p>
+                      <p className="text-xs text-emerald-800/80">Tratamiento multifármaco crónico según Ficha AVIS activa. El médico validará la vigencia y meses de renovación al autorizar.</p>
+                    </div>
+                  </div>
+                ) : esSolicitudGeneral ? (
                   <div className="w-full bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3">
                     <span className="text-2xl">📋</span>
                     <div>
