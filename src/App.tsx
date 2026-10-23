@@ -172,7 +172,7 @@ export default function App() {
       </header>
 
       {/* Main */}
-      <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 pb-36 md:pb-44">
+      <main className="flex-1 max-w-[1600px] mx-auto w-full px-3 py-4 md:px-6 md:py-6 pb-36 md:pb-44">
         <Routes>
           <Route path="/" element={<Dashboard farmaciaUser={farmaciaUser} isAdmin={isAdmin} isMedico={isMedico} isFuncionario={isFuncionario} />} />
           <Route

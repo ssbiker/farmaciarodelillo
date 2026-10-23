@@ -335,21 +335,19 @@ export function RecetaList({
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#F0F4FF] border-b border-[#DDE6F5] text-[#5D7299] text-xs uppercase tracking-wide font-semibold">
-                <th className="px-5 py-3.5 text-left">Estado</th>
-                <th className="px-5 py-3.5 text-left">Paciente</th>
-                <th className="px-5 py-3.5 text-left">RUT</th>
-                <th className="px-5 py-3.5 text-left">Medicamento</th>
-                <th className="px-5 py-3.5 text-left">Solicitud</th>
-                <th className="px-5 py-3.5 text-left">Plazo / Tiempo</th>
-                <th className="px-5 py-3.5 text-left">Médico / Receta</th>
-                <th className="px-5 py-3.5 text-left">Nota</th>
-                <th className="px-5 py-3.5 text-right">Acciones</th>
+                <th className="px-3.5 py-3 text-left w-[110px]">Estado</th>
+                <th className="px-3.5 py-3 text-left min-w-[150px]">Paciente / RUT</th>
+                <th className="px-3.5 py-3 text-left min-w-[180px]">Medicamento</th>
+                <th className="px-3.5 py-3 text-left w-[125px]">Plazo / Solicitud</th>
+                <th className="px-3.5 py-3 text-left min-w-[130px]">Médico / Receta</th>
+                <th className="px-3.5 py-3 text-left max-w-[140px]">Nota</th>
+                <th className="px-3.5 py-3 text-right w-[130px]">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EEF3FC]">
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-5 py-10 text-center text-[#5D7299]">
+                  <td colSpan={7} className="px-5 py-10 text-center text-[#5D7299]">
                     No hay registros que coincidan con la búsqueda.
                   </td>
                 </tr>
@@ -371,19 +369,19 @@ export function RecetaList({
                         ? "bg-yellow-500/5 hover:bg-yellow-500/10"
                         : "hover:bg-[#F5F8FF]"
                     }`}>
-                    <td className="px-5 py-4 relative">
+                    <td className="px-3.5 py-3 relative whitespace-nowrap">
                       {isCritical && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-red-500" />}
                       {isWarning && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-yellow-500" />}
                       {sinVigencia && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-slate-300" />}
                       <EstadoBadge estado={receta.estado} sinVigencia={sinVigencia} esParcial={esAutorizacionParcial(receta)} />
                     </td>
-                    <td className="px-5 py-4">
-                      <span className={`font-semibold ${sinVigencia ? "text-slate-400" : "text-[#0F1B35]"}`}>{receta.nombrePaciente}</span>
+                    <td className="px-3.5 py-3">
+                      <span className={`font-semibold text-sm block leading-snug ${sinVigencia ? "text-slate-400" : "text-[#0F1B35]"}`}>{receta.nombrePaciente}</span>
+                      <div className="mt-1">
+                        <RutBadge rut={receta.rut} className="text-[#3D5278] text-[11px]" />
+                      </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <RutBadge rut={receta.rut} className="text-[#3D5278]" />
-                    </td>
-                    <td className="px-5 py-4">
+                    <td className="px-3.5 py-3">
                       {(() => {
                         const items = getItemsDeReceta(receta);
                         const isMulti = items.length > 1;
@@ -499,24 +497,22 @@ export function RecetaList({
                         );
                       })()}
                     </td>
-                    <td className="px-5 py-4 text-[#5D7299] text-xs whitespace-nowrap">
-                      {formatDate(receta.fechaSolicitud)}
-                    </td>
-                    <td className="px-5 py-4">
+                    <td className="px-3.5 py-3 whitespace-nowrap">
                       <TiempoBadge receta={receta} config={config} />
+                      <p className="text-[#8FA3C4] text-[11px] mt-1 font-medium">{formatDate(receta.fechaSolicitud)}</p>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-3.5 py-3">
                       {receta.estado === "completado" ? (
                         <div>
                           <p className="text-green-700 font-semibold text-xs flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3"/> {receta.medicoReceta || "—"}
+                            <CheckCircle2 className="w-3 h-3 flex-shrink-0"/> <span className="truncate max-w-[130px]">{receta.medicoReceta || "—"}</span>
                           </p>
                           <p className="text-[#5D7299] text-[11px] mt-0.5">{formatDate(receta.fechaReceta)}</p>
                         </div>
                       ) : receta.medicoReceta ? (
                         <div>
                           <p className="text-brand-blue font-semibold text-xs flex items-center gap-1">
-                            <Clock className="w-3 h-3"/> {receta.medicoReceta}
+                            <Clock className="w-3 h-3 flex-shrink-0"/> <span className="truncate max-w-[130px]">{receta.medicoReceta}</span>
                           </p>
                           <p className="text-[#5D7299] text-[11px] mt-0.5">Asignado (Pendiente)</p>
                         </div>
@@ -529,18 +525,18 @@ export function RecetaList({
                         <span className="text-[#8FA3C4] text-xs">Sin asignar</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 max-w-[180px]">
+                    <td className="px-3.5 py-3 max-w-[140px]">
                       {receta.nota ? (
-                        <p className="text-[#3D5278] text-xs line-clamp-2 leading-relaxed">{receta.nota}</p>
+                        <p className="text-[#3D5278] text-xs line-clamp-2 leading-relaxed" title={receta.nota}>{receta.nota}</p>
                       ) : (
                         <span className="text-[#8FA3C4] text-xs">—</span>
                       )}
                       {receta.estado === "rechazado" && receta.motivoRechazo && (
-                        <p className="text-red-500 text-xs mt-1 italic">❌ {receta.motivoRechazo}</p>
+                        <p className="text-red-500 text-[11px] mt-1 italic line-clamp-2" title={receta.motivoRechazo}>❌ {receta.motivoRechazo}</p>
                       )}
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td className="px-3.5 py-3 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1">
                         {/* Imprimir ticket */}
                         {receta.estado === "completado" && (
                           <button onClick={() => setTicketReceta(receta)}
@@ -553,14 +549,14 @@ export function RecetaList({
                         {/* Botón Principal: AUTORIZAR para médico/admin si está pendiente */}
                         {receta.estado === "pendiente" && (puedeCambiarEstado(receta) || isSuperAdmin) ? (
                           <button onClick={() => openEdit(receta)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs hover:shadow transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs hover:shadow transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
                             title="Autorizar o revisar esta receta médica">
                             <Edit className="w-3.5 h-3.5" />
                             <span>Autorizar</span>
                           </button>
                         ) : receta.estado === "pendiente" && puedeEditarDatos ? (
                           <button onClick={() => openEdit(receta)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-brand-blue/10 text-brand-blue border border-[#DDE6F5] hover:border-brand-blue/40 rounded-lg text-xs font-bold transition-all shadow-xs whitespace-nowrap"
+                            className="inline-flex items-center gap-1 px-2 py-1.5 bg-white hover:bg-brand-blue/10 text-brand-blue border border-[#DDE6F5] hover:border-brand-blue/40 rounded-lg text-xs font-bold transition-all shadow-xs whitespace-nowrap"
                             title="Editar datos de la solicitud">
                             <Edit className="w-3.5 h-3.5" />
                             <span>Editar</span>
