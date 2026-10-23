@@ -151,11 +151,21 @@ function RecetaCard({ receta, config, onAction, onAuditoria }: { receta: Receta;
               <History className="w-3.5 h-3.5" />
             </button>
           )}
-          {onAction && (
-            <div className="bg-brand-blue/10 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-              <ArrowRight className="w-3.5 h-3.5 text-brand-blue" />
+          {onAction && receta.estado === "pendiente" ? (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onAction(); }}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-blue hover:bg-brand-blue-dark text-white text-xs font-bold shadow-xs hover:scale-[1.02] active:scale-[0.98] transition-all"
+              title="Revisar y autorizar receta"
+            >
+              <span>Revisar</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          ) : onAction ? (
+            <div className="p-1.5 rounded-lg bg-[#EFF3FB] text-[#5D7299] group-hover:bg-brand-blue/10 group-hover:text-brand-blue transition-colors">
+              <ArrowRight className="w-3.5 h-3.5" />
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

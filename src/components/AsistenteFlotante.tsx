@@ -13,6 +13,8 @@ import {
   Bot,
   User,
   Loader2,
+  Minus,
+  Maximize2,
 } from "lucide-react";
 import {
   procesarPreguntaAsistente,
@@ -77,6 +79,9 @@ export function AsistenteFlotante({
   isAdmin?: boolean;
 }) {
   const [abierto, setAbierto] = useState(false);
+  const [minimizado, setMinimizado] = useState(() => {
+    return localStorage.getItem("asistente_minimizado") === "true";
+  });
   const [inputTexto, setInputTexto] = useState("");
   const [cargando, setCargando] = useState(false);
   const [categoriaTab, setCategoriaTab] = useState<"chat" | "medico" | "funcionario" | "temas">("chat");
@@ -198,33 +203,68 @@ export function AsistenteFlotante({
   };
 
   return createPortal(
-    <div style={{ position: "fixed", bottom: "24px", right: "24px", zIndex: 99999, pointerEvents: "auto" }}>
-      {/* ── BOTÓN FLOTANTE PERMANENTE ── */}
-      {!abierto && (
-        <button
-          onClick={() => setAbierto(true)}
-          style={{
-            position: "fixed",
-            bottom: "24px",
-            right: "24px",
-            zIndex: 99999,
-          }}
-          className="flex items-center gap-3 px-5 py-3.5 rounded-full header-gradient text-white shadow-[0_12px_36px_rgba(26,85,204,0.45)] hover:scale-105 active:scale-95 transition-all duration-300 border-2 border-white/40 ring-4 ring-brand-blue/20 group cursor-pointer"
-          title="Abrir Asistente Virtual del Sistema"
-        >
-          <div className="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center border border-white/40 group-hover:bg-white/35 transition-colors">
+    <div style={{ position: "fixed", bottom: "24px", right: "24px", zIndex: 40, pointerEvents: "auto" }}>
+      {/* ── BOTÓN FLOTANTE: MODO COMPACTO (BURBUJA PEQUEÑA) ── */}
+      {!abierto && minimizado && (
+        <div className="relative group">
+          <button
+            onClick={() => setAbierto(true)}
+            className="w-12 h-12 rounded-full header-gradient text-white shadow-[0_8px_24px_rgba(26,85,204,0.35)] hover:scale-110 active:scale-95 transition-all duration-200 border-2 border-white/50 flex items-center justify-center cursor-pointer"
+            title="Abrir Asistente Virtual Rodelillo"
+          >
             <Sparkles className="w-5 h-5 text-white animate-pulse" />
-          </div>
-          <div className="text-left">
-            <div className="flex items-center gap-1.5">
-              <p className="text-xs font-black tracking-wide leading-none">Ayuda Sistema</p>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span className="absolute top-0 right-0 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white" />
+          </button>
+          {/* Botón para expandir a pastilla completa */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setMinimizado(false);
+              localStorage.setItem("asistente_minimizado", "false");
+            }}
+            className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-white text-brand-blue border border-[#DDE6F5] shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 cursor-pointer"
+            title="Expandir nombre del asistente"
+          >
+            <Maximize2 className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
+      {/* ── BOTÓN FLOTANTE: MODO EXTENDIDO (PASTILLA) ── */}
+      {!abierto && !minimizado && (
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setAbierto(true)}
+            className="flex items-center gap-3 px-4 py-2.5 sm:px-5 sm:py-3 rounded-full header-gradient text-white shadow-[0_10px_28px_rgba(26,85,204,0.4)] hover:scale-[1.03] active:scale-95 transition-all duration-300 border-2 border-white/40 ring-4 ring-brand-blue/15 group cursor-pointer"
+            title="Abrir Asistente Virtual del Sistema"
+          >
+            <div className="w-8 h-8 rounded-full bg-white/25 flex items-center justify-center border border-white/40 group-hover:bg-white/35 transition-colors">
+              <Sparkles className="w-4 h-4 text-white animate-pulse" />
             </div>
-            <p className="text-[10px] text-white/90 leading-none mt-1 font-semibold">
-              Asistente Rodelillo
-            </p>
-          </div>
-        </button>
+            <div className="text-left">
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs font-black tracking-wide leading-none">Ayuda Sistema</p>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              </div>
+              <p className="text-[10px] text-white/90 leading-none mt-1 font-semibold">
+                Asistente Rodelillo
+              </p>
+            </div>
+          </button>
+
+          {/* Botón rápido para minimizar a burbuja circular */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setMinimizado(true);
+              localStorage.setItem("asistente_minimizado", "true");
+            }}
+            className="w-7 h-7 rounded-full bg-white text-[#5D7299] hover:text-[#0F1B35] shadow-md border border-[#DDE6F5] flex items-center justify-center transition-all hover:scale-110 active:scale-90 cursor-pointer"
+            title="Minimizar a ícono circular pequeño"
+          >
+            <Minus className="w-3.5 h-3.5" />
+          </button>
+        </div>
       )}
 
       {/* ── VENTANA DE CHAT FLOTANTE ── */}
@@ -234,7 +274,7 @@ export function AsistenteFlotante({
             position: "fixed",
             bottom: "24px",
             right: "24px",
-            zIndex: 99999,
+            zIndex: 40,
           }}
           className="w-[calc(100vw-2rem)] sm:w-[460px] h-[640px] max-h-[88vh] bg-white border border-[#DDE6F5] rounded-3xl shadow-[0_16px_50px_rgba(15,27,53,0.25)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         >

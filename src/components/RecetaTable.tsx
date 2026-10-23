@@ -297,11 +297,11 @@ export function RecetaTable({
 
                     {/* Acciones */}
                     <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1.5">
                         {receta.estado === "completado" && (
                           <button 
                             onClick={() => setTicketReceta(receta)}
-                            className="p-1.5 text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
+                            className="p-1.5 text-brand-blue bg-blue-50/70 hover:bg-brand-blue hover:text-white border border-blue-200/60 rounded-lg transition-all shadow-xs"
                             title="Ver Ticket"
                           >
                             <Printer className="w-4 h-4" />
@@ -309,14 +309,14 @@ export function RecetaTable({
                         )}
                         <button 
                           onClick={() => { setEditingReceta(receta); setIsModalOpen(true); }}
-                          className="p-1.5 text-[#5D7299] hover:text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
+                          className="p-1.5 text-[#5D7299] bg-white hover:text-brand-blue hover:bg-brand-blue/10 border border-[#DDE6F5] hover:border-brand-blue/40 rounded-lg transition-all shadow-xs"
                           title="Ver / Editar"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setAuditoriaReceta(receta)}
-                          className="p-1.5 text-[#5D7299] hover:text-brand-purple hover:bg-brand-purple/10 rounded-lg transition-colors"
+                          className="p-1.5 text-[#5D7299] bg-white hover:text-brand-purple hover:bg-brand-purple/10 border border-[#DDE6F5] hover:border-brand-purple/40 rounded-lg transition-all shadow-xs"
                           title="Historial de cambios"
                         >
                           <History className="w-4 h-4" />
@@ -324,7 +324,7 @@ export function RecetaTable({
                         {(isAdmin || farmaciaUser.email === "ssanchez@cmvalparaiso.cl") && (
                           <button 
                             onClick={() => handleDelete(receta)}
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-1.5 text-[#5D7299] bg-white hover:text-red-500 hover:bg-red-50 border border-[#DDE6F5] hover:border-red-200 rounded-lg transition-all shadow-xs"
                             title="Eliminar registro"
                           >
                             <Trash2 className="w-4 h-4" />

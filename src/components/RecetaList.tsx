@@ -330,7 +330,7 @@ export function RecetaList({
       </div>
 
       {/* Tabla */}
-      <div className="rounded-2xl border border-[#DDE6F5] overflow-hidden">
+      <div className="rounded-2xl border border-[#DDE6F5] overflow-hidden mb-12 shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -540,53 +540,67 @@ export function RecetaList({
                       )}
                     </td>
                     <td className="px-5 py-4">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {/* Historial */}
-                        <button onClick={() => setAuditoriaReceta(receta)}
-                          className="p-1.5 text-[#5D7299] hover:text-purple-500 hover:bg-purple-500/10 rounded-lg transition-colors"
-                          title="Ver historial de cambios">
-                          <History className="w-4 h-4" />
-                        </button>
+                      <div className="flex items-center justify-end gap-1.5">
                         {/* Imprimir ticket */}
                         {receta.estado === "completado" && (
                           <button onClick={() => setTicketReceta(receta)}
-                            className="p-1.5 text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
+                            className="p-1.5 text-brand-blue bg-blue-50/70 hover:bg-brand-blue hover:text-white border border-blue-200/60 rounded-lg transition-all shadow-xs"
                             title="Ver e Imprimir Ticket">
                             <Printer className="w-4 h-4" />
                           </button>
                         )}
-                        {/* Editar datos (funcionario/admin) o Autorizar (médico con permiso) o Super Admin */}
-                        {(puedeEditarDatos || puedeCambiarEstado(receta) || isSuperAdmin) && (
+
+                        {/* Botón Principal: AUTORIZAR para médico/admin si está pendiente */}
+                        {receta.estado === "pendiente" && (puedeCambiarEstado(receta) || isSuperAdmin) ? (
                           <button onClick={() => openEdit(receta)}
-                            className={`p-1.5 rounded-lg transition-colors ${
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs hover:shadow transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
+                            title="Autorizar o revisar esta receta médica">
+                            <Edit className="w-3.5 h-3.5" />
+                            <span>Autorizar</span>
+                          </button>
+                        ) : receta.estado === "pendiente" && puedeEditarDatos ? (
+                          <button onClick={() => openEdit(receta)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-brand-blue/10 text-brand-blue border border-[#DDE6F5] hover:border-brand-blue/40 rounded-lg text-xs font-bold transition-all shadow-xs whitespace-nowrap"
+                            title="Editar datos de la solicitud">
+                            <Edit className="w-3.5 h-3.5" />
+                            <span>Editar</span>
+                          </button>
+                        ) : (puedeEditarDatos || puedeCambiarEstado(receta) || isSuperAdmin) ? (
+                          <button onClick={() => openEdit(receta)}
+                            className={`p-1.5 rounded-lg transition-all shadow-xs border ${
                               isSuperAdmin
-                                ? "text-purple-600 hover:text-purple-800 hover:bg-purple-100/70"
-                                : puedeCambiarEstado(receta) && !puedeEditarDatos
-                                ? "text-brand-blue hover:text-brand-blue-dark hover:bg-brand-blue/10"
-                                : "text-[#5D7299] hover:text-brand-blue hover:bg-brand-blue/10"
+                                ? "text-purple-700 bg-purple-50 border-purple-200 hover:bg-purple-100"
+                                : "text-[#5D7299] bg-white border-[#DDE6F5] hover:text-brand-blue hover:border-brand-blue/40 hover:bg-brand-blue/10"
                             }`}
                             title={
                               isSuperAdmin
                                 ? "🛡️ Super Admin: Editar receta y corregir cantidades/medicamentos"
-                                : puedeCambiarEstado(receta) && !puedeEditarDatos
-                                ? "Autorizar / Rechazar"
-                                : "Editar"
+                                : "Ver / Editar"
                             }>
                             <Edit className="w-4 h-4" />
                           </button>
-                        )}
-                        {/* Médico sin permiso para esta receta: mostrar candado */}
-                        {isMedico && !isAdmin && !puedeCambiarEstado(receta) && (
+                        ) : null}
+
+                        {/* Médico sin permiso para esta receta: mostrar candado visible */}
+                        {isMedico && !isAdmin && !puedeCambiarEstado(receta) && receta.estado === "pendiente" && (
                           <span
-                            className="p-1.5 text-[#C4D4EE] rounded-lg cursor-not-allowed"
-                            title="Solo el médico asignado puede autorizar esta receta">
-                            🔒
+                            className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg cursor-help whitespace-nowrap"
+                            title={`Solo el médico asignado (${receta.medicoReceta || "otro profesional"}) puede autorizar esta receta`}>
+                            🔒 Asignada a otro
                           </span>
                         )}
+
+                        {/* Historial */}
+                        <button onClick={() => setAuditoriaReceta(receta)}
+                          className="p-1.5 text-[#5D7299] bg-white hover:text-purple-600 hover:bg-purple-50 border border-[#DDE6F5] hover:border-purple-200 rounded-lg transition-all shadow-xs"
+                          title="Ver historial de cambios">
+                          <History className="w-4 h-4" />
+                        </button>
+
                         {/* Papelera — solo admin */}
                         {isAdmin && (
                           <button onClick={() => setPapeleraReceta(receta)}
-                            className="p-1.5 text-[#5D7299] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-1.5 text-[#5D7299] bg-white hover:text-red-500 hover:bg-red-50 border border-[#DDE6F5] hover:border-red-200 rounded-lg transition-all shadow-xs"
                             title="Enviar a papelera">
                             <Trash2 className="w-4 h-4" />
                           </button>
