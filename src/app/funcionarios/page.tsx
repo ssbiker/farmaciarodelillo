@@ -144,7 +144,7 @@ function Dashboard({ user, userRole, onLogout }: { user: User; userRole: string;
   const [showNoticeModal, setShowNoticeModal] = useState(false);
   const [noticeForm, setNoticeForm] = useState({ content: "", isUrgent: false });
   const [showUserModal, setShowUserModal] = useState(false);
-  const [userForm, setUserForm] = useState({ email: "", password: "", role: "funcionario" });
+  const [userForm, setUserForm] = useState({ name: "", email: "", password: "", role: "funcionario" });
   const [userFormStatus, setUserFormStatus] = useState("");
 
   // States Calendario
@@ -210,10 +210,30 @@ function Dashboard({ user, userRole, onLogout }: { user: User; userRole: string;
     try {
       const secondaryApp = getApps().find(a => a.name === "SecondaryApp") || initializeApp(app.options!, "SecondaryApp");
       const res = await createUserWithEmailAndPassword(getAuth(secondaryApp), userForm.email, userForm.password);
-      await setDoc(doc(db, "users", res.user.uid), { email: res.user.email, role: userForm.role, createdAt: Timestamp.now() });
+
+      const isDoc = userForm.role === "medico";
+      const isFunc = userForm.role === "funcionario";
+      const cleanName = userForm.name.trim() || res.user.email?.split("@")[0] || "Funcionario";
+
+      const userData: Record<string, any> = {
+        name: cleanName,
+        email: res.user.email,
+        role: userForm.role,
+        isMedico: isDoc,
+        isFuncionario: isFunc,
+        inFarmaciaTeam: true,
+        hasFarmaciaAccess: true,
+        createdAt: Timestamp.now(),
+      };
+
+      await setDoc(doc(db, "users", res.user.uid), userData, { merge: true });
       await getAuth(secondaryApp).signOut();
       setUserFormStatus("¡Usuario creado exitosamente!");
-      setTimeout(() => { setShowUserModal(false); setUserFormStatus(""); setUserForm({ email: "", password: "", role: "funcionario" }); }, 1500);
+      setTimeout(() => { 
+        setShowUserModal(false); 
+        setUserFormStatus(""); 
+        setUserForm({ name: "", email: "", password: "", role: "funcionario" }); 
+      }, 1500);
     } catch (err: any) { setUserFormStatus("Error: " + err.message); }
   };
 
@@ -443,30 +463,62 @@ function Dashboard({ user, userRole, onLogout }: { user: User; userRole: string;
               <table className="w-full text-left border-collapse">
                 <thead className="bg-gray-50">
                   <tr className="border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    <th className="py-4 px-6">Funcionario / Nombre</th>
                     <th className="py-4 px-6">Correo Institucional</th>
                     <th className="py-4 px-6">Rol Actual</th>
                     <th className="py-4 px-6">Registro</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
-                  {usersList.map(u => (
-                    <tr key={u.uid} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                      <td className="py-4 px-6 font-semibold text-[#1A1A2E]">{u.email}</td>
-                      <td className="py-4 px-6">
-                        <select 
-                          value={u.role} 
-                          onChange={(e) => updateDoc(doc(db, "users", u.uid), { role: e.target.value })}
-                          className={`text-xs font-black uppercase tracking-wide px-4 py-2 rounded-xl outline-none cursor-pointer transition-colors ${u.role === 'admin' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
-                        >
-                          <option value="admin">Admin</option>
-                          <option value="funcionario">Funcionario</option>
-                        </select>
-                      </td>
-                      <td className="py-4 px-6 text-gray-400 text-xs font-medium">
-                        {u.createdAt ? u.createdAt.toDate().toLocaleDateString('es-CL') : 'N/A'}
-                      </td>
-                    </tr>
-                  ))}
+                  {usersList.map(u => {
+                    const currentRole = u.role || (u.isMedico ? "medico" : "funcionario");
+                    return (
+                      <tr key={u.uid} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                        <td className="py-4 px-6 font-semibold text-[#1A1A2E]">
+                          {u.name || <span className="text-gray-400 italic font-normal">Sin nombre ({u.email?.split("@")[0]})</span>}
+                        </td>
+                        <td className="py-4 px-6 text-gray-600">{u.email}</td>
+                        <td className="py-4 px-6">
+                          <select 
+                            value={currentRole} 
+                            onChange={(e) => {
+                              const newRole = e.target.value;
+                              const updates: Record<string, any> = { role: newRole };
+                              if (newRole === "medico") {
+                                updates.isMedico = true;
+                                updates.isFuncionario = false;
+                                updates.inFarmaciaTeam = true;
+                                updates.hasFarmaciaAccess = true;
+                              } else if (newRole === "funcionario") {
+                                updates.isFuncionario = true;
+                                updates.isMedico = false;
+                                updates.inFarmaciaTeam = true;
+                                updates.hasFarmaciaAccess = true;
+                              } else if (newRole === "admin") {
+                                updates.inFarmaciaTeam = true;
+                                updates.hasFarmaciaAccess = true;
+                              }
+                              updateDoc(doc(db, "users", u.uid), updates);
+                            }}
+                            className={`text-xs font-black uppercase tracking-wide px-4 py-2 rounded-xl outline-none cursor-pointer transition-colors ${
+                              currentRole === 'admin' 
+                                ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' 
+                                : currentRole === 'medico'
+                                ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            }`}
+                          >
+                            <option value="admin">Admin</option>
+                            <option value="medico">Médico</option>
+                            <option value="funcionario">Funcionario</option>
+                          </select>
+                        </td>
+                        <td className="py-4 px-6 text-gray-400 text-xs font-medium">
+                          {u.createdAt ? u.createdAt.toDate().toLocaleDateString('es-CL') : 'N/A'}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -601,17 +653,56 @@ function Dashboard({ user, userRole, onLogout }: { user: User; userRole: string;
               <button onClick={() => setShowUserModal(false)}><X className="w-6 h-6 text-gray-400 hover:text-red-500" /></button>
             </div>
             {userFormStatus && <div className="mb-6 text-center text-sm font-bold text-[#7B2FBE] bg-purple-50 py-3 rounded-xl">{userFormStatus}</div>}
-            <form onSubmit={handleCreateUser} className="space-y-5">
-              <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Correo Electrónico</label><input type="email" required value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:border-[#7B2FBE] outline-none" /></div>
-              <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Contraseña Provisoria</label><input type="password" required value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:border-[#7B2FBE] outline-none" minLength={6} /></div>
+            <form onSubmit={handleCreateUser} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Rol Inicial</label>
-                <select value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:border-[#7B2FBE] outline-none font-bold">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Nombre y Apellido</label>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="Ej: Dr. Juan Pérez" 
+                  value={userForm.name} 
+                  onChange={e => setUserForm({...userForm, name: e.target.value})} 
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:border-[#7B2FBE] outline-none text-sm" 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Correo Electrónico</label>
+                <input 
+                  type="email" 
+                  required 
+                  placeholder="ejemplo@cmvalparaiso.cl"
+                  value={userForm.email} 
+                  onChange={e => setUserForm({...userForm, email: e.target.value})} 
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:border-[#7B2FBE] outline-none text-sm" 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Contraseña Provisoria</label>
+                <input 
+                  type="password" 
+                  required 
+                  placeholder="Mínimo 6 caracteres"
+                  value={userForm.password} 
+                  onChange={e => setUserForm({...userForm, password: e.target.value})} 
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:border-[#7B2FBE] outline-none text-sm" 
+                  minLength={6} 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Rol Inicial</label>
+                <select 
+                  value={userForm.role} 
+                  onChange={e => setUserForm({...userForm, role: e.target.value})} 
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:border-[#7B2FBE] outline-none font-bold text-sm"
+                >
                   <option value="funcionario">Funcionario</option>
+                  <option value="medico">Médico</option>
                   <option value="admin">Administrador</option>
                 </select>
               </div>
-              <button type="submit" className="w-full bg-[#7B2FBE] hover:bg-[#5C1FA0] text-white font-bold py-3.5 rounded-xl mt-4">Crear Cuenta</button>
+              <button type="submit" className="w-full bg-[#7B2FBE] hover:bg-[#5C1FA0] text-white font-bold py-3.5 rounded-xl mt-4 shadow-md transition-all">
+                Crear Cuenta
+              </button>
             </form>
           </div>
         </div>
@@ -657,11 +748,26 @@ export default function FuncionariosPortal() {
         const userRef = doc(db, "users", currentUser.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-          setUserRole(userSnap.data().role || "funcionario");
+          const data = userSnap.data();
+          setUserRole(data.role || "funcionario");
+          // Si el usuario en Firestore no tiene nombre, auto-sanar con su displayName o correo
+          if (!data.name && (currentUser.displayName || currentUser.email)) {
+            const fallback = currentUser.displayName || currentUser.email?.split("@")[0] || "Funcionario";
+            await setDoc(userRef, { name: fallback }, { merge: true });
+          }
         } else {
           const isMasterAdmin = currentUser.email === "ssanchez@cmvalparaiso.cl";
           const newRole = isMasterAdmin ? "admin" : "funcionario";
-          await setDoc(userRef, { email: currentUser.email, role: newRole, createdAt: Timestamp.now() });
+          const fallback = currentUser.displayName || currentUser.email?.split("@")[0] || "Funcionario";
+          await setDoc(userRef, { 
+            name: fallback,
+            email: currentUser.email, 
+            role: newRole, 
+            isFuncionario: !isMasterAdmin,
+            inFarmaciaTeam: true,
+            hasFarmaciaAccess: true,
+            createdAt: Timestamp.now() 
+          }, { merge: true });
           setUserRole(newRole);
         }
       } else {

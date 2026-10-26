@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Routes, Route, Navigate, Link } from "react-router-dom";
 import { auth, db } from "./lib/firebase";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, Timestamp } from "firebase/firestore";
 import type { User } from "firebase/auth";
 import { LoginScreen } from "./components/LoginScreen";
 import { Dashboard } from "./components/Dashboard";
@@ -32,9 +32,16 @@ export default function App() {
             const hasAccess = isAdmin || userData.inFarmaciaTeam === true || userData.hasFarmaciaAccess === true || isMedico || isFuncionario;
 
             if (hasAccess) {
+              const resolvedName = userData.name?.trim() || currentUser.displayName || currentUser.email?.split("@")[0] || "Funcionario";
+              // Auto-sanar en Firestore si el usuario estaba sin nombre
+              if (!userData.name || !userData.name.trim()) {
+                updateDoc(doc(db, "users", currentUser.uid), { name: resolvedName }).catch(() => {});
+              }
+
               setUser(currentUser);
               setFarmaciaUser({
                 ...userData,
+                name: resolvedName,
                 id: currentUser.uid,
                 email: currentUser.email || "",
               });
@@ -46,10 +53,27 @@ export default function App() {
               setAuthError("Acceso Denegado: Tu cuenta no tiene permisos para el módulo de Farmacia.");
             }
           } else {
-            await signOut(auth);
-            setUser(null);
-            setFarmaciaUser(null);
-            setAuthError("Acceso Denegado: Tu perfil no existe en el sistema.");
+            // Auto-crear perfil inicial seguro si no existe documento en Firestore
+            const isMasterAdmin = currentUser.email === "ssanchez@cmvalparaiso.cl";
+            const initialRole = isMasterAdmin ? "admin" : "funcionario";
+            const initialName = currentUser.displayName || currentUser.email?.split("@")[0] || "Funcionario";
+            const newUserData: FarmaciaUser = {
+              id: currentUser.uid,
+              name: initialName,
+              email: currentUser.email || "",
+              role: initialRole,
+              isFuncionario: !isMasterAdmin,
+              inFarmaciaTeam: true,
+              hasFarmaciaAccess: true,
+            };
+            await setDoc(doc(db, "users", currentUser.uid), {
+              ...newUserData,
+              createdAt: Timestamp.now(),
+            }, { merge: true });
+
+            setUser(currentUser);
+            setFarmaciaUser(newUserData);
+            setAuthError(null);
           }
         } catch {
           await signOut(auth);

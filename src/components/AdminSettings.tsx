@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { collection, onSnapshot, doc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import type { User } from "firebase/auth";
-import { Save, Clock, Users, Stethoscope, ShieldCheck, ShieldOff, CheckCircle, Trash2, ClipboardList } from "lucide-react";
+import { Save, Clock, Users, Stethoscope, ShieldCheck, ShieldOff, CheckCircle, Trash2, ClipboardList, Edit2, Check, X } from "lucide-react";
 import type { FarmaciaUser, FarmaciaConfig } from "../types";
 import { PapeleraModal } from "./PapeleraModal";
 
@@ -13,6 +13,8 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
   const [users, setUsers] = useState<FarmaciaUser[]>([]);
   const [saving, setSaving] = useState(false);
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
   const [toast, setToast] = useState("");
   const [papeleraOpen, setPapeleraOpen] = useState(false);
 
@@ -40,11 +42,30 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
     finally { setSaving(false); }
   };
 
+  const saveUserName = async (userId: string) => {
+    const cleanName = editingName.trim();
+    if (!cleanName) return;
+    setSavingUserId(userId);
+    try {
+      await updateDoc(doc(db, "users", userId), { name: cleanName });
+      showToast("✅ Nombre guardado: " + cleanName);
+      setEditingUserId(null);
+    } catch (err: any) {
+      showToast("❌ Error al guardar nombre: " + err.message);
+    } finally {
+      setSavingUserId(null);
+    }
+  };
+
   const toggleFarmaciaAccess = async (user: FarmaciaUser) => {
     setSavingUserId(user.id);
-    const newVal = !user.inFarmaciaTeam;
-    await updateDoc(doc(db, "users", user.id), { inFarmaciaTeam: newVal });
-    showToast((newVal ? "✅ Acceso otorgado" : "🚫 Acceso retirado") + " a " + user.name + ".");
+    const currentlyHas = user.inFarmaciaTeam === true || user.hasFarmaciaAccess === true;
+    const newVal = !currentlyHas;
+    await updateDoc(doc(db, "users", user.id), { 
+      inFarmaciaTeam: newVal,
+      hasFarmaciaAccess: newVal 
+    });
+    showToast((newVal ? "✅ Acceso otorgado" : "🚫 Acceso retirado") + " a " + (user.name || user.email) + ".");
     setSavingUserId(null);
   };
 
@@ -55,13 +76,21 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
 
     const updates: Record<string, any> = {
       isMedico: newMedico,
-      isFuncionario: false,
     };
-    if (user.role !== "admin" && user.role !== "quimico") {
-      updates.role = newMedico ? "medico" : "funcionario";
-    }
-    if (newMedico && !user.inFarmaciaTeam) {
+
+    if (newMedico) {
+      updates.isFuncionario = false;
+      if (user.role !== "admin" && user.role !== "quimico") {
+        updates.role = "medico";
+      }
       updates.inFarmaciaTeam = true;
+      updates.hasFarmaciaAccess = true;
+    } else {
+      // Si se desactiva médico, pasa a ser funcionario estándar para no quedar bloqueado
+      if (user.role !== "admin" && user.role !== "quimico") {
+        updates.role = "funcionario";
+      }
+      updates.isFuncionario = true;
     }
 
     await updateDoc(doc(db, "users", user.id), updates);
@@ -76,13 +105,20 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
 
     const updates: Record<string, any> = {
       isFuncionario: newFuncionario,
-      isMedico: false,
     };
-    if (user.role !== "admin" && user.role !== "quimico") {
-      updates.role = newFuncionario ? "funcionario" : "usuario";
-    }
-    if (newFuncionario && !user.inFarmaciaTeam) {
+
+    if (newFuncionario) {
+      updates.isMedico = false;
+      if (user.role !== "admin" && user.role !== "quimico") {
+        updates.role = "funcionario";
+      }
       updates.inFarmaciaTeam = true;
+      updates.hasFarmaciaAccess = true;
+    } else {
+      if (user.role !== "admin" && user.role !== "quimico") {
+        updates.role = "usuario";
+      }
+      updates.inFarmaciaTeam = false;
     }
 
     await updateDoc(doc(db, "users", user.id), updates);
@@ -191,7 +227,8 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
               // Considera flags booleanos y role plano sin conflicto
               const isMedico = u.isMedico === true || (u.role?.toLowerCase() === "medico" && u.isFuncionario !== true);
               const isFuncionario = (u.isFuncionario === true || u.role?.toLowerCase() === "funcionario") && !isMedico;
-              const hasAccess = u.inFarmaciaTeam === true;
+              const isAdmin = u.role?.toLowerCase() === "admin" || u.role?.toLowerCase() === "quimico" || u.email === "ssanchez@cmvalparaiso.cl";
+              const hasAccess = u.inFarmaciaTeam === true || u.hasFarmaciaAccess === true || isMedico || isFuncionario || isAdmin;
               const isCurrentUser = u.id === currentUser.uid;
               const isLoading = savingUserId === u.id;
               return (
@@ -201,10 +238,57 @@ export function AdminSettings({ currentUser, farmaciaUser }: { currentUser: User
                     {(u.name || u.email || "?")[0].toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold leading-tight truncate text-[#0F1B35]">
-                      {u.name || "Sin nombre"}
-                      {isCurrentUser && <span className="ml-1.5 text-[11px] bg-brand-blue/10 text-brand-blue px-1.5 py-0.5 rounded-full">tú</span>}
-                    </p>
+                    {editingUserId === u.id ? (
+                      <div className="flex items-center gap-1.5 my-1">
+                        <input
+                          type="text"
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          placeholder="Nombre y Apellido"
+                          className="bg-white border border-brand-blue rounded-lg px-2.5 py-1 text-xs text-[#0F1B35] font-semibold outline-none w-52 shadow-sm"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") saveUserName(u.id);
+                            if (e.key === "Escape") setEditingUserId(null);
+                          }}
+                        />
+                        <button
+                          onClick={() => saveUserName(u.id)}
+                          className="p-1 text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                          title="Guardar nombre"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setEditingUserId(null)}
+                          className="p-1 text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                          title="Cancelar"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 group">
+                        <p className="text-sm font-semibold leading-tight truncate text-[#0F1B35]">
+                          {u.name ? (
+                            u.name
+                          ) : (
+                            <span className="text-amber-600 italic font-medium">Sin nombre asignado</span>
+                          )}
+                          {isCurrentUser && <span className="ml-1.5 text-[11px] bg-brand-blue/10 text-brand-blue px-1.5 py-0.5 rounded-full">tú</span>}
+                        </p>
+                        <button
+                          onClick={() => {
+                            setEditingUserId(u.id);
+                            setEditingName(u.name || (u.email ? u.email.split("@")[0] : ""));
+                          }}
+                          className="opacity-60 group-hover:opacity-100 p-0.5 hover:bg-brand-blue/10 rounded text-brand-blue transition-all"
+                          title="Editar / Asignar nombre"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
                     <p className="text-xs text-[#5D7299] truncate">{u.email}</p>
                     <div className="flex gap-1 mt-1 flex-wrap">
                       {u.role && u.role !== "medico" && u.role !== "funcionario" && (
