@@ -185,6 +185,7 @@ export function RecetaList({
 }) {
   const [search, setSearch] = useState("");
   const [filterEstado, setFilterEstado] = useState("all");
+  const [sortBy, setSortBy] = useState<"urgencia" | "fecha_desc" | "fecha_asc" | "nombre">("urgencia");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Receta | null>(null);
   const [ticketReceta, setTicketReceta] = useState<Receta | null>(null);
@@ -243,6 +244,44 @@ export function RecetaList({
     const matchSearch = matchNombre || matchRut || matchMed;
     const matchEstado = filterEstado === "all" || r.estado === filterEstado;
     return matchSearch && matchEstado;
+  });
+
+  // Puntuación de urgencia clínica para ordenamiento (menor valor = mayor prioridad / menos días restantes)
+  const getUrgenciaScore = (r: Receta): number => {
+    if (r.estado !== "pendiente") return 999999;
+    if (r.fechaLimite) {
+      // Negativo = días vencida (ej. -5 es más urgente que -1, luego 0, 1, 2...)
+      return daysToDeadline(r.fechaLimite);
+    }
+    if (r.fechaSolicitud) {
+      return config.diasAlertaRoja - daysSince(r.fechaSolicitud);
+    }
+    return 99990;
+  };
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "urgencia") {
+      const scoreA = getUrgenciaScore(a);
+      const scoreB = getUrgenciaScore(b);
+      if (scoreA !== scoreB) return scoreA - scoreB;
+      const timeA = a.fechaSolicitud?.toMillis() ?? 0;
+      const timeB = b.fechaSolicitud?.toMillis() ?? 0;
+      return timeA - timeB;
+    }
+    if (sortBy === "fecha_desc") {
+      const timeA = a.fechaSolicitud?.toMillis() ?? 0;
+      const timeB = b.fechaSolicitud?.toMillis() ?? 0;
+      return timeB - timeA;
+    }
+    if (sortBy === "fecha_asc") {
+      const timeA = a.fechaSolicitud?.toMillis() ?? 0;
+      const timeB = b.fechaSolicitud?.toMillis() ?? 0;
+      return timeA - timeB;
+    }
+    if (sortBy === "nombre") {
+      return (a.nombrePaciente || "").localeCompare(b.nombrePaciente || "");
+    }
+    return 0;
   });
 
   const total = visibles.length;
@@ -321,6 +360,17 @@ export function RecetaList({
           </select>
           <ChevronDown className="w-4 h-4 text-[#5D7299] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
+        <div className="relative">
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}
+            className="appearance-none bg-white border border-[#DDE6F5] rounded-xl pl-4 pr-9 py-2.5 text-sm font-semibold text-[#0F1B35] focus:border-brand-blue outline-none transition-colors"
+            title="Ordenar recetas por prioridad o fecha">
+            <option value="urgencia">⚡ Más prioritarias (Días restantes)</option>
+            <option value="fecha_desc">📅 Más recientes primero</option>
+            <option value="fecha_asc">📅 Más antiguas primero</option>
+            <option value="nombre">👤 Paciente (A - Z)</option>
+          </select>
+          <ChevronDown className="w-4 h-4 text-[#5D7299] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        </div>
         {puedeCrear && (
           <button onClick={openCreate}
             className="flex items-center justify-center gap-2 bg-brand-blue hover:bg-brand-blue-dark text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg hover:scale-[1.02]">
@@ -345,14 +395,14 @@ export function RecetaList({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EEF3FC]">
-              {filtered.length === 0 && (
+              {sorted.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-5 py-10 text-center text-[#5D7299]">
                     No hay registros que coincidan con la búsqueda.
                   </td>
                 </tr>
               )}
-              {filtered.map((receta) => {
+              {sorted.map((receta) => {
                 const isCritical = isVencida(receta);
                 const isWarning = !isCritical && isWarningZone(receta);
                 // Receta completada cuyo ciclo ya terminó (entrega única > 30d o renovación agotada)
@@ -505,9 +555,16 @@ export function RecetaList({
                       {receta.estado === "completado" ? (
                         <div>
                           <p className="text-green-700 font-semibold text-xs flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 flex-shrink-0"/> <span className="truncate max-w-[130px]">{receta.medicoReceta || "—"}</span>
+                            <CheckCircle2 className="w-3 h-3 flex-shrink-0"/> <span className="truncate max-w-[130px]">{receta.emisorReceta || receta.medicoReceta || "—"}</span>
                           </p>
-                          <p className="text-[#5D7299] text-[11px] mt-0.5">{formatDate(receta.fechaReceta)}</p>
+                          <p className="text-[#5D7299] text-[11px] mt-0.5">
+                            {formatDate(receta.fechaReceta)}
+                            {receta.emisorReceta && receta.medicoReceta && receta.emisorReceta !== receta.medicoReceta && (
+                              <span className="block text-[10px] text-[#8FA3C4] truncate max-w-[130px]" title={`Autorizada en plataforma por ${receta.medicoReceta}`}>
+                                Aut: {receta.medicoReceta}
+                              </span>
+                            )}
+                          </p>
                         </div>
                       ) : receta.medicoReceta ? (
                         <div>

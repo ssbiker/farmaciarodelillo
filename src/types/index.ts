@@ -51,6 +51,8 @@ export interface Receta {
   nota: string;
   medicoReceta?: string;
   medicoUid?: string;
+  emisorReceta?: string; // Médico que emitió originalmente la receta (si difiere del que autoriza en sistema)
+  emisorUid?: string;
   fechaReceta?: Timestamp | null;
   creadoPor: string;
   creadoEn: Timestamp;
