@@ -322,7 +322,7 @@ export function RecetaModal({
   useEffect(() => {
     setRecetaVinculada(null);
     setFormTipo(tipo);
-    setFormSector(sector);
+    setFormSector(receta?.sector || sector);
     if (receta) {
       const esGeneral = receta.medicamento === "SOLICITUD_RECETA";
       setEsSolicitudGeneral(esGeneral);
@@ -380,7 +380,7 @@ export function RecetaModal({
   const targetCollection = !recetaObjetivo
     ? (formTipo === "controladas" ? "recetas_controladas" : formTipo === "maternales" ? "recetas_maternales" : formTipo === "respiratorias" ? "recetas_respiratorias" : "recetas_cronicas")
     : getCollectionForReceta(recetaObjetivo);
-  const targetSector = !recetaObjetivo ? formSector : recetaObjetivo.sector;
+  const targetSector = formSector;
   const targetTipo = !recetaObjetivo
     ? (formTipo === "controladas" ? "controlado" : formTipo === "maternales" ? "maternal" : formTipo === "respiratorias" ? "respiratorio" : "cronico")
     : (recetaObjetivo.tipo === "controlado" ? "controlado" : recetaObjetivo.tipo === "maternal" ? "maternal" : recetaObjetivo.tipo === "respiratorio" ? "respiratorio" : "cronico");
@@ -559,6 +559,7 @@ export function RecetaModal({
             medicamento: primerItem.medicamento,
             codigoMedicamento: primerItem.codigoMedicamento,
             cantidad: primerItem.cantidad,
+            sector: formSector,
             // Array de ítems (modelo nuevo)
             items: itemsConMeses,
             actualizadoEn: now,
@@ -588,7 +589,7 @@ export function RecetaModal({
             form.rut,
             payload.estado,
             recetaObjetivo.tipo,
-            recetaObjetivo.sector,
+            formSector,
             nuevaFechaSolicitud,
             formItems[0]?.autoRenovacion ?? 0,
             formItems[0]?.mesesDescontados ?? 0,
@@ -597,7 +598,7 @@ export function RecetaModal({
           const cambios = detectarCambios(
             dataAntes,
             { ...payloadCifrado, items: itemsConMeses } as Record<string, unknown>,
-            ["estado", "medicoReceta", "motivoRechazo", "medicamento", "cantidad", "items", "nombrePaciente", "rut", "nota", "fechaLimite", "fechaSolicitud", "fechaReceta", "emisorReceta"]
+            ["estado", "sector", "medicoReceta", "motivoRechazo", "medicamento", "cantidad", "items", "nombrePaciente", "rut", "nota", "fechaLimite", "fechaSolicitud", "fechaReceta", "emisorReceta"]
           );
           await registrarAccion(finalCollection, recetaObjetivo.id, "MODIFICACION", farmaciaUser, cambios);
 
@@ -784,6 +785,7 @@ export function RecetaModal({
           medicamento: form.medicamento,
           codigoMedicamento: form.codigoMedicamento,
           cantidad: form.cantidad ? Number(form.cantidad) : 0,
+          sector: formSector,
           nota: form.nota,
           estado: form.estado,
           medicoReceta: form.medicoReceta,
@@ -826,7 +828,7 @@ export function RecetaModal({
             form.rut,
             payload.estado ?? recetaObjetivo.estado,
             recetaObjetivo.tipo,
-            recetaObjetivo.sector,
+            formSector,
             recetaObjetivo.fechaSolicitud,
             payload.autoRenovacion ?? recetaObjetivo.autoRenovacion ?? 0,
             recetaObjetivo.mesesDescontados ?? 0,
@@ -835,7 +837,7 @@ export function RecetaModal({
           const cambios = detectarCambios(
             dataAntes,
             payloadCifrado as Record<string, unknown>,
-            ["nombrePaciente", "rut", "medicamento", "nota", "estado", "medicoReceta", "fechaLimite", "autoRenovacion", "motivoRechazo", "cantidad", "items"]
+            ["nombrePaciente", "rut", "sector", "medicamento", "nota", "estado", "medicoReceta", "fechaLimite", "autoRenovacion", "motivoRechazo", "cantidad", "items"]
           );
           await registrarAccion(finalCollection, recetaObjetivo.id, "MODIFICACION", farmaciaUser, cambios);
           
@@ -883,7 +885,7 @@ export function RecetaModal({
           const payloadCifrado = encryptRecetaFields(payload);
           const docRef = await addDoc(collection(db, collectionName), {
             ...payloadCifrado,
-            sector,
+            sector: formSector,
             tipo: tipo === "controladas" ? "controlado" : tipo === "maternales" ? "maternal" : tipo === "respiratorias" ? "respiratorio" : "cronico",
             fechaSolicitud: now,
             creadoPor: farmaciaUser.id,
@@ -909,7 +911,7 @@ export function RecetaModal({
             form.rut,
             "pendiente",
             (tipo === "controladas" ? "controlado" : tipo === "maternales" ? "maternal" : tipo === "respiratorias" ? "respiratorio" : "cronico") as import("../types").TipoReceta,
-            sector,
+            formSector,
             now,
             form.autoRenovacion ?? 0,
             0,
@@ -971,7 +973,7 @@ export function RecetaModal({
                 </span>
               ) : (
                 <span>
-                  {tipo === "controladas" ? "💊 Controlada" : tipo === "maternales" ? "🤰 Maternal" : tipo === "respiratorias" ? "🫁 Respiratorio" : "🩺 Crónica"} — Sector {sector}
+                  {tipo === "controladas" ? "💊 Controlada" : tipo === "maternales" ? "🤰 Maternal" : tipo === "respiratorias" ? "🫁 Respiratorio" : "🩺 Crónica"} — Sector {formSector}
                 </span>
               )}
               {isDoctorMode && !isSuperAdmin && (
@@ -1052,7 +1054,7 @@ export function RecetaModal({
                   </div>
                 </div>
 
-                {!receta && (
+                {!receta ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
                       <label className={labelClass}>Tipo de Receta</label>
@@ -1078,6 +1080,34 @@ export function RecetaModal({
                         <option value="B">Sector B</option>
                         <option value="CECOSF">CECOSF</option>
                       </select>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className={labelClass}>Tipo de Receta</label>
+                      <div className={inputDisabledClass}>
+                        {tipo === "controladas" ? "💊 Receta Controlada" : tipo === "maternales" ? "🤰 Receta Maternal" : tipo === "respiratorias" ? "🫁 Receta Respiratorio" : "🩺 Receta Crónica"}
+                      </div>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Sector Clínico</label>
+                      {isSuperAdmin || isDoctorMode || puedeAutorizar || puedeEditarDatos ? (
+                        <select
+                          value={formSector}
+                          onChange={(e) => setFormSector(e.target.value as "A" | "B" | "CECOSF")}
+                          className={`${inputClass} font-semibold text-brand-dark border-blue-200 focus:border-brand-blue`}
+                          title="Cambiar sector clínico si la receta fue asignada erróneamente a otro sector"
+                        >
+                          <option value="A">Sector A</option>
+                          <option value="B">Sector B</option>
+                          <option value="CECOSF">CECOSF</option>
+                        </select>
+                      ) : (
+                        <div className={inputDisabledClass}>
+                          {formSector === "A" ? "Sector A" : formSector === "B" ? "Sector B" : "CECOSF"}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
