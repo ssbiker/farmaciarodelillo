@@ -341,7 +341,7 @@ export function RecetaModal({
         medicoUid: receta.medicoUid || "",
         emisorReceta: receta.emisorReceta || receta.medicoReceta || "",
         emisorUid: receta.emisorUid || receta.medicoUid || "",
-        fechaEmisionManual: tsToDateStr(receta.fechaReceta) || new Date().toISOString().split("T")[0],
+        fechaEmisionManual: tsToDateStr(receta.fechaReceta) || tsToDateStr(receta.fechaSolicitud) || new Date().toISOString().split("T")[0],
         fechaLimite: tsToDateStr(receta.fechaLimite),
         autoRenovacion: receta.autoRenovacion ?? 0,
         motivoRechazo: receta.motivoRechazo || "",
@@ -394,6 +394,23 @@ export function RecetaModal({
     if (!str) return null;
     const d = new Date(str + "T23:59:00");
     return Timestamp.fromDate(d);
+  };
+
+  const calcularProximoRetiro = (fechaBaseStr: string, meses: number): string => {
+    if (!fechaBaseStr) return "";
+    const [y, m, d] = fechaBaseStr.split("-").map(Number);
+    const date = new Date(y, m - 1, d);
+    date.setMonth(date.getMonth() + meses);
+    return date.toISOString().split("T")[0];
+  };
+
+  const calcularDiasRestantesDesdeStr = (fechaLimiteStr: string): number => {
+    if (!fechaLimiteStr) return 0;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const [y, m, d] = fechaLimiteStr.split("-").map(Number);
+    const target = new Date(y, m - 1, d);
+    return Math.round((target.getTime() - today.getTime()) / 86400000);
   };
 
   // Asistente de Cálculo Matemático
@@ -528,6 +545,14 @@ export function RecetaModal({
           // Primer ítem para retrocompatibilidad de campos planos (preferir uno autorizado)
           const primerItem = itemsConMeses.find(it => it.estadoItem !== "rechazado") ?? itemsConMeses[0] ?? nuevoItemVacio();
 
+          const nuevaFechaSolicitud = form.fechaEmisionManual
+            ? Timestamp.fromDate(new Date(form.fechaEmisionManual + "T12:00:00"))
+            : recetaObjetivo.fechaSolicitud;
+
+          const nuevaFechaLimite = form.fechaLimite
+            ? dateStrToTs(form.fechaLimite)
+            : (recetaObjetivo.fechaLimite ?? null);
+
           const payload = {
             estado: form.estado,
             // Campos planos (retrocompatibilidad + cifrado existente)
@@ -539,15 +564,17 @@ export function RecetaModal({
             actualizadoEn: now,
             medicoReceta: form.estado !== "pendiente"
               ? (form.medicoReceta || farmaciaUser.name)
-              : recetaObjetivo.medicoReceta,
+              : (recetaObjetivo.medicoReceta || form.medicoReceta || ""),
             medicoUid: form.estado !== "pendiente"
               ? (form.medicoUid || farmaciaUser.id)
-              : recetaObjetivo.medicoUid,
+              : (recetaObjetivo.medicoUid || form.medicoUid || ""),
             emisorReceta: form.emisorReceta || form.medicoReceta || farmaciaUser.name,
             emisorUid: form.emisorUid || form.medicoUid || farmaciaUser.id,
+            fechaSolicitud: nuevaFechaSolicitud,
+            fechaLimite: nuevaFechaLimite,
             fechaReceta: form.estado === "completado"
               ? (form.fechaEmisionManual ? Timestamp.fromDate(new Date(form.fechaEmisionManual + "T12:00:00")) : (recetaObjetivo.fechaReceta ?? now))
-              : null,
+              : (recetaObjetivo.fechaReceta ?? null),
             motivoRechazo: form.estado === "rechazado" ? (form.motivoRechazo || "") : "",
             nombrePaciente: form.nombrePaciente,
             rut: form.rut,
@@ -562,7 +589,7 @@ export function RecetaModal({
             payload.estado,
             recetaObjetivo.tipo,
             recetaObjetivo.sector,
-            recetaObjetivo.fechaSolicitud,
+            nuevaFechaSolicitud,
             formItems[0]?.autoRenovacion ?? 0,
             formItems[0]?.mesesDescontados ?? 0,
             false
@@ -570,7 +597,7 @@ export function RecetaModal({
           const cambios = detectarCambios(
             dataAntes,
             { ...payloadCifrado, items: itemsConMeses } as Record<string, unknown>,
-            ["estado", "medicoReceta", "motivoRechazo", "medicamento", "cantidad", "items", "nombrePaciente", "rut", "nota"]
+            ["estado", "medicoReceta", "motivoRechazo", "medicamento", "cantidad", "items", "nombrePaciente", "rut", "nota", "fechaLimite", "fechaSolicitud", "fechaReceta", "emisorReceta"]
           );
           await registrarAccion(finalCollection, recetaObjetivo.id, "MODIFICACION", farmaciaUser, cambios);
 
@@ -766,7 +793,10 @@ export function RecetaModal({
           actualizadoEn: now,
           fechaReceta: form.estado === "completado"
             ? (form.fechaEmisionManual ? Timestamp.fromDate(new Date(form.fechaEmisionManual + "T12:00:00")) : (receta?.fechaReceta ?? now))
-            : null,
+            : (receta?.fechaReceta ?? null),
+          fechaSolicitud: form.fechaEmisionManual
+            ? Timestamp.fromDate(new Date(form.fechaEmisionManual + "T12:00:00"))
+            : (receta?.fechaSolicitud ?? now),
           fechaLimite: dateStrToTs(form.fechaLimite),
           autoRenovacion: form.estado === "rechazado" ? 0 : (form.autoRenovacion ?? 0),
           motivoRechazo: form.estado === "rechazado" ? (form.motivoRechazo || "") : "",
@@ -3628,53 +3658,158 @@ export function RecetaModal({
               </div>
             </div>
 
-            {/* Configuración clínica avanzada: Emisor original y Fecha de emisión AVIS */}
+            {/* Configuración clínica avanzada: Emisor original, Fecha de emisión AVIS y Fecha Límite */}
             {(isDoctorMode || puedeAutorizar || isSuperAdmin) && (
-              <div className="pt-3 border-t border-[#DDE6F5]/80 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Profesional emisor de la receta física/AVIS */}
-                <div>
-                  <label className={labelClass}>
-                    <span>🩺 Profesional Emisor (Quien confeccionó la receta)</span>
-                  </label>
-                  <select
-                    value={form.emisorUid || form.medicoUid || ""}
-                    onChange={(e) => {
-                      const selId = e.target.value;
-                      const selMed = medicos.find((m) => m.id === selId);
-                      setForm((prev) => ({
-                        ...prev,
-                        emisorUid: selId,
-                        emisorReceta: selMed ? selMed.name : "",
-                      }));
-                    }}
-                    className={`${inputClass} appearance-none text-xs`}
-                  >
-                    <option value="">Mismo profesional autorizador / tratante</option>
-                    {medicos.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name} {m.id === farmaciaUser?.id ? "(Usted)" : ""}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-[11px] text-[#5D7299] mt-1">
-                    Útil si usted está autorizando en plataforma una receta emitida por otro colega en box o AVIS.
-                  </p>
+              <div className="pt-3 border-t border-[#DDE6F5]/80 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Profesional emisor de la receta física/AVIS */}
+                  <div>
+                    <label className={labelClass}>
+                      <span>🩺 Profesional Emisor (Quien confeccionó la receta)</span>
+                    </label>
+                    <select
+                      value={form.emisorUid || form.medicoUid || ""}
+                      onChange={(e) => {
+                        const selId = e.target.value;
+                        const selMed = medicos.find((m) => m.id === selId);
+                        setForm((prev) => ({
+                          ...prev,
+                          emisorUid: selId,
+                          emisorReceta: selMed ? selMed.name : "",
+                        }));
+                      }}
+                      className={`${inputClass} appearance-none text-xs`}
+                    >
+                      <option value="">Mismo profesional autorizador / tratante</option>
+                      {medicos.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name} {m.id === farmaciaUser?.id ? "(Usted)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[11px] text-[#5D7299] mt-1">
+                      Útil si autoriza en plataforma una receta emitida por otro colega en box o AVIS.
+                    </p>
+                  </div>
+
+                  {/* Fecha de emisión real de la receta (AVIS) */}
+                  <div>
+                    <label className={labelClass}>
+                      <span>📅 Fecha de Emisión en AVIS / Papel</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={form.fechaEmisionManual || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        // Al ingresar la fecha en AVIS, calcular automáticamente fecha límite +1 mes
+                        const prox = val ? calcularProximoRetiro(val, 1) : form.fechaLimite;
+                        setForm((prev) => ({
+                          ...prev,
+                          fechaEmisionManual: val,
+                          fechaLimite: prox,
+                        }));
+                      }}
+                      className={`${inputClass} text-xs font-semibold`}
+                    />
+                    <p className="text-[11px] text-[#5D7299] mt-1">
+                      Fecha de confección de la última receta en AVIS (desde aquí corre la vigencia).
+                    </p>
+                  </div>
                 </div>
 
-                {/* Fecha de emisión real de la receta (AVIS) */}
-                <div>
-                  <label className={labelClass}>
-                    <span>📅 Fecha de Emisión en AVIS / Papel</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={form.fechaEmisionManual || ""}
-                    onChange={(e) => setForm((prev) => ({ ...prev, fechaEmisionManual: e.target.value }))}
-                    className={`${inputClass} text-xs font-semibold`}
-                  />
-                  <p className="text-[11px] text-[#5D7299] mt-1">
-                    Permite sincronizar con la fecha de retiro de AVIS para evitar falsos vencimientos.
-                  </p>
+                {/* Sincronización de Próximo Retiro / Fecha Límite */}
+                <div className="bg-amber-50/70 border border-amber-200/90 rounded-xl p-3.5 space-y-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4 text-amber-700" />
+                        Próximo Retiro / Fecha Límite de Atención:
+                      </span>
+                      <p className="text-[11px] text-amber-800/80 mt-0.5">
+                        Controla el vencimiento en el listado. Permite mantener la receta como <strong>Pendiente</strong> con sus días reales restantes.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="date"
+                        value={form.fechaLimite || ""}
+                        onChange={(e) => setForm((prev) => ({ ...prev, fechaLimite: e.target.value }))}
+                        className="bg-white border border-amber-300 rounded-lg px-2.5 py-1 text-xs font-bold text-amber-950 focus:border-amber-500 outline-none shadow-sm"
+                      />
+                      {form.fechaLimite && (
+                        <button
+                          type="button"
+                          onClick={() => setForm((prev) => ({ ...prev, fechaLimite: "" }))}
+                          className="text-[11px] text-[#8FA3C4] hover:text-red-500 px-1 py-0.5"
+                          title="Quitar fecha límite fija"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Chips rápidos de cálculo de retiro (+1 mes, +2 meses, +3 meses) */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] uppercase font-bold text-amber-800 tracking-wider">Calcular desde emisión AVIS:</span>
+                    {[
+                      { label: "✦ +1 Mes (Pauta mensual AVIS)", meses: 1 },
+                      { label: "✦ +2 Meses", meses: 2 },
+                      { label: "✦ +3 Meses", meses: 3 },
+                    ].map(chip => (
+                      <button
+                        key={chip.meses}
+                        type="button"
+                        onClick={() => {
+                          const base = form.fechaEmisionManual || new Date().toISOString().split("T")[0];
+                          const prox = calcularProximoRetiro(base, chip.meses);
+                          setForm(prev => ({ ...prev, fechaLimite: prox }));
+                        }}
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-lg border border-amber-300/80 bg-white text-amber-900 hover:bg-amber-100 transition-all shadow-2xs"
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Estado calculado en tiempo real */}
+                  {form.fechaLimite && (() => {
+                    const diff = calcularDiasRestantesDesdeStr(form.fechaLimite);
+                    const venceStr = form.fechaLimite.split("-").reverse().join("/");
+                    if (diff < 0) {
+                      return (
+                        <div className="text-xs font-semibold text-red-700 bg-red-100/70 border border-red-200 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+                          <AlertCircle className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
+                          <span>Vencida hace {Math.abs(diff)} día(s) (venció el {venceStr}).</span>
+                        </div>
+                      );
+                    }
+                    if (diff <= 5) {
+                      return (
+                        <div className="text-xs font-bold text-amber-800 bg-amber-100/90 border border-amber-300 rounded-lg px-3 py-1.5 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-amber-700" />
+                            Quedan {diff} día(s) para el retiro (vence el {venceStr}).
+                          </span>
+                          <span className="text-[10px] font-normal text-amber-900/80">
+                            {form.estado === "pendiente" ? "Permanecerá en Pendiente con días reales" : ""}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 rounded-lg px-3 py-1.5 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Vigente: quedan {diff} días restantes (próximo retiro el {venceStr}).
+                        </span>
+                        <span className="text-[10px] font-normal text-emerald-900/80">
+                          {form.estado === "pendiente" ? "Permanecerá en Pendiente en el listado" : ""}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -3827,7 +3962,7 @@ export function RecetaModal({
                   ? (formItems.some(it => it.estadoItem === "rechazado")
                       ? `Autorizar Receta (Parcial)`
                       : `Autorizar Receta ${currentTipoLabel}`)
-                  : form.estado === "rechazado" ? "Confirmar Rechazo" : "Confirmar Decisión")
+                  : form.estado === "rechazado" ? "Confirmar Rechazo" : form.estado === "pendiente" ? "Guardar Cambios (Mantener Pendiente)" : "Confirmar Decisión")
               : "Guardar Registro"}
           </button>
         </div>
