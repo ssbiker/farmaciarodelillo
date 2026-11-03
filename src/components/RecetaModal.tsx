@@ -397,7 +397,7 @@ export function RecetaModal({
   };
 
   // Asistente de Cálculo Matemático
-  type FormatoDosis = "comp" | "puff" | "amp" | "gotas" | "ml" | "crema" | "ovulo" | "unid";
+  type FormatoDosis = "comp" | "puff" | "amp" | "gotas" | "ml" | "crema" | "ovulo" | "insulina" | "jeringa" | "unid";
   const [calcOpenIdx, setCalcOpenIdx] = useState<number | null>(null);
   const [calcTipo, setCalcTipo] = useState<FormatoDosis>("comp");
   const [calcDosis, setCalcDosis] = useState("1");
@@ -421,6 +421,16 @@ export function RecetaModal({
 
     if (tipo === "comp") {
       total = Math.ceil(tomas * dosis * dias);
+    } else if (tipo === "insulina") {
+      // Cálculo de Insulina en UI: total UI requeridas divididas por la capacidad del envase (1000 UI por frasco o 300 UI por lápiz)
+      const totalUI = tomas * dosis * dias;
+      const capacidadEnvase = parseFloat(frascoTamanoStr) || 1000;
+      total = Math.ceil(totalUI / (capacidadEnvase > 0 ? capacidadEnvase : 1000));
+      total = Math.max(1, total);
+    } else if (tipo === "jeringa") {
+      // Jeringas e insumos descartables: conteo unitario directo
+      total = Math.ceil(tomas * dosis * dias);
+      total = Math.max(1, total);
     } else if (tipo === "puff") {
       const totalPuffs = tomas * dosis * dias;
       const dosisPorInhalador = parseFloat(frascoTamanoStr) || 200;
@@ -447,8 +457,14 @@ export function RecetaModal({
       total = Math.ceil(tomas * dosis * dias);
       total = Math.max(1, total);
     } else if (tipo === "unid") {
-      total = Math.ceil(tomas * dosis * dias);
-      total = Math.max(1, total);
+      // Retrocompatibilidad
+      const capacidad = parseFloat(frascoTamanoStr) || 1000;
+      if (dosis >= 5) {
+        const totalUI = tomas * dosis * dias;
+        total = Math.max(1, Math.ceil(totalUI / capacidad));
+      } else {
+        total = Math.max(1, Math.ceil(tomas * dosis * dias));
+      }
     }
 
     // 1. Actualizar form.cantidad (por compatibilidad)
@@ -1573,6 +1589,17 @@ export function RecetaModal({
                                     initialDias = "30";
                                     initialFrasco = itemMed.includes("lactulosa") ? "200" : "100";
                                   } else if (
+                                    itemMed.includes("jeringa") ||
+                                    itemMed.includes("lanceta") ||
+                                    itemMed.includes("aguja") ||
+                                    itemMed.includes("insumo")
+                                  ) {
+                                    detectedTipo = "jeringa";
+                                    initialDosis = "1";
+                                    initialHoras = "24";
+                                    initialDias = "30";
+                                    initialFrasco = "1";
+                                  } else if (
                                     itemMed.includes("insulina") ||
                                     itemMed.includes("glargina") ||
                                     itemMed.includes("nph") ||
@@ -1581,15 +1608,15 @@ export function RecetaModal({
                                     itemMed.includes("aspart") ||
                                     itemMed.includes("detemir") ||
                                     itemMed.includes("degludec") ||
-                                    itemMed.includes("jeringa") ||
-                                    itemMed.includes("lanceta") ||
-                                    itemMed.includes("aguja")
+                                    itemMed.includes("lantus") ||
+                                    itemMed.includes("tresiba")
                                   ) {
-                                    detectedTipo = "unid";
-                                    initialDosis = itemMed.includes("jeringa") ? "1" : "20";
+                                    detectedTipo = "insulina";
+                                    initialDosis = "20";
                                     initialHoras = "24";
                                     initialDias = "30";
-                                    initialFrasco = "1";
+                                    const esLapiz = itemMed.includes("glargina") || itemMed.includes("lantus") || itemMed.includes("degludec") || itemMed.includes("tresiba") || itemMed.includes("lapiz") || itemMed.includes("lápiz") || itemMed.includes("pen");
+                                    initialFrasco = esLapiz ? "300" : "1000";
                                   } else {
                                     detectedTipo = "comp";
                                     initialDosis = "1";
@@ -1616,16 +1643,17 @@ export function RecetaModal({
                                   <span className="text-[10px] font-bold text-brand-blue uppercase tracking-wider flex items-center gap-1">
                                     ✦ Calculadora de Posología Clínica
                                   </span>
-                                  <span className="text-[10px] text-[#5D7299]">Comprimidos, Inhaladores, Inyectables, Gotas, Jarabes, Cremas y Óvulos</span>
+                                  <span className="text-[10px] text-[#5D7299]">Comprimidos, Insulina (UI), Jeringas, Inhaladores, Gotas, Jarabes, Cremas y Óvulos</span>
                                 </div>
 
-                                {/* Selector de Formato: 8 presentaciones */}
+                                {/* Selector de Formato: 9 presentaciones */}
                                 <div className="flex items-center gap-1.5 p-1 bg-white/95 border border-brand-blue/20 rounded-xl overflow-x-auto shadow-inner">
                                   {[
                                     { id: "comp", label: "💊 Comprimidos", activeBg: "bg-brand-blue text-white shadow-sm" },
-                                    { id: "unid", label: "💉 Unidades (Insulina)", activeBg: "bg-teal-700 text-white shadow-sm" },
+                                    { id: "insulina", label: "💉 Insulina (UI)", activeBg: "bg-teal-700 text-white shadow-sm" },
+                                    { id: "jeringa", label: "🩹 Jeringas / Insumos", activeBg: "bg-emerald-700 text-white shadow-sm" },
                                     { id: "puff", label: "🫁 Inhalador (Puff)", activeBg: "bg-sky-700 text-white shadow-sm" },
-                                    { id: "amp", label: "🩹 Inyectable (Amp.)", activeBg: "bg-emerald-700 text-white shadow-sm" },
+                                    { id: "amp", label: "🩹 Inyectable (Amp.)", activeBg: "bg-indigo-700 text-white shadow-sm" },
                                     { id: "gotas", label: "💧 Gotas", activeBg: "bg-cyan-700 text-white shadow-sm" },
                                     { id: "ml", label: "🧪 Jarabe (ml)", activeBg: "bg-purple-700 text-white shadow-sm" },
                                     { id: "crema", label: "🧴 Crema / Tópico", activeBg: "bg-amber-700 text-white shadow-sm" },
@@ -1645,6 +1673,16 @@ export function RecetaModal({
 
                                           if (newTipo === "comp") {
                                             defDosis = "1";
+                                            defFrasco = "1";
+                                          } else if (newTipo === "insulina") {
+                                            defDosis = "20";
+                                            defHoras = "24";
+                                            defDias = "30";
+                                            defFrasco = "1000";
+                                          } else if (newTipo === "jeringa") {
+                                            defDosis = "1";
+                                            defHoras = "24";
+                                            defDias = "30";
                                             defFrasco = "1";
                                           } else if (newTipo === "puff") {
                                             defDosis = "2";
@@ -1680,7 +1718,7 @@ export function RecetaModal({
                                             defDosis = "20";
                                             defHoras = "24";
                                             defDias = "30";
-                                            defFrasco = "1";
+                                            defFrasco = "1000";
                                           }
 
                                           setCalcTipo(newTipo);
@@ -2772,50 +2810,221 @@ export function RecetaModal({
                                   </div>
                                 )}
 
-                                {/* Inputs para UNIDADES (Insulina, Jeringas, etc.) */}
-                                {calcTipo === "unid" && (
+                                {/* Inputs para INSULINA (UI) */}
+                                {(calcTipo === "insulina" || (calcTipo === "unid" && parseFloat(calcDosis) >= 5)) && (
+                                  <div className="space-y-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                      {/* Dosis en UI */}
+                                      <div className="space-y-1">
+                                        <label className="text-xs font-bold text-teal-800 flex items-center justify-between">
+                                          <span>💉 Dosis de Insulina:</span>
+                                          <span className="text-[10px] text-teal-700 font-semibold">Unidades (UI)</span>
+                                        </label>
+                                        <div className="flex items-center gap-1.5">
+                                          <input
+                                            type="number"
+                                            step="any"
+                                            min="1"
+                                            value={calcDosis}
+                                            onChange={e => {
+                                              setCalcDosis(e.target.value);
+                                              runCalculadora(e.target.value, calcHoras, calcDias, "insulina", calcFrascoTamano, idx);
+                                            }}
+                                            className="w-full bg-white border border-teal-300 rounded-xl px-2.5 py-1.5 text-sm text-center font-black text-teal-900 focus:border-teal-500 outline-none shadow-inner"
+                                          />
+                                          <span className="text-xs font-semibold text-[#5D7299]">UI</span>
+                                        </div>
+                                        {/* Chips de dosis comunes */}
+                                        <div className="flex flex-wrap gap-1 pt-1">
+                                          {[
+                                            { label: "10 UI", val: "10" },
+                                            { label: "15 UI", val: "15" },
+                                            { label: "20 UI", val: "20" },
+                                            { label: "24 UI", val: "24" },
+                                            { label: "30 UI", val: "30" },
+                                            { label: "40 UI", val: "40" },
+                                          ].map(chip => (
+                                            <button
+                                              key={chip.val}
+                                              type="button"
+                                              onClick={() => {
+                                                setCalcDosis(chip.val);
+                                                runCalculadora(chip.val, calcHoras, calcDias, "insulina", calcFrascoTamano, idx);
+                                              }}
+                                              className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg border transition-all ${
+                                                calcDosis === chip.val
+                                                  ? "bg-teal-700 text-white border-teal-800 shadow-sm scale-105"
+                                                  : "bg-white text-[#3D5278] border-[#DDE6F5] hover:bg-teal-50 hover:text-teal-800"
+                                              }`}
+                                            >
+                                              {chip.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      {/* Frecuencia (horas) */}
+                                      <div className="space-y-1">
+                                        <label className="text-xs font-bold text-teal-800 flex items-center justify-between">
+                                          <span>⏰ Cada cuántas horas:</span>
+                                        </label>
+                                        <div className="flex items-center gap-1.5">
+                                          <input
+                                            type="number"
+                                            min="1"
+                                            max="48"
+                                            value={calcHoras}
+                                            onChange={e => {
+                                              setCalcHoras(e.target.value);
+                                              runCalculadora(calcDosis, e.target.value, calcDias, "insulina", calcFrascoTamano, idx);
+                                            }}
+                                            className="w-full bg-white border border-teal-300 rounded-xl px-2.5 py-1.5 text-sm text-center font-black text-teal-900 focus:border-teal-500 outline-none shadow-inner"
+                                          />
+                                          <span className="text-xs font-semibold text-[#5D7299]">hrs</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1 pt-1">
+                                          {[
+                                            { label: "c/24h (1x día)", val: "24" },
+                                            { label: "c/12h (2x día)", val: "12" },
+                                            { label: "c/8h (3x día)", val: "8" },
+                                          ].map(chip => (
+                                            <button
+                                              key={chip.val}
+                                              type="button"
+                                              onClick={() => {
+                                                setCalcHoras(chip.val);
+                                                runCalculadora(calcDosis, chip.val, calcDias, "insulina", calcFrascoTamano, idx);
+                                              }}
+                                              className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg border transition-all ${
+                                                calcHoras === chip.val
+                                                  ? "bg-teal-700 text-white border-teal-800 shadow-sm scale-105"
+                                                  : "bg-white text-[#3D5278] border-[#DDE6F5] hover:bg-teal-50 hover:text-teal-800"
+                                              }`}
+                                            >
+                                              {chip.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      {/* Días de tratamiento */}
+                                      <div className="space-y-1">
+                                        <label className="text-xs font-bold text-teal-800 flex items-center justify-between">
+                                          <span>📅 Días de tratamiento:</span>
+                                        </label>
+                                        <div className="flex items-center gap-1.5">
+                                          <input
+                                            type="number"
+                                            min="1"
+                                            value={calcDias}
+                                            onChange={e => {
+                                              setCalcDias(e.target.value);
+                                              runCalculadora(calcDosis, calcHoras, e.target.value, "insulina", calcFrascoTamano, idx);
+                                            }}
+                                            className="w-full bg-white border border-teal-300 rounded-xl px-2.5 py-1.5 text-sm text-center font-black text-teal-900 focus:border-teal-500 outline-none shadow-inner"
+                                          />
+                                          <span className="text-xs font-semibold text-[#5D7299]">días</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1 pt-1">
+                                          {[
+                                            { label: "30 días (1 mes)", val: "30" },
+                                            { label: "60 días (2 meses)", val: "60" },
+                                            { label: "90 días (3 meses)", val: "90" },
+                                          ].map(chip => (
+                                            <button
+                                              key={chip.val}
+                                              type="button"
+                                              onClick={() => {
+                                                setCalcDias(chip.val);
+                                                runCalculadora(calcDosis, calcHoras, chip.val, "insulina", calcFrascoTamano, idx);
+                                              }}
+                                              className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg border transition-all ${
+                                                calcDias === chip.val
+                                                  ? "bg-teal-700 text-white border-teal-800 shadow-sm scale-105"
+                                                  : "bg-white text-[#3D5278] border-[#DDE6F5] hover:bg-teal-50 hover:text-teal-800"
+                                              }`}
+                                            >
+                                              {chip.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Selector de Presentación de Insulina: Frasco 1.000 UI vs Lápiz 300 UI */}
+                                    <div className="bg-white/85 border border-teal-200 rounded-xl p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-inner">
+                                      <div className="text-xs">
+                                        <span className="font-bold text-teal-900">Presentación farmacéutica:</span>
+                                        <span className="text-[11px] text-[#5D7299] ml-1.5">Determina cuántas UI rinde cada envase a despachar</span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5">
+                                        {[
+                                          { label: "🧪 Frasco 1.000 UI (10 ml - NPH / Cristalina)", val: "1000" },
+                                          { label: "🖊️ Lápiz 300 UI (3 ml - Glargina / Lantus)", val: "300" },
+                                        ].map(envase => {
+                                          const isSelected = (calcFrascoTamano === envase.val) || (!calcFrascoTamano && envase.val === "1000");
+                                          return (
+                                            <button
+                                              key={envase.val}
+                                              type="button"
+                                              onClick={() => {
+                                                setCalcFrascoTamano(envase.val);
+                                                runCalculadora(calcDosis, calcHoras, calcDias, "insulina", envase.val, idx);
+                                              }}
+                                              className={`text-xs font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                                                isSelected
+                                                  ? "bg-teal-800 text-white border-teal-900 shadow-sm"
+                                                  : "bg-white text-teal-800 border-teal-300 hover:bg-teal-50"
+                                              }`}
+                                            >
+                                              {envase.label}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Inputs para JERINGAS E INSUMOS */}
+                                {(calcTipo === "jeringa" || (calcTipo === "unid" && parseFloat(calcDosis) < 5)) && (
                                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                                    {/* Dosis en Unidades */}
+                                    {/* Cantidad de Jeringas por uso */}
                                     <div className="space-y-1">
-                                      <label className="text-xs font-bold text-teal-800 flex items-center justify-between">
-                                        <span>💉 Dosis / Cantidad:</span>
-                                        <span className="text-[10px] text-teal-700 font-semibold">UI o jeringas</span>
+                                      <label className="text-xs font-bold text-emerald-800 flex items-center justify-between">
+                                        <span>🩹 Jeringas por aplicación:</span>
+                                        <span className="text-[10px] text-emerald-700 font-semibold">Unidades</span>
                                       </label>
                                       <div className="flex items-center gap-1.5">
                                         <input
                                           type="number"
-                                          step="any"
+                                          step="1"
                                           min="1"
                                           value={calcDosis}
                                           onChange={e => {
                                             setCalcDosis(e.target.value);
-                                            runCalculadora(e.target.value, calcHoras, calcDias, "unid", calcFrascoTamano, idx);
+                                            runCalculadora(e.target.value, calcHoras, calcDias, "jeringa", "1", idx);
                                           }}
-                                          className="w-full bg-white border border-teal-300 rounded-xl px-2.5 py-1.5 text-sm text-center font-black text-teal-900 focus:border-teal-500 outline-none shadow-inner"
+                                          className="w-full bg-white border border-emerald-300 rounded-xl px-2.5 py-1.5 text-sm text-center font-black text-emerald-900 focus:border-emerald-500 outline-none shadow-inner"
                                         />
-                                        <span className="text-xs font-semibold text-[#5D7299]">unid/UI</span>
+                                        <span className="text-xs font-semibold text-[#5D7299]">jeringa(s)</span>
                                       </div>
-                                      {/* Chips de dosis comunes */}
                                       <div className="flex flex-wrap gap-1 pt-1">
                                         {[
-                                          { label: "1 unid (jeringa)", val: "1" },
-                                          { label: "10 UI", val: "10" },
-                                          { label: "15 UI", val: "15" },
-                                          { label: "20 UI", val: "20" },
-                                          { label: "30 UI", val: "30" },
-                                          { label: "40 UI", val: "40" },
+                                          { label: "1 jeringa por aplicación", val: "1" },
+                                          { label: "2 jeringas", val: "2" },
                                         ].map(chip => (
                                           <button
                                             key={chip.val}
                                             type="button"
                                             onClick={() => {
                                               setCalcDosis(chip.val);
-                                              runCalculadora(chip.val, calcHoras, calcDias, "unid", calcFrascoTamano, idx);
+                                              runCalculadora(chip.val, calcHoras, calcDias, "jeringa", "1", idx);
                                             }}
                                             className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg border transition-all ${
                                               calcDosis === chip.val
-                                                ? "bg-teal-700 text-white border-teal-800 shadow-sm scale-105"
-                                                : "bg-white text-[#3D5278] border-[#DDE6F5] hover:bg-teal-50 hover:text-teal-800"
+                                                ? "bg-emerald-700 text-white border-emerald-800 shadow-sm scale-105"
+                                                : "bg-white text-[#3D5278] border-[#DDE6F5] hover:bg-emerald-50 hover:text-emerald-800"
                                             }`}
                                           >
                                             {chip.label}
@@ -2826,7 +3035,7 @@ export function RecetaModal({
 
                                     {/* Frecuencia (horas) */}
                                     <div className="space-y-1">
-                                      <label className="text-xs font-bold text-teal-800 flex items-center justify-between">
+                                      <label className="text-xs font-bold text-emerald-800 flex items-center justify-between">
                                         <span>⏰ Cada cuántas horas:</span>
                                       </label>
                                       <div className="flex items-center gap-1.5">
@@ -2837,9 +3046,9 @@ export function RecetaModal({
                                           value={calcHoras}
                                           onChange={e => {
                                             setCalcHoras(e.target.value);
-                                            runCalculadora(calcDosis, e.target.value, calcDias, "unid", calcFrascoTamano, idx);
+                                            runCalculadora(calcDosis, e.target.value, calcDias, "jeringa", "1", idx);
                                           }}
-                                          className="w-full bg-white border border-teal-300 rounded-xl px-2.5 py-1.5 text-sm text-center font-black text-teal-900 focus:border-teal-500 outline-none shadow-inner"
+                                          className="w-full bg-white border border-emerald-300 rounded-xl px-2.5 py-1.5 text-sm text-center font-black text-emerald-900 focus:border-emerald-500 outline-none shadow-inner"
                                         />
                                         <span className="text-xs font-semibold text-[#5D7299]">hrs</span>
                                       </div>
@@ -2847,19 +3056,18 @@ export function RecetaModal({
                                         {[
                                           { label: "c/24h (1x día)", val: "24" },
                                           { label: "c/12h (2x día)", val: "12" },
-                                          { label: "c/8h (3x día)", val: "8" },
                                         ].map(chip => (
                                           <button
                                             key={chip.val}
                                             type="button"
                                             onClick={() => {
                                               setCalcHoras(chip.val);
-                                              runCalculadora(calcDosis, chip.val, calcDias, "unid", calcFrascoTamano, idx);
+                                              runCalculadora(calcDosis, chip.val, calcDias, "jeringa", "1", idx);
                                             }}
                                             className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg border transition-all ${
                                               calcHoras === chip.val
-                                                ? "bg-teal-700 text-white border-teal-800 shadow-sm scale-105"
-                                                : "bg-white text-[#3D5278] border-[#DDE6F5] hover:bg-teal-50 hover:text-teal-800"
+                                                ? "bg-emerald-700 text-white border-emerald-800 shadow-sm scale-105"
+                                                : "bg-white text-[#3D5278] border-[#DDE6F5] hover:bg-emerald-50 hover:text-emerald-800"
                                             }`}
                                           >
                                             {chip.label}
@@ -2870,7 +3078,7 @@ export function RecetaModal({
 
                                     {/* Días de tratamiento */}
                                     <div className="space-y-1">
-                                      <label className="text-xs font-bold text-teal-800 flex items-center justify-between">
+                                      <label className="text-xs font-bold text-emerald-800 flex items-center justify-between">
                                         <span>📅 Días de tratamiento:</span>
                                       </label>
                                       <div className="flex items-center gap-1.5">
@@ -2880,9 +3088,9 @@ export function RecetaModal({
                                           value={calcDias}
                                           onChange={e => {
                                             setCalcDias(e.target.value);
-                                            runCalculadora(calcDosis, calcHoras, e.target.value, "unid", calcFrascoTamano, idx);
+                                            runCalculadora(calcDosis, calcHoras, e.target.value, "jeringa", "1", idx);
                                           }}
-                                          className="w-full bg-white border border-teal-300 rounded-xl px-2.5 py-1.5 text-sm text-center font-black text-teal-900 focus:border-teal-500 outline-none shadow-inner"
+                                          className="w-full bg-white border border-emerald-300 rounded-xl px-2.5 py-1.5 text-sm text-center font-black text-emerald-900 focus:border-emerald-500 outline-none shadow-inner"
                                         />
                                         <span className="text-xs font-semibold text-[#5D7299]">días</span>
                                       </div>
@@ -2897,12 +3105,12 @@ export function RecetaModal({
                                             type="button"
                                             onClick={() => {
                                               setCalcDias(chip.val);
-                                              runCalculadora(calcDosis, calcHoras, chip.val, "unid", calcFrascoTamano, idx);
+                                              runCalculadora(calcDosis, calcHoras, chip.val, "jeringa", "1", idx);
                                             }}
                                             className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg border transition-all ${
                                               calcDias === chip.val
-                                                ? "bg-teal-700 text-white border-teal-800 shadow-sm scale-105"
-                                                : "bg-white text-[#3D5278] border-[#DDE6F5] hover:bg-teal-50 hover:text-teal-800"
+                                                ? "bg-emerald-700 text-white border-emerald-800 shadow-sm scale-105"
+                                                : "bg-white text-[#3D5278] border-[#DDE6F5] hover:bg-emerald-50 hover:text-emerald-800"
                                             }`}
                                           >
                                             {chip.label}
@@ -3077,27 +3285,50 @@ export function RecetaModal({
                                   );
                                 })()}
 
-                                {calcTipo === "unid" && (() => {
+                                {(calcTipo === "insulina" || (calcTipo === "unid" && parseFloat(calcDosis) >= 5)) && (() => {
                                   const tomas = 24 / (parseFloat(calcHoras) || 24);
-                                  const totalUnid = Math.max(1, Math.ceil(tomas * (parseFloat(calcDosis) || 0) * (parseFloat(calcDias) || 0)));
+                                  const totalUI = tomas * (parseFloat(calcDosis) || 0) * (parseFloat(calcDias) || 0);
+                                  const capacidad = parseFloat(calcFrascoTamano) || 1000;
+                                  const envases = Math.max(1, Math.ceil(totalUI / capacidad));
+                                  const esFrasco = capacidad >= 1000;
+                                  const tipoEnvaseNombre = esFrasco ? "frasco" : "lápiz";
+                                  const tipoEnvasePlural = esFrasco ? "frascos" : "lápices";
                                   return (
-                                    <div className="bg-white/90 border border-teal-300/60 rounded-xl p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-sm">
+                                    <div className="bg-white/95 border border-teal-400/70 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-sm">
                                       <div className="text-xs text-[#5D7299]">
                                         <div>
-                                          <span className="font-semibold text-teal-800">Cálculo:</span>{" "}
-                                          {tomas.toFixed(1).replace(".0", "")} aplicación(es)/día × {calcDosis} unid. × {calcDias} días ={" "}
-                                          <span className="font-bold text-[#0F1B35]">{totalUnid} unidades en total</span>
+                                          <span className="font-semibold text-teal-800">Cálculo UI:</span>{" "}
+                                          {tomas.toFixed(1).replace(".0", "")} toma(s)/día × {calcDosis} UI × {calcDias} días ={" "}
+                                          <span className="font-bold text-[#0F1B35]">{Math.round(totalUI)} UI requeridas en total</span>
                                         </div>
                                         <div className="text-[11px] text-[#5D7299] mt-0.5">
-                                          {parseFloat(calcDosis) <= 2
-                                            ? `✓ Jeringas de insulina: ${totalUnid} jeringas para el período.`
-                                            : `✓ Si calcula Insulina UI: ${totalUnid} UI (~${Math.ceil(totalUnid / 300)} lápices de 300 UI o ~${Math.ceil(totalUnid / 1000)} frascos de 1000 UI).`}
+                                          {esFrasco ? "🧪 Frasco Vial de 1.000 UI" : "🖊️ Lápiz de 300 UI"}: {Math.round(totalUI)} UI ÷ {capacidad} UI = {(totalUI / capacidad).toFixed(2)} envases
                                         </div>
                                       </div>
                                       <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
-                                        <span className="text-[11px] font-bold text-teal-900 uppercase">Total a despachar:</span>
+                                        <span className="text-[11px] font-bold text-teal-900 uppercase">A despachar por Farmacia:</span>
                                         <span className="text-base font-black text-teal-900 bg-teal-100 border border-teal-300 rounded-lg px-3 py-0.5 shadow-sm">
-                                          {totalUnid} unid.
+                                          {envases} {envases !== 1 ? tipoEnvasePlural : tipoEnvaseNombre}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+
+                                {(calcTipo === "jeringa" || (calcTipo === "unid" && parseFloat(calcDosis) < 5)) && (() => {
+                                  const tomas = 24 / (parseFloat(calcHoras) || 24);
+                                  const totalJeringas = Math.max(1, Math.ceil(tomas * (parseFloat(calcDosis) || 0) * (parseFloat(calcDias) || 0)));
+                                  return (
+                                    <div className="bg-white/95 border border-emerald-400/70 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-sm">
+                                      <div className="text-xs text-[#5D7299]">
+                                        <span className="font-semibold text-emerald-800">Cálculo Insumos:</span>{" "}
+                                        {tomas.toFixed(1).replace(".0", "")} uso(s)/día × {calcDosis} jeringa(s) × {calcDias} días ={" "}
+                                        <span className="font-bold text-[#0F1B35]">{totalJeringas} jeringas requeridas en total</span>
+                                      </div>
+                                      <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
+                                        <span className="text-[11px] font-bold text-emerald-900 uppercase">Total a despachar:</span>
+                                        <span className="text-base font-black text-emerald-900 bg-emerald-100 border border-emerald-300 rounded-lg px-3 py-0.5 shadow-sm">
+                                          {totalJeringas} jeringas
                                         </span>
                                       </div>
                                     </div>

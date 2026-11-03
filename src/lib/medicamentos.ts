@@ -15,6 +15,7 @@ export const MEDICAMENTOS_COMUNES = [
   "Glibenclamida 5mg",
   "Insulina NPH (Frasco)",
   "Insulina Cristalina Rápida",
+  "Jeringas de Insulina (1ml / 100 UI)",
   
   // ── Tiroides y Respiratorio ──
   "Levotiroxina 100mcg",
